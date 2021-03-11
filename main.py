@@ -218,7 +218,7 @@ for y in range(0,nrows):
          xeff = x+nskips-1
          xeffp1 = xeff-1
          xeffp2 = xeff-2
-         xeffplast = xeff-iskiplast
+         xeffplast = xeff - iskiplast
          xeffend = xeff - iskipstart
          xeffstart = xeff - iskipend
       #averages and std of the skips of (y, xp) pixel

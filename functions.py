@@ -83,7 +83,7 @@ def scanPlotsFile(scanparametername, firstskipnoise, avgimgnoise, kclsignificanc
     fileplots.close()
     return 0
 
-def pixelFFTT(skipimage, rows, columns, Nskips, samplet):
+def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     import numpy as np
     import matplotlib.pyplot as plt
     from scipy.fftpack import fft
