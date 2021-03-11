@@ -175,7 +175,7 @@ for y in range(0,nrows):
          image_data[y,ncoltot-2] = image_data0[y,0]
          image_data[y,ncoltot-1] = image_data0[y,1]
          
- if ampl == 'UL':
+if ampl == 'UL':
      for x in range(nallcolumns-3,int(nallcolumns/2)-1,-1):
          image_data[y,x+2] = image_data0[y,x]
      if y < nrows-1:
