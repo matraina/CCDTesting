@@ -56,10 +56,10 @@ from astropy.io import fits
 # Get processing modules
 
 import functions
-#import chargeloss
+import chargeloss
 #import calibration
 #import darkcurrent
-#import latekreport
+import latekreport
 
 ##############################################################################
 # Specify path (can be out of the main tree)
@@ -136,7 +136,7 @@ skipper_image2 = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for last skip
 skipper_image3 = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for average of skip images
-skipper_avg = np.zeros((nrows, ncolumns), dtype=np.float64)
+skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for calibrated average of skip images (offset subtraction + gain rescaling)
 skipper_avg_cal = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for standard deviation of skips
@@ -227,11 +227,11 @@ for y in range(0,nrows):
          if nskips >= 10: 
             movingavg[index] = (image_data[y,xeff:xeff+10].mean()); index+=1 #comment this line and while below to speed up
             if nskips >= 100: 
-               while index <= nskips/100: movingavg[index] = (image_data[y,xeff:xeff+(100*index)].mean()); index+=1 #change xeff to xeffstart to check fs noise
+                while index <= nskips/100: movingavg[index] = (image_data[y,xeff:xeff+(100*index)].mean()); index+=1 #change xeff to xeffstart to skip fs noise
          avgpixval = image_data[y,xeffstart:xeffend].mean()
          stdpixval = image_data[y,xeffstart:xeffend].std()
          for k in range(naverages): skipper_averages[y, xp, k] = movingavg[k]  #comment along with if's above to speed up 
-         skipper_avg[y,xp] = avgpixval
+         skipper_avg0[y,xp] = avgpixval
          skipper_std[y,xp] = stdpixval
          skipper_image0[y,xp] = image_data[y,xeff]
          skipper_image1[y,xp] = image_data[y,xeffp1]
@@ -257,7 +257,7 @@ if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
 #HEREON ONLY SKIPPER IMGS PROCESSING #########################################
 ##############################################################################
 
-imageIsGood = True
+#imageIsGood = True
 
 ##############################################################################
 #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
@@ -269,6 +269,27 @@ ampmanyskip, mumanyskip, stdmanyskip = [],[],[]
 for k in range(naverages): amp, mu, std = functions.sigmaFinder(skipper_averages[:,:,k], False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std)
 
 ##############################################################################
+#FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
+##############################################################################
+
+#can exclude image border over here if necessary
+#charge loss check excluding border pixels
+diff_image_core = np.zeros((nrows-2, ncolumns-2), dtype=np.float64) #row and column coordinates
+for y in range(1,nrows-1):
+    for x in range(1,ncolumns-1):
+            diff_image_core[y-1][x-1] = skipper_diff[y][x]
+
+skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD = chargeloss.firstLastSkipPCDDCheck(diff_image_core, False)
+kclsignificance = kclPCDD/kclPCDDuncertainty
+if -3 < kclsignificance > 3: imageIsGood *= False; print("Kcl value flags probable charge loss")
+
+##############################################################################
+#LATEK REPORTS ###############################################################
+##############################################################################
+
+latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty)
+
+##############################################################################
 #OUTPUT PROCESSED IMAGE ######################################################
 ##############################################################################
 
@@ -278,7 +299,7 @@ hdu0 = fits.PrimaryHDU(data=skipper_image0,header=hdr_copy)
 hdu1 = fits.ImageHDU(data=skipper_image1)
 hdu2 = fits.ImageHDU(data=skipper_image2)
 hdu3 = fits.ImageHDU(data=skipper_image3)
-hdu4 = fits.ImageHDU(data=skipper_avg)
+hdu4 = fits.ImageHDU(data=skipper_avg0)
 hdu5 = fits.ImageHDU(data=skipper_std)
 hdu6 = fits.ImageHDU(data=skipper_diff)
 new_hdul = fits.HDUList([hdu0,hdu1,hdu2,hdu3,hdu4,hdu5,hdu6])

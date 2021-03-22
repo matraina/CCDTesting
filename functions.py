@@ -49,7 +49,8 @@ def sigmaFinder(image, debug):
     sigma = abs(mostlikelyentry - fwhm)
     sigma = sigma/np.sqrt(2*np.log(2))
     #now find accurate mean and stdev by fitting in proper range
-    pcdinrange = [s for s in pcd if s > mostlikelyentry - 2.2*sigma and s < mostlikelyentry + 2.2*sigma] #remove pixels out of desired range
+    fitrange = 2.
+    pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
     pguess = [mostlikelyentrycounts,mostlikelyentry,sigma]
     binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange))
     pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
@@ -57,7 +58,7 @@ def sigmaFinder(image, debug):
     try:
         pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
         pcdhistfit = gauss(bincenters,*pfit)
-        amp,mu,std, = pfit[0],pfit[1],pfit[2]
+        amp,mu,std, = pfit[0],pfit[1],abs(pfit[2])
     except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); print("Gaussian fit for noise evaluation failed. Fit guess values used")
     
     if debug:
