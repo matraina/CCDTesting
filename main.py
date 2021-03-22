@@ -57,7 +57,7 @@ from astropy.io import fits
 
 import functions
 import chargeloss
-#import calibration
+import calibration
 #import darkcurrent
 import latekreport
 
@@ -281,13 +281,20 @@ for y in range(1,nrows-1):
 
 skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD = chargeloss.firstLastSkipPCDDCheck(diff_image_core, False)
 kclsignificance = kclPCDD/kclPCDDuncertainty
-if -3 < kclsignificance > 3: imageIsGood *= False; print("Kcl value flags probable charge loss")
+if abs(kclsignificance) > 3: imageIsGood *= False; print("Kcl value flags probable charge loss")
+
+##############################################################################
+#ADU TO e- CALIBRATION #######################################################
+##############################################################################
+
+skipper_avg_cal, calibrationconstant, offset, calibrationIsGood = calibration.calibrate(skipper_avg0, 10, False)[0:4]
+if not calibrationIsGood: imageIsGood *= False; print("Calibration failed")
 
 ##############################################################################
 #LATEK REPORTS ###############################################################
 ##############################################################################
 
-latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty)
+latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant)
 
 ##############################################################################
 #OUTPUT PROCESSED IMAGE ######################################################
