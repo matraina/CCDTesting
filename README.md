@@ -23,5 +23,5 @@ General Notes:
 - starting_skip_avg_img_and_difference starts at 0, not at 1, if 1 chosen, it will start from the second skip
 - final_skip_avg_img_and_difference follows the convention above, so to check the last skip of a 1000-skip image, it should be set to 999. This hassle can be dealt with as explained below:
 - Setting -1 (or any other impossible value) for skip number arguments: starting_skip, final_skip_avg_img_and_difference will set them to 0 (first skip) and N_tot_skip-1, respectively
-- When not starting with first skip, there will be a discrepancy in the noise trend plot in the report: the x-axis skip_number will effectively be the value shown minus starting_skip_avg_img_and_difference
+- Set starting and end skips hold for all processing (avg image, std image, difference image, etc.) except for noise trend. The noise trend is computed for all skips regardless
 - There is no .fits extension at the end of image name (for raw and for processed image) both in shell and python scripts

@@ -221,7 +221,7 @@ for y in range(0,nrows):
          if nskips >= 10: 
             movingavg[index] = (image_data[y,xeff:xeff+10].mean()); index+=1 #comment this line and while below to speed up
             if nskips >= 100: 
-                while index <= nskips/100: movingavg[index] = (image_data[y,xeffstart:xeffstart+(100*index)].mean()); index+=1
+                while index <= nskips/100: movingavg[index] = (image_data[y,xeff:xeff+(100*index)].mean()); index+=1
          avgpixval = image_data[y,xeffstart:xeffend].mean()
          stdpixval = image_data[y,xeffstart:xeffend].std()
          for k in range(naverages): skipper_averages[y, xp, k] = movingavg[k]  #comment along with if's above to speed up 
