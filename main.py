@@ -20,14 +20,12 @@ arg1 = sys.argv[1]
 arg2 = sys.argv[2] + ".fits"
 #output FITS file with skipper images
 arg3 = sys.argv[3] + ".fits"
-#skip to start average/std of skips (after BS=BaselineShift (PedestalShift probably due to reset))
+#skip to start average/std and difference of skips (after BS=BaselineShift (PedestalShift probably due to reset))
 arg4 = sys.argv[4]
-#skip to end average/std of skips
+#skip to end average/std and difference of skips
 arg5 = sys.argv[5]
-#skip for subtraction with initial (after BS=BaselineShift) skip for CLC
-arg6 = sys.argv[6]
 #iskipend = nskips if iskipend set negative  (see lines below)
-iskipstart, iskipend, iskiplast = int(arg4), int(arg5), int(arg6)
+iskipstart, iskipend = int(arg4), int(arg5)
 
 ##############################################################################                             
 # Get Numpy, and relevant Scipy
@@ -150,12 +148,10 @@ skipper_large_charge = np.zeros((nrows, ncolumns), dtype=np.bool)
 # Initialization of various arrays and parameters
 
 # y = row   x = column
-if iskipstart < 0 or iskipstart > nskips:
+if iskipstart < 0  or iskipstart > nskips:
    iskipstart = 0
 if iskipend < 0 or iskipend > nskips:
-   iskipend = nskips
-if iskiplast < 0:
-   iskiplast = nskips
+   iskipend = nskips - 1
 
 
 ##############################################################################    
@@ -208,36 +204,34 @@ for y in range(0,nrows):
    for x in range(0, nallcolumns, nskips): 
       xp = xp+1
       xeff = x
-      xeffp1 = xeff+1
-      xeffp2 = xeff+2
-      xeffplast = xeff + iskiplast - 1 #this is used as an index so will fail when == nskips. Need to subtract 1
       xeffstart = xeff + iskipstart
       xeffend = xeff + iskipend #this is used as a range so will be OK when == nskips
+      xeffp1 = xeffstart+1
+      xeffp2 = xeffstart+2
       #redefine if UL case
       if ampl == 'UL' and xp>int(ncolumns/2)-1:
          xeff = x+nskips-1
-         xeffp1 = xeff-1
-         xeffp2 = xeff-2
-         xeffplast = xeff - iskiplast
          xeffend = xeff - iskipstart
          xeffstart = xeff - iskipend
+         xeffp1 = xeffstart-1
+         xeffp2 = xeffstart-2
       #averages and std of the skips of (y, xp) pixel
       index = 0
       if nskips > 1:
          if nskips >= 10: 
             movingavg[index] = (image_data[y,xeff:xeff+10].mean()); index+=1 #comment this line and while below to speed up
             if nskips >= 100: 
-                while index <= nskips/100: movingavg[index] = (image_data[y,xeff:xeff+(100*index)].mean()); index+=1 #change xeff to xeffstart to skip fs noise
+                while index <= nskips/100: movingavg[index] = (image_data[y,xeffstart:xeffstart+(100*index)].mean()); index+=1
          avgpixval = image_data[y,xeffstart:xeffend].mean()
          stdpixval = image_data[y,xeffstart:xeffend].std()
          for k in range(naverages): skipper_averages[y, xp, k] = movingavg[k]  #comment along with if's above to speed up 
          skipper_avg0[y,xp] = avgpixval
          skipper_std[y,xp] = stdpixval
-         skipper_image0[y,xp] = image_data[y,xeff]
+         skipper_image0[y,xp] = image_data[y,xeffstart]
          skipper_image1[y,xp] = image_data[y,xeffp1]
          skipper_image2[y,xp] = image_data[y,xeffp2]
-         skipper_image3[y,xp] = image_data[y,xeffplast]
-         #check charge difference between first and last skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
+         skipper_image3[y,xp] = image_data[y,xeffend]
+         #check charge difference between start and end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
          skipper_diff[y,xp] = skipper_image0[y,xp] - skipper_image3[y,xp]
       #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
       elif nskips == 1:
