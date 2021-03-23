@@ -58,7 +58,7 @@ from astropy.io import fits
 import functions
 import chargeloss
 import calibration
-#import darkcurrent
+import darkcurrent
 import latekreport
 
 ##############################################################################
@@ -291,10 +291,16 @@ skipper_avg_cal, calibrationconstant, offset, calibrationIsGood = calibration.ca
 if not calibrationIsGood: imageIsGood *= False; print("Calibration failed")
 
 ##############################################################################
+#DARK CURRENT ESTIMATE #######################################################
+##############################################################################
+
+darkcurrentestimate, darkcurrentestimate2, dcfitparameters = darkcurrent.darkCurrentEstimations(skipper_avg_cal, stdmanyskip[-1]/calibrationconstant, False)
+
+##############################################################################
 #LATEK REPORTS ###############################################################
 ##############################################################################
 
-latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant)
+latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, darkcurrentestimate, darkcurrentestimate2, *dcfitparameters)
 
 ##############################################################################
 #OUTPUT PROCESSED IMAGE ######################################################
