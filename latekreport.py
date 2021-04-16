@@ -184,12 +184,21 @@ def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, st
     samplet /= (nrows*nallcolumns)
     ncolumns = int(nallcolumns/nskips) # n of columns in the image
     functions.pixelFFT(image_data, nrows-1, ncolumns-1, nskips, samplet)
+    
     with doc.create(Section('Fourier Analysis')):
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Full image Fast Fourier Transform (first to last skip).')
         plt.clf()
-        doc.append(NewPage())
+        
+    samplet *= nskips
+    functions.rowFFT(skipper_avg0, nrows-1, ncolumns-1, samplet)
+    
+    with doc.create(Figure(position='htb!')) as plot:
+        plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+        plot.add_caption('Average image Fast Fourier Transform (all row pixels).')
+    plt.clf()
+    doc.append(NewPage())
      
     #############################################
     #############Produce Report PDF##############
