@@ -139,7 +139,8 @@ skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
 skipper_avg_cal = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for standard deviation of skips
 skipper_std = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image difference skip 0 (or after BS) - avg
+# image differences (first-second and second-last)
+skipper_diff_01 = np.zeros((nrows, ncolumns), dtype=np.float64)
 skipper_diff = np.zeros((nrows, ncolumns), dtype=np.float64)
 # select high charge pixels
 skipper_large_charge = np.zeros((nrows, ncolumns), dtype=np.bool)
@@ -231,8 +232,9 @@ for y in range(0,nrows):
          skipper_image1[y,xp] = image_data[y,xeffp1]
          skipper_image2[y,xp] = image_data[y,xeffp2]
          skipper_image3[y,xp] = image_data[y,xeffend]
-         #check charge difference between start and end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
-         skipper_diff[y,xp] = skipper_image0[y,xp] - skipper_image3[y,xp]
+         #check charge difference between first & second skips, and start+1 & end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
+         skipper_diff_01[y,xp] = image_data[y,xeff] - image_data[y,xeff+1]
+         skipper_diff[y,xp] = skipper_image1[y,xp] - skipper_image3[y,xp]
       #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
       elif nskips == 1:
          image_data[y,xp] = image_data[y,xp] - pedestaloneskiprow
@@ -308,6 +310,7 @@ hdu2 = fits.ImageHDU(data=skipper_image2)
 hdu3 = fits.ImageHDU(data=skipper_image3)
 hdu4 = fits.ImageHDU(data=skipper_avg0)
 hdu5 = fits.ImageHDU(data=skipper_std)
-hdu6 = fits.ImageHDU(data=skipper_diff)
-new_hdul = fits.HDUList([hdu0,hdu1,hdu2,hdu3,hdu4,hdu5,hdu6])
+hdu6 = fits.ImageHDU(data=skipper_diff_01)
+hdu7 = fits.ImageHDU(data=skipper_diff)
+new_hdul = fits.HDUList([hdu0,hdu1,hdu2,hdu3,hdu4,hdu5,hdu6,hdu7])
 new_hdul.writeto(arg3, overwrite=True)
