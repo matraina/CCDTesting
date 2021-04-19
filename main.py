@@ -57,6 +57,7 @@ import functions
 import chargeloss
 import calibration
 import darkcurrent
+import calibrationdc
 import latekreport
 
 ##############################################################################
@@ -283,20 +284,21 @@ if abs(kclsignificance) > 3: imageIsGood *= False; print("Kcl value flags probab
 #ADU TO e- CALIBRATION #######################################################
 ##############################################################################
 
-skipper_avg_cal, calibrationconstant, offset, calibrationIsGood = calibration.calibrate(skipper_avg0, 10, False)[0:4]
-if not calibrationIsGood: imageIsGood *= False; print("Calibration failed")
+parameters = calibrationdc.calibrationDC(skipper_avg0,mumanyskip[-1],stdmanyskip[-1])
+#skipper_avg_cal, calibrationconstant, offset, calibrationIsGood = calibration.calibrate(skipper_avg0, 10, False)[0:4]
+#if not calibrationIsGood: imageIsGood *= False; print("Calibration failed")
 
 ##############################################################################
 #DARK CURRENT ESTIMATE #######################################################
 ##############################################################################
 
-darkcurrentestimate, darkcurrentestimate2, dcfitparameters = darkcurrent.darkCurrentEstimations(skipper_avg_cal, stdmanyskip[-1]/calibrationconstant, False)
+#darkcurrentestimate, darkcurrentestimate2, dcfitparameters = darkcurrent.darkCurrentEstimations(skipper_avg_cal, stdmanyskip[-1]/calibrationconstant, False)
 
 ##############################################################################
 #LATEK REPORTS ###############################################################
 ##############################################################################
 
-latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, darkcurrentestimate, darkcurrentestimate2, *dcfitparameters)
+#latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, darkcurrentestimate, darkcurrentestimate2, *dcfitparameters)
 
 ##############################################################################
 #OUTPUT PROCESSED IMAGE ######################################################

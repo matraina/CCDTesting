@@ -105,6 +105,8 @@ def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     plt.ylabel("FFT magnitude")
     plt.xlabel("Frequency (Hz)")
     plt.title("Full Image Fast Fourier Transform")
+    
+    return 0
 
 def rowFFT(avgimage, rows, columns, samplet):
     import numpy as np
@@ -125,6 +127,6 @@ def rowFFT(avgimage, rows, columns, samplet):
     plt.yscale("log")
     plt.ylabel("FFT magnitude")
     plt.xlabel("Frequency (Hz)")
-    plt.title("Full Image Fast Fourier Transform")
+    plt.title("Average Image Fast Fourier Transform")
 
     return 0
