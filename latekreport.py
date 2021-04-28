@@ -1,6 +1,17 @@
 #function(s) to produce latex report with image quality information and plots
+
+import sys
+from astropy.utils.data import get_pkg_data_filename
+from astropy.io import fits
+from scipy.optimize import curve_fit
+import numpy as np
+import matplotlib
+import functions
+from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
+matplotlib.use('Agg')  # Not to use X server. For TravisCI.
+import matplotlib.pyplot as plt  # noqa
+
 def gauss(x, *p):
-    import numpy as np
     A, mu, sigma = p
     return A*np.exp(-(x-mu)**2/(2*sigma**2))
     
@@ -10,7 +21,6 @@ def factorial(n):
     return facto
         
 def convolutionGaussianPoisson(q, *p):
-    import numpy as np
     dcratep, npeaksp, amplip, sigmap = p
     f = 0
     npeaksp = 3
@@ -18,16 +28,7 @@ def convolutionGaussianPoisson(q, *p):
         f +=  ( (dcratep**peaks * np.exp(-dcratep) / factorial(peaks)) * (amplip / np.sqrt(2 * np.pi * sigmap**2)) * np.exp( - (q - peaks)**2 / (2 * sigmap**2)) )
     return f
 
-def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, skipperdiffcore, mudiff, stddiff, skew, skewuncertainty, kcl, kcluncertainty, offset, calibrationconstant, dcestimate, dcestimate2, *dcfitpar):
-    import sys
-    from astropy.utils.data import get_pkg_data_filename
-    from astropy.io import fits
-    from scipy.optimize import curve_fit
-    import numpy as np
-    import matplotlib
-    from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
-    matplotlib.use('Agg')  # Not to use X server. For TravisCI.
-    import matplotlib.pyplot as plt  # noqa
+def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, skipperdiffcore, mudiff, stddiff, skew, skewuncertainty, kcl, kcluncertainty, offset, calibrationconstant, skipper_avg_cal, dcestimate2, *parametersDCfit):
     #setup document parameters
     geometry_options = {"right": "2cm", "left": "2cm"}
     doc = Document(geometry_options=geometry_options)
@@ -51,12 +52,15 @@ def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, st
     #Pixel charge distribution and noise section#
     #############################################
     with doc.create(Section('Pixel Charge Distributions and Noise')):
+        import functions
         
         fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=True, tight_layout=True)
         
         skipper_image0ravel = skipper_image0.ravel()
-        skipper_image = [s for s in skipper_image0ravel if s != 0]
-        skipper_imagehist, binedges = np.histogram(skipper_image, bins = 800, density=False)
+        #skipper_image = [s for s in skipper_image0ravel if s != 0]
+        #instead of removing 0-entries from histogram use numpy mask to avoid discrepancies between gaussian and plotted PCD skipper_image0ravel
+        skipper_image_unsaturated = np.ma.masked_equal(skipper_image0ravel, 0.0, copy=False)
+        skipper_imagehist, binedges = np.histogram(skipper_image_unsaturated, bins = 800, density=False)
         ampfs = skipper_imagehist[np.argmax(skipper_imagehist)]
         axs[0].hist(skipper_image0ravel, 800, density = False, histtype='step', linewidth=2, log = True, color = "teal")
         bincenters = np.arange(mufs - 3*stdfs, mufs + 3*stdfs + 6*stdfs/100, 6*stdfs/100) #last term in upper bound to get ~sym drawing
@@ -64,12 +68,14 @@ def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, st
         axs[0].set_title('First skip pixel charge distribution: $\sigma_{0e^-}~=~$ ' + str(round(stdfs,4)) + ' ADU')#; estimated noise: ' + str(round(stdfs/calibrationconstant,4)) + ' $e^{-}$')
         
         avg_image_0ravel = skipper_avg0.ravel()
-        avg_image = [s for s in avg_image_0ravel if s != 0 and  offset - 5*calibrationconstant < s < offset + calibrationconstant]
-        avg_image_hist, binedges = np.histogram(avg_image, bins = 200, density=False)
+        correctoffset = functions.sigmaFinder(skipper_avg0, debug=False)[1]
+        avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
+        avg_image_unsaturated = [s for s in avg_image_unsaturated if correctoffset - 5*calibrationconstant < s < correctoffset + calibrationconstant]
+        avg_image_hist, binedges = np.histogram(avg_image_unsaturated, bins = 200, density=False)
         ampls = avg_image_hist[np.argmax(avg_image_hist)]
-        bincenters = np.arange(offset - 3*stdmanyskip[-1], offset + 3*stdmanyskip[-1] + 6*stdmanyskip[-1]/100, 6*stdmanyskip[-1]/100)
-        axs[1].plot(bincenters, gauss(bincenters,ampls,offset,stdmanyskip[-1]), label='fit curve', linewidth=1, color="red")
-        axs[1].hist(avg_image_0ravel, 200, range = (offset - 5*calibrationconstant, offset + calibrationconstant), density = False, histtype='step', linewidth=2, log = True, color="teal")
+        bincenters = np.arange(correctoffset - 3*stdmanyskip[-1], correctoffset + 3*stdmanyskip[-1] + 6*stdmanyskip[-1]/200, 6*stdmanyskip[-1]/200)
+        axs[1].plot(bincenters, gauss(bincenters,ampls,correctoffset,stdmanyskip[-1]), label='fit curve', linewidth=1, color="red")
+        axs[1].hist(avg_image_0ravel, 200, range = (correctoffset - 5*calibrationconstant, correctoffset + calibrationconstant), density = False, histtype='step', linewidth=2, log = True, color="teal")
         axs[1].set_title('Average image pixel charge distribution: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
         
         plt.subplots_adjust(hspace=0.5)
@@ -109,7 +115,7 @@ def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, st
         fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
         
         skipperdiffcoreravelled = skipperdiffcore.ravel()
-        skipper_imagehist, binedges = np.histogram(skipper_image, bins = 800, density=False)
+        skipper_imagehist, binedges = np.histogram(skipper_image_unsaturated, bins = 800, density=False)
         axs[0].hist(skipperdiffcoreravelled, 400, density = False, histtype='step', linewidth=2, log = True, color="teal")
         axs[0].set_title('Estimated width : $\sigma_{dif}~=~$' + str(round(stddiff,4)) + 'ADU')
         
@@ -148,20 +154,22 @@ def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, st
     #############################################
     ##Calibrated image and Dark Current section##
     #############################################
-    skipperavgcalibrated = (offset - skipper_avg0)/calibrationconstant
+    skipperavgcalibrated = skipper_avg_cal.ravel()
     if calibrationconstant == 10: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
     else: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
     nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
     if nbins == 0: nbins=100
     skipperavgcalibratedravelhist, binedges = np.histogram(skipperavgcalibratedravel, nbins, density=False)
     bincenters=(binedges[:-1] + binedges[1:])/2
-    skipperavgcalibratedravelhistfit = convolutionGaussianPoisson(bincenters,*dcfitpar)
+    npeaksp = 3
+    dcpar = parametersDCfit[0], npeaksp, parametersDCfit[2]/(50/0.5), parametersDCfit[3]/calibrationconstant
+    skipperavgcalibratedravelhistfit = convolutionGaussianPoisson(bincenters,*dcpar)
     plt.plot(bincenters,skipperavgcalibratedravelhist,label='aie', color="teal")
     plt.plot(bincenters, skipperavgcalibratedravelhistfit, label='fit curve', color="red")
     #plt.hist(skipperavgcalibrated.ravel(), 200, (-1,5), density = False, histtype='step', linewidth=2, log = True, color="teal")
     plt.xlabel("pixel value [e$^-$]")
     plt.ylabel("counts")
-    plt.title('$I_{darkAC}~=~$' + str(round(dcestimate,6)) + ' $e^-$pix$^{-1}$, $I_{darkCF}~=~$' + str(round(dcestimate2,6)) + ' $e^-$pix$^{-1}$')
+    plt.title('$I_{darkCF}~=~$' + str(round(parametersDCfit[0],6)) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(dcestimate2,6)) + ' $e^-$pix$^{-1}$')
     
     with doc.create(Section('Dark Current')):
         with doc.create(Figure(position='htb!')) as plot:

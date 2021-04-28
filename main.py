@@ -260,10 +260,10 @@ if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
 #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
 ##############################################################################
 
-ampfs, mufs, stdfs = functions.sigmaFinder(skipper_image0, False)
+ampfs, mufs, stdfs = functions.sigmaFinder(skipper_image0, debug=False)
 if mufs < 1E+3: imageIsGood *= False; print("Pedestal value is too small: LEACH might have failed.")
 ampmanyskip, mumanyskip, stdmanyskip = [],[],[]
-for k in range(naverages): amp, mu, std = functions.sigmaFinder(skipper_averages[:,:,k], False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std)
+for k in range(naverages): amp, mu, std = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std)
 
 ##############################################################################
 #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
@@ -276,29 +276,23 @@ for y in range(1,nrows-1):
     for x in range(1,ncolumns-1):
             diff_image_core[y-1][x-1] = skipper_diff[y][x]
 
-skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD = chargeloss.firstLastSkipPCDDCheck(diff_image_core, False)
+skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False)
 kclsignificance = kclPCDD/kclPCDDuncertainty
 if abs(kclsignificance) > 3: imageIsGood *= False; print("Kcl value flags probable charge loss")
 
 ##############################################################################
-#ADU TO e- CALIBRATION #######################################################
+#ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
 ##############################################################################
 
-parameters = calibrationdc.calibrationDC(skipper_avg0,mumanyskip[-1],stdmanyskip[-1])
-#skipper_avg_cal, calibrationconstant, offset, calibrationIsGood = calibration.calibrate(skipper_avg0, 10, False)[0:4]
-#if not calibrationIsGood: imageIsGood *= False; print("Calibration failed")
-
-##############################################################################
-#DARK CURRENT ESTIMATE #######################################################
-##############################################################################
-
-#darkcurrentestimate, darkcurrentestimate2, dcfitparameters = darkcurrent.darkCurrentEstimations(skipper_avg_cal, stdmanyskip[-1]/calibrationconstant, False)
+parametersDCfit, offset, skipper_avg_cal = calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse=True, debug=False)
+calibrationconstant = parametersDCfit[5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
+darkcurrentestimateAC = calibrationdc.anticlusteringDarkCurrent(skipper_avg_cal, calibratedsigma, debug=False)
 
 ##############################################################################
 #LATEK REPORTS ###############################################################
 ##############################################################################
 
-#latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, darkcurrentestimate, darkcurrentestimate2, *dcfitparameters)
+latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, skipper_avg_cal, darkcurrentestimateAC, *parametersDCfit)
 
 ##############################################################################
 #OUTPUT PROCESSED IMAGE ######################################################

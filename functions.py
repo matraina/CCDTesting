@@ -102,6 +102,7 @@ def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     
     plt.plot(xfreq[1:int(Nskips/2)], np.abs(fftdata[1:int(Nskips/2)]), color="teal")
     plt.yscale("log")
+    #plt.grid(color='grey', linestyle='-', linewidth=1)
     plt.ylabel("FFT magnitude")
     plt.xlabel("Frequency (Hz)")
     plt.title("Full Image Fast Fourier Transform")
