@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.special import factorial
 import lmfit
 
-#functions performing gaussPoisson convolution fit. Using lmfit library
+#functions performing gaussPoisson convolution fit. Using lmfit library. Adapted from A. Piers https://github.com/alexanderpiers/damicm-image-preproc/
 
 def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess=10, darkcurrent=-1, npoisson=6):
 
