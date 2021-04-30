@@ -55,8 +55,6 @@ from astropy.io import fits
 
 import functions
 import chargeloss
-import calibration
-import darkcurrent
 import calibrationdc
 import latekreport
 
