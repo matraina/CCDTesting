@@ -55,8 +55,6 @@ from astropy.io import fits
 
 import functions
 import chargeloss
-import calibration
-import darkcurrent
 import calibrationdc
 import latekreport
 
@@ -260,10 +258,10 @@ if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
 #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
 ##############################################################################
 
-ampfs, mufs, stdfs = functions.sigmaFinder(skipper_image0, debug=False)
+ampfs, mufs, stdfs, stduncfs = functions.sigmaFinder(skipper_image0, debug=False)
 if mufs < 1E+3: imageIsGood *= False; print("Pedestal value is too small: LEACH might have failed.")
-ampmanyskip, mumanyskip, stdmanyskip = [],[],[]
-for k in range(naverages): amp, mu, std = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std)
+ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
+for k in range(naverages): amp, mu, std, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 
 ##############################################################################
 #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
@@ -292,7 +290,7 @@ darkcurrentestimateAC = calibrationdc.anticlusteringDarkCurrent(skipper_avg_cal,
 #LATEK REPORTS ###############################################################
 ##############################################################################
 
-latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, mumanyskip, stdmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, skipper_avg_cal, darkcurrentestimateAC, *parametersDCfit)
+latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, stduncfs, mumanyskip, stdmanyskip, stduncmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, skipper_avg_cal, darkcurrentestimateAC, *parametersDCfit)
 
 ##############################################################################
 #OUTPUT PROCESSED IMAGE ######################################################

@@ -1,0 +1,11 @@
+{
+    "report" :
+    [{
+        "header" : true,
+        "pcds" : true,
+        "chargeloss" : true,
+        "calibration_darkcurrent" : true,
+        "fft_skips" : true,
+        "fft_row" : false
+    }]
+}

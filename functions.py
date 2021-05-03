@@ -58,8 +58,9 @@ def sigmaFinder(image, debug):
     try:
         pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
         pcdhistfit = gauss(bincenters,*pfit)
-        amp,mu,std, = pfit[0],pfit[1],abs(pfit[2])
-    except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); print("Gaussian fit for noise evaluation failed. Fit guess values used")
+        amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
+        punc = np.sqrt(np.diag(varmatrix))[-1]
+    except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); stdunc=0; print("Gaussian fit for noise evaluation failed. Fit guess values used")
     
     if debug:
         print("Most likely entry is:", mostlikelyentry)
@@ -73,7 +74,7 @@ def sigmaFinder(image, debug):
         plt.title('$\mu=$' + str(round(mu,1)) + ' ADU, $\sigma=$' + str(round(std,3)) + ' ADU')
         plt.show()
         
-    return amp, mu, std
+    return amp, mu, std, punc
     
 def scanPlotsFile(scanparametername, firstskipnoise, avgimgnoise, kclsignificance, rscore, gain, dc1, dc2):
     import sys
