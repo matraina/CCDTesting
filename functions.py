@@ -60,15 +60,15 @@ def sigmaFinder(image, debug):
         pcdhistfit = gauss(bincenters,*pfit)
         amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
         punc = np.sqrt(np.diag(varmatrix))[-1]
-    except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); stdunc=0; print("Gaussian fit for noise evaluation failed. Fit guess values used")
+    except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); stdunc=0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
     
     if debug:
-        print("Most likely entry is:", mostlikelyentry)
-        print("Most likely entry counts are:", mostlikelyentrycounts)
-        print("FWHM is at:", fwhm)
-        print("FWHM difference counts are:",fwhmcounts)
-        print("Value of approximate gaussian std (noise) is:", round(sigma,4))
-        print("Value of gaussian std (noise) is:", round(std,4))
+        print('Most likely entry is:', mostlikelyentry)
+        print('Most likely entry counts are:', mostlikelyentrycounts)
+        print('FWHM is at:', fwhm)
+        print('FWHM difference counts are:',fwhmcounts)
+        print('Value of approximate gaussian std (noise) is:', round(sigma,4))
+        print('Value of gaussian std (noise) is:', round(std,4))
         plt.plot(bincenters,pcdinrangehist,label='pcd')
         plt.plot(bincenters, pcdhistfit, label='fit curve')
         plt.title('$\mu=$' + str(round(mu,1)) + ' ADU, $\sigma=$' + str(round(std,3)) + ' ADU')
@@ -80,7 +80,7 @@ def scanPlotsFile(scanparametername, firstskipnoise, avgimgnoise, kclsignificanc
     import sys
     fsne = firstskipnoise/gain
     aine = avgimgnoise/gain
-    fileplots = open(sys.argv[1]+"/reports/"+scanparametername+"_scan_output", "a+")
+    fileplots = open(sys.argv[1]+'/reports/'+scanparametername+'_scan_output', 'a+')
     fileplots.write(str(firstskipnoise)+' '+str(avgimgnoise)+' '+str(fsne)+' '+str(aine)+' '+str(kclsignificance)+' '+str(rscore)+' '+str(gain)+' '+str(dc1)+' '+str(dc2)+'\n')
     fileplots.close()
     return 0
@@ -101,12 +101,13 @@ def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     xfreq = np.arange(0,xfreq,xfreq/Nskips)
     fftdata /= (rows*columns)
     
-    plt.plot(xfreq[1:int(Nskips/2)], np.abs(fftdata[1:int(Nskips/2)]), color="teal")
-    plt.yscale("log")
+    plt.plot(xfreq[1:int(Nskips/2)], np.abs(fftdata[1:int(Nskips/2)]), color='teal', label='Pixel Fast Fourier Transform across skips')
+    plt.legend(loc='upper right',prop={'size': 20})
+    plt.yscale('log')
     #plt.grid(color='grey', linestyle='-', linewidth=1)
-    plt.ylabel("FFT magnitude")
-    plt.xlabel("Frequency (Hz)")
-    plt.title("Full Image Fast Fourier Transform")
+    plt.ylabel('FFT magnitude')
+    plt.xlabel('Frequency (Hz)')
+    plt.title('Full Image Fast Fourier Transform')
     
     return 0
 
@@ -125,10 +126,11 @@ def rowFFT(avgimage, rows, columns, samplet):
     xfreq = np.arange(0,xfreq,xfreq/columns)
     fftdata /= (rows)
     
-    plt.plot(xfreq[1:int(columns/2)], np.abs(fftdata[1:int(columns/2)]), color="teal")
-    plt.yscale("log")
-    plt.ylabel("FFT magnitude")
-    plt.xlabel("Frequency (Hz)")
-    plt.title("Average Image Fast Fourier Transform")
+    plt.plot(xfreq[1:int(columns/2)], np.abs(fftdata[1:int(columns/2)]), color='teal', label='Row Fast Fourier Transform')
+    plt.legend(loc='upper right',prop={'size': 20})
+    plt.yscale('log')
+    plt.ylabel('FFT magnitude')
+    plt.xlabel('Frequency (Hz)')
+    plt.title('Average Image Fast Fourier Transform')
 
     return 0

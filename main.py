@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-"""
+'''
 -------------------
 
 *By: Michelangelo Traina and Paolo Privitera to study skipper CCD data
@@ -8,7 +8,7 @@
 *License: BSD*
 
 -------------------
-"""
+'''
 ##############################################################################                             
 # Input values from command line
 
@@ -17,9 +17,9 @@ import sys
 #directory where raw images and derivati are found
 arg1 = sys.argv[1]
 #input FITS file
-arg2 = sys.argv[2] + ".fits"
+arg2 = sys.argv[2] + '.fits'
 #output FITS file with skipper images
-arg3 = sys.argv[3] + ".fits"
+arg3 = sys.argv[3] + '.fits'
 #skip to start average/std and difference of skips (after BS=BaselineShift (PedestalShift probably due to reset))
 arg4 = sys.argv[4]
 #skip to end average/std and difference of skips
@@ -77,14 +77,14 @@ fits.info(image_file)
 ##############################################################################
 # Look at the header of the zero extension:
 
-#print("Header Extension 0:")
+#print('Header Extension 0:')
 #print(repr(fits.getheader(image_file, 0)))
 #print()
 
 ##############################################################################
-# Write header in a text file named just like output image, located in "header" folder:
+# Write header in a text file named just like output image, located in 'header' folder:
 
-fileHeader = open(sys.argv[3].replace("processed","header") + ".txt", "a")
+fileHeader = open(sys.argv[3].replace('processed','header') + '.txt', 'a')
 fileHeader.write(repr(fits.getheader(image_file, 0)))
 fileHeader.close()
 
@@ -100,7 +100,7 @@ ncolumns = int(nallcolumns/nskips) # n of columns in the image
 ampl = hdr['AMPL']
 exposuretime = hdr['MEXP']
 rdoutime = hdr['MREAD']
-print("N. rows columns skips ",nrows,ncolumns,nskips)
+print('N. rows columns skips ',nrows,ncolumns,nskips)
 
 ##############################################################################
 # Generally the image information is located in the Primary HDU, also known
@@ -113,10 +113,10 @@ image_data0 = fits.getdata(image_file, ext=0)
 # The data is now stored as a 2D numpy array. Print the dimensions using the
 # shape attribute:
 
-#print("Image ndim: ", image_data0.ndim)
-#print("Image shape:", image_data0.shape)
-#print("Image size: ", image_data0.size)
-#print("Image dtype:", image_data0.dtype)
+#print('Image ndim: ', image_data0.ndim)
+#print('Image shape:', image_data0.shape)
+#print('Image size: ', image_data0.size)
+#print('Image dtype:', image_data0.dtype)
 
 ##############################################################################                             
 # Create the Skipper images arrays
@@ -259,7 +259,7 @@ if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
 ##############################################################################
 
 ampfs, mufs, stdfs, stduncfs = functions.sigmaFinder(skipper_image0, debug=False)
-if mufs < 1E+3: imageIsGood *= False; print("Pedestal value is too small: LEACH might have failed.")
+if mufs < 1E+3: imageIsGood *= False; print('Pedestal value is too small: LEACH might have failed.')
 ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
 for k in range(naverages): amp, mu, std, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 
@@ -276,21 +276,21 @@ for y in range(1,nrows-1):
 
 skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False)
 kclsignificance = kclPCDD/kclPCDDuncertainty
-if abs(kclsignificance) > 3: imageIsGood *= False; print("Kcl value flags probable charge loss")
+if abs(kclsignificance) > 3: imageIsGood *= False; print('Kcl value flags probable charge loss')
 
 ##############################################################################
 #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
 ##############################################################################
 
-parametersDCfit, offset, skipper_avg_cal = calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse=True, debug=False)
-calibrationconstant = parametersDCfit[5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
+parametersDCfit, reducedchisquared, offset, skipper_avg_cal = calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse=True, debug=False)
+calibrationconstant = parametersDCfit[0][5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
 darkcurrentestimateAC = calibrationdc.anticlusteringDarkCurrent(skipper_avg_cal, calibratedsigma, debug=False)
 
 ##############################################################################
 #LATEK REPORTS ###############################################################
 ##############################################################################
 
-latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, stduncfs, mumanyskip, stdmanyskip, stduncmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, calibrationconstant, skipper_avg_cal, darkcurrentestimateAC, *parametersDCfit)
+latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, stduncfs, mumanyskip, stdmanyskip, stduncmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, reducedchisquared, skipper_avg_cal, darkcurrentestimateAC, *parametersDCfit)
 
 ##############################################################################
 #OUTPUT PROCESSED IMAGE ######################################################
