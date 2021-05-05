@@ -100,7 +100,7 @@ def firstLastSkipPCDDCheck(firstlastskipdifferenceimage, debug):
         print('HM abscissa (first-last skip difference) is:', HMdifference)
         print('HM ordinata (counts) is:', HMdifferencecounts)
         print('Value of first-last skip PCDD gaussian std estimate is:', round(stdPCDDestimate,4))
-        print('Here's skewness of PCDD: ',skewnessPCDD,'+-',skewnessPCDDuncertainty)
+        print("Here's skewness of PCDD: ",skewnessPCDD,'+-',skewnessPCDDuncertainty)
         print('The entries below the symmetric threshold are:',countsbelowsymmetrythreshold)
         print('The entries above the symmetric threshold are:',countsabovesymmetrythreshold)
         print('The charge loss coefficient is:', kcl, '+-', kcluncertainty)

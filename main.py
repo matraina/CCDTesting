@@ -259,7 +259,7 @@ if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
 ##############################################################################
 
 ampfs, mufs, stdfs, stduncfs = functions.sigmaFinder(skipper_image0, debug=False)
-if mufs < 1E+3: imageIsGood *= False; print('Pedestal value is too small: LEACH might have failed.')
+#if mufs < 1E+3: imageIsGood *= False; print('Pedestal value is too small: LEACH might have failed.')
 ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
 for k in range(naverages): amp, mu, std, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 

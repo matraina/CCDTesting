@@ -1,4 +1,6 @@
 {
+    "ccd_register_size":1036,
+    "analysis_region" : "full",
     "report" :
     [{
         "header" : true,

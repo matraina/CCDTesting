@@ -1,5 +1,31 @@
 # VARIOUS FUNCTIONS
 
+##############################################################################
+# import json and read configuration file
+
+import json
+import numpy as np
+
+with open('config.json') as config_file:
+    config = json.load(config_file)
+registersize = config['ccd_register_size']
+analysisregion = config['analysis_region']
+
+def selectImageRegion(image,analysisregion):
+    if analysisregion == 'full': return image
+    elif analysisregion == 'overscan':
+        rowidx = np.arange(np.size(image,0))
+        colidx = np.arange(registersize,np.size(image,1))
+        image_overscan = image[np.ix_(rowidx, colidx)]
+        return image_overscan
+    elif analysisregion == 'exposed_pixels':
+        rowidx = np.arange(np.size(image,0))
+        colidx = np.arange(registersize)
+        image_exposed = image[np.ix_(rowidx, colidx)]
+        return image_exposed
+
+##############################################################################
+
 def plot_spectrum(im_fft):
     from matplotlib.colors import LogNorm
     # A logarithmic colormap
@@ -25,29 +51,37 @@ def sigmaFinder(image, debug):
     import numpy as np
     from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
+    image = selectImageRegion(image,analysisregion)
     pcd = image.ravel()
     pcd = [s for s in pcd if s != 0]
     bins = int(max(pcd) - min(pcd))
     pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-    while bins - np.argmax(pcdhistogram) < 30:
-        bins += 10
-        pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-    mostlikelyentry = 0.5*(binedges[np.argmax(pcdhistogram)]+binedges[np.argmax(pcdhistogram)+1]) #pedestal estimation
-    #find sigma using FWHM
-    mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
-    bincounter = 1
-    #loop towards right tail of gaussian to find bin of FWHM. Loop condition 10-fold checks that we're not <= HM for a fluctuation
-    condition = np.ones(10)
-    while(any(condition)):
-        bincounter=bincounter+1
-        for i in range (0,len(condition)): condition[i] = pcdhistogram[np.argmax(pcdhistogram)+bincounter+(i+1)] > 0.5*mostlikelyentrycounts
-    #FWHM ADUs value
-    fwhm = 0.5*( binedges[np.argmax(pcdhistogram)+bincounter] + binedges[np.argmax(pcdhistogram)+bincounter+1] )
-    #find sigma using FWHM
-    fwhmcounts = pcdhistogram[np.argmax(pcdhistogram) + bincounter]
-    #sigma is: sigma  = 0.5*FWHM/sqrt(2ln2)
-    sigma = abs(mostlikelyentry - fwhm)
-    sigma = sigma/np.sqrt(2*np.log(2))
+    if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std()
+    else:
+        while bins - np.argmax(pcdhistogram) < 30:
+            bins += 10
+            pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
+        mostlikelyentry = 0.5*(binedges[np.argmax(pcdhistogram)]+binedges[np.argmax(pcdhistogram)+1]) #pedestal estimation
+        #find sigma using FWHM
+        mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
+        try:
+            #loop towards right tail of gaussian to find bin of FWHM. Loop condition 10-fold checks that we're not <= HM for a fluctuation
+            bincounter = 1
+            condition = np.ones(10)
+            while(any(condition)):
+                bincounter=bincounter+1
+                for i in range (0,len(condition)): condition[i] = pcdhistogram[np.argmax(pcdhistogram)+bincounter+(i+1)] >  0.5*mostlikelyentrycounts
+            #FWHM ADUs value
+            fwhm = 0.5*( binedges[np.argmax(pcdhistogram)+bincounter] + binedges[np.argmax(pcdhistogram)+bincounter+1] )
+            #find sigma using FWHM
+            fwhmcounts = pcdhistogram[np.argmax(pcdhistogram) + bincounter]
+            #sigma is: sigma  = 0.5*FWHM/sqrt(2ln2)
+            sigma = abs(mostlikelyentry - fwhm)
+            sigma = sigma/np.sqrt(2*np.log(2))
+        except:
+            mostlikelyentry=np.array(pcd).mean()
+            sigma=np.array(pcd).std()
+            print('Accurate noise estimation failed. Using pcd array statistics as fit guess: mean ='+str(round(mostlikelyentry,2))+' ADU and std= '+str(round(sigma,4))+' ADU')
     #now find accurate mean and stdev by fitting in proper range
     fitrange = 2.
     pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
@@ -59,10 +93,14 @@ def sigmaFinder(image, debug):
         pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
         pcdhistfit = gauss(bincenters,*pfit)
         amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
-        punc = np.sqrt(np.diag(varmatrix))[-1]
+        stdunc = np.sqrt(np.diag(varmatrix))[-1]
     except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); stdunc=0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
     
     if debug:
+        #bincenters=0.5*(binedges[1:] + binedges[:-1])
+        #plt.plot(bincenters, pcdhistogram)
+        #plt.show()
+        #plt.clf()
         print('Most likely entry is:', mostlikelyentry)
         print('Most likely entry counts are:', mostlikelyentrycounts)
         print('FWHM is at:', fwhm)
@@ -74,7 +112,7 @@ def sigmaFinder(image, debug):
         plt.title('$\mu=$' + str(round(mu,1)) + ' ADU, $\sigma=$' + str(round(std,3)) + ' ADU')
         plt.show()
         
-    return amp, mu, std, punc
+    return amp, mu, std, stdunc
     
 def scanPlotsFile(scanparametername, firstskipnoise, avgimgnoise, kclsignificance, rscore, gain, dc1, dc2):
     import sys

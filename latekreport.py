@@ -31,7 +31,8 @@ def convolutionGaussianPoisson(q, *p):
 import json
 with open('config.json') as config_file:
     config = json.load(config_file)
-
+registersize = config['ccd_register_size']
+analysisregion = config['analysis_region']
 reportHeader = config['report'][-1]['header']
 reportPCD = config['report'][-1]['pcds']
 reportChargeLoss = config['report'][-1]['chargeloss']
@@ -74,6 +75,7 @@ def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, st
             fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=True, tight_layout=True)
             calibrationconstant = parametersDCfit[0][5]
             
+            skipper_image0 = functions.selectImageRegion(skipper_image0,analysisregion)
             skipper_image0ravel = skipper_image0.ravel()
             #skipper_image = [s for s in skipper_image0ravel if s != 0]
             #instead of removing 0-entries from histogram use numpy mask to avoid discrepancies between gaussian and plotted PCD skipper_image0ravel
@@ -86,8 +88,9 @@ def produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, st
             axs[0].legend(loc='upper left',prop={'size': 14})
             axs[0].set_title('First skip pixel charge distribution: $\sigma_{0e^-}~=~$ ' + str(round(stdfs,4)) + ' ADU; estimated noise: ' + str(round(stdfs/calibrationconstant,4)) + ' $e^{-}$')
             
-            avg_image_0ravel = skipper_avg0.ravel()
             correctoffset = functions.sigmaFinder(skipper_avg0, debug=False)[1]
+            skipper_avg0 = functions.selectImageRegion(skipper_avg0,analysisregion)
+            avg_image_0ravel = skipper_avg0.ravel()
             avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
             avg_image_unsaturated = [s for s in avg_image_unsaturated if correctoffset - 5*calibrationconstant < s < correctoffset + calibrationconstant]
             avg_image_hist, binedges = np.histogram(avg_image_unsaturated, bins = 200, density=False)
