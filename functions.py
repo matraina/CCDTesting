@@ -8,6 +8,7 @@ import numpy as np
 
 with open('config.json') as config_file:
     config = json.load(config_file)
+reverse = config['reverse']
 registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
 
@@ -23,7 +24,11 @@ def selectImageRegion(image,analysisregion):
         colidx = np.arange(registersize)
         image_exposed = image[np.ix_(rowidx, colidx)]
         return image_exposed
-
+    elif analysisregion == 'no_borders':
+        rowidx = np.arange(1,np.size(image,0)-1)
+        colidx = np.arange(1,np.size(image,1)-1)
+        image_no_borders = image[np.ix_(rowidx, colidx)]
+        return image_no_borders
 ##############################################################################
 
 def plot_spectrum(im_fft):
@@ -123,9 +128,13 @@ def scanPlotsFile(scanparametername, firstskipnoise, avgimgnoise, kclsignificanc
     fileplots.close()
     return 0
 
+
+from math import ceil,log
+
 def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     import numpy as np
     import matplotlib.pyplot as plt
+    #from matplotlib.ticker import (NullFormatter, AutoMinorLocator, MultipleLocator)
     from scipy.fftpack import fft
     
     fftdata = np.zeros(Nskips, dtype=np.float64)
@@ -139,19 +148,31 @@ def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     xfreq = np.arange(0,xfreq,xfreq/Nskips)
     fftdata /= (rows*columns)
     
-    plt.plot(xfreq[1:int(Nskips/2)], np.abs(fftdata[1:int(Nskips/2)]), color='teal', label='Pixel Fast Fourier Transform across skips')
-    plt.legend(loc='upper right',prop={'size': 20})
-    plt.yscale('log')
+    #plt.plot(xfreq[1:int(Nskips/2)], np.abs(fftdata[1:int(Nskips/2)]), color='teal', label='Pixel Fast Fourier Transform across skips')
+    #plt.legend(loc='upper right',prop={'size': 20})
+    #plt.yscale('log')
     #plt.grid(color='grey', linestyle='-', linewidth=1)
-    plt.ylabel('FFT magnitude')
-    plt.xlabel('Frequency (Hz)')
-    plt.title('Full Image Fast Fourier Transform')
+    #plt.ylabel('FFT magnitude')
+    #plt.xlabel('Frequency (Hz)')
+    #plt.title('Full Image Fast Fourier Transform')
+    fig,axs = plt.subplots(1,1)
+    axs.plot(xfreq[1:int(Nskips/2)],np.abs(fftdata[1:int(Nskips/2)]), color='teal', label='Pixel Fast Fourier Transform across skips')
+    axs.set_yscale('log')
+    #axs.yaxis.set_major_locator(MultipleLocator( 10**(ceil( log( max(np.abs(fftdata))-min(np.abs(fftdata)), 10 ) ) -1 ) ))
+    #axs.yaxis.set_minor_formatter(NullFormatter())
+    axs.tick_params(axis='both', which='both', length=10, direction='in')
+    axs.grid(color='grey', linestyle=':', linewidth=1, which='both')
+    plt.setp(axs.get_yticklabels(), visible=True)
+    axs.set_xlabel('Frequency (Hz)')
+    axs.set_ylabel('FFT magnitude')
+    axs.set_title('Full Image Fast Fourier Transform')
     
     return 0
 
 def rowFFT(avgimage, rows, columns, samplet):
     import numpy as np
     import matplotlib.pyplot as plt
+    #from matplotlib.ticker import (NullFormatter, AutoMinorLocator, MultipleLocator)
     from scipy.fftpack import fft
     
     fftdata = np.zeros(columns, dtype=np.float64)
@@ -164,11 +185,21 @@ def rowFFT(avgimage, rows, columns, samplet):
     xfreq = np.arange(0,xfreq,xfreq/columns)
     fftdata /= (rows)
     
-    plt.plot(xfreq[1:int(columns/2)], np.abs(fftdata[1:int(columns/2)]), color='teal', label='Row Fast Fourier Transform')
-    plt.legend(loc='upper right',prop={'size': 20})
-    plt.yscale('log')
-    plt.ylabel('FFT magnitude')
-    plt.xlabel('Frequency (Hz)')
-    plt.title('Average Image Fast Fourier Transform')
+    #plt.plot(xfreq[1:int(columns/2)], np.abs(fftdata[1:int(columns/2)]), color='teal', label='Row Fast Fourier Transform')
+    #plt.legend(loc='upper right',prop={'size': 20})
+    #plt.yscale('log')
+    #plt.ylabel('FFT magnitude')
+    #plt.xlabel('Frequency (Hz)')
+    #plt.title('Average Image Fast Fourier Transform')
+    fig,axs = plt.subplots(1,1)
+    axs.plot(xfreq[1:int(columns/2)], np.abs(fftdata[1:int(columns/2)]), color='teal', label='Row Fast Fourier Transform')
+    axs.set_yscale('log')
+    #axs.yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))
+    axs.tick_params(axis='both', which='both', length=10, direction='in')
+    axs.grid(color='grey', linestyle=':', linewidth=1, which='both')
+    plt.setp(axs.get_yticklabels(), visible=True)
+    axs.set_xlabel('Frequency (Hz)')
+    axs.set_ylabel('FFT magnitude')
+    axs.set_title('Average Image Fast Fourier Transform')
 
     return 0

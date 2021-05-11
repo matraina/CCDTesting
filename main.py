@@ -54,6 +54,7 @@ from astropy.io import fits
 # Get processing modules
 
 import functions
+from functions import reverse, analysisregion
 import chargeloss
 import calibrationdc
 import latekreport
@@ -72,7 +73,7 @@ image_file = get_pkg_data_filename(arg2)
 ##############################################################################
 # Use `astropy.io.fits.info()` to display the structure of the file
 
-fits.info(image_file)
+if __name__ == '__main__': fits.info(image_file)
 
 ##############################################################################
 # Look at the header of the zero extension:
@@ -100,7 +101,7 @@ ncolumns = int(nallcolumns/nskips) # n of columns in the image
 ampl = hdr['AMPL']
 exposuretime = hdr['MEXP']
 rdoutime = hdr['MREAD']
-print('N. rows columns skips ',nrows,ncolumns,nskips)
+if __name__ == '__main__': print('N. rows columns skips ',nrows,ncolumns,nskips)
 
 ##############################################################################
 # Generally the image information is located in the Primary HDU, also known
@@ -130,8 +131,10 @@ skipper_image0 = np.zeros((nrows, ncolumns), dtype=np.float64)
 skipper_image1 = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for skip 2
 skipper_image2 = np.zeros((nrows, ncolumns), dtype=np.float64)
+# image for start skip
+skipper_image_start = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for last skip
-skipper_image3 = np.zeros((nrows, ncolumns), dtype=np.float64)
+skipper_image_end = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for average of skip images
 skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
 # image for calibrated average of skip images (offset subtraction + gain rescaling)
@@ -227,84 +230,86 @@ for y in range(0,nrows):
          for k in range(naverages): skipper_averages[y, xp, k] = movingavg[k]  #comment along with if's above to speed up 
          skipper_avg0[y,xp] = avgpixval
          skipper_std[y,xp] = stdpixval
-         skipper_image0[y,xp] = image_data[y,xeffstart]
+         skipper_image0[y,xp] = image_data[y,xeff]
          skipper_image1[y,xp] = image_data[y,xeffp1]
          skipper_image2[y,xp] = image_data[y,xeffp2]
-         skipper_image3[y,xp] = image_data[y,xeffend]
+         skipper_image_start[y,xp] = image_data[y,xeffstart]
+         skipper_image_end[y,xp] = image_data[y,xeffend]
          #check charge difference between first & second skips, and start+1 & end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
          skipper_diff_01[y,xp] = image_data[y,xeff] - image_data[y,xeff+1]
-         skipper_diff[y,xp] = skipper_image1[y,xp] - skipper_image3[y,xp]
+         skipper_diff[y,xp] = skipper_image1[y,xp] - skipper_image_end[y,xp]
       #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
       elif nskips == 1:
          image_data[y,xp] = image_data[y,xp] - pedestaloneskiprow
 
-##############################################################################
-# Output the single skip image, same header of original file
 
-if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
-   hdr_copy = hdr.copy()
-   hdu0 = fits.PrimaryHDU(data=image_data,header=hdr_copy)
-   new_hdul = fits.HDUList([hdu0])
-   new_hdul.writeto(arg3, overwrite=True)
-   sys.exit()
 
-##############################################################################
-#HEREON ONLY SKIPPER IMGS PROCESSING #########################################
-##############################################################################
 
-#imageIsGood = True
 
-##############################################################################
-#ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
-##############################################################################
+if __name__ == '__main__':
+    ##############################################################################
+    # Output the single skip image, same header of original file
 
-ampfs, mufs, stdfs, stduncfs = functions.sigmaFinder(skipper_image0, debug=False)
-#if mufs < 1E+3: imageIsGood *= False; print('Pedestal value is too small: LEACH might have failed.')
-ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
-for k in range(naverages): amp, mu, std, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
+    if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
+       hdr_copy = hdr.copy()
+       hdu0 = fits.PrimaryHDU(data=image_data,header=hdr_copy)
+       new_hdul = fits.HDUList([hdu0])
+       new_hdul.writeto(arg3, overwrite=True)
+       sys.exit()
 
-##############################################################################
-#FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
-##############################################################################
+    ##############################################################################
+    #HEREON ONLY SKIPPER IMGS PROCESSING #########################################
+    ##############################################################################
 
-#can exclude image border over here if necessary
-#charge loss check excluding border pixels
-diff_image_core = np.zeros((nrows-2, ncolumns-2), dtype=np.float64) #row and column coordinates
-for y in range(1,nrows-1):
-    for x in range(1,ncolumns-1):
-            diff_image_core[y-1][x-1] = skipper_diff[y][x]
+    #imageIsGood = True
 
-skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False)
-kclsignificance = kclPCDD/kclPCDDuncertainty
-if abs(kclsignificance) > 3: imageIsGood *= False; print('Kcl value flags probable charge loss')
+    ##############################################################################
+    #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
+    ##############################################################################
 
-##############################################################################
-#ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
-##############################################################################
+    startskipfitpar = functions.sigmaFinder(skipper_image_start, debug=False) #ampss, muss, stdss, stduncss
+    #if startskipfitpar[1] < 1E+3: imageIsGood *= False; print('Pedestal value is too small: LEACH might have failed.')
+    ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
+    for k in range(naverages): amp, mu, std, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp); mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 
-parametersDCfit, reducedchisquared, offset, skipper_avg_cal = calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse=True, debug=False)
-calibrationconstant = parametersDCfit[0][5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
-darkcurrentestimateAC = calibrationdc.anticlusteringDarkCurrent(skipper_avg_cal, calibratedsigma, debug=False)
+    ##############################################################################
+    #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
+    ##############################################################################
 
-##############################################################################
-#LATEK REPORTS ###############################################################
-##############################################################################
+    diff_image_core = functions.selectImageRegion(skipper_diff,'no_borders')
+    PCDDstudyparameters = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD
+    kclsignificance = PCDDstudyparameters[2]/PCDDstudyparameters[3]
+    if abs(kclsignificance) > 3: imageIsGood *= False; print('Kcl value flags probable charge loss')
 
-latekreport.produceReport(image_file, image_data, skipper_image0, skipper_avg0, mufs, stdfs, stduncfs, mumanyskip, stdmanyskip, stduncmanyskip, diff_image_core, muPCDD, stdPCDD, skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, offset, reducedchisquared, skipper_avg_cal, darkcurrentestimateAC, *parametersDCfit)
+    ##############################################################################
+    #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
+    ##############################################################################
 
-##############################################################################
-#OUTPUT PROCESSED IMAGE ######################################################
-##############################################################################
+    parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse, debug=False)
+    calibrationconstant = parametersDCfit[0][5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
+    skipper_avg_cal = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant
+    darkcurrentestimateAC = calibrationdc.anticlusteringDarkCurrent(functions.selectImageRegion(skipper_avg_cal,analysisregion), calibratedsigma, debug=False)
 
-# Output the skipper images, same header as original file
-hdr_copy = hdr.copy()
-hdu0 = fits.PrimaryHDU(data=skipper_image0,header=hdr_copy)
-hdu1 = fits.ImageHDU(data=skipper_image1)
-hdu2 = fits.ImageHDU(data=skipper_image2)
-hdu3 = fits.ImageHDU(data=skipper_image3)
-hdu4 = fits.ImageHDU(data=skipper_avg0)
-hdu5 = fits.ImageHDU(data=skipper_std)
-hdu6 = fits.ImageHDU(data=skipper_diff_01)
-hdu7 = fits.ImageHDU(data=skipper_diff)
-new_hdul = fits.HDUList([hdu0,hdu1,hdu2,hdu3,hdu4,hdu5,hdu6,hdu7])
-new_hdul.writeto(arg3, overwrite=True)
+    ##############################################################################
+    #LATEK REPORTS ###############################################################
+    ##############################################################################
+
+    latekreport.produceReport(startskipfitpar, mumanyskip, stdmanyskip, stduncmanyskip, PCDDstudyparameters, offset, reducedchisquared, darkcurrentestimateAC, *parametersDCfit)
+
+    ##############################################################################
+    #OUTPUT PROCESSED IMAGE ######################################################
+    ##############################################################################
+
+    # Output the skipper images, same header as original file
+    hdr_copy = hdr.copy()
+    hdu0 = fits.PrimaryHDU(data=skipper_image0,header=hdr_copy)
+    hdu1 = fits.ImageHDU(data=skipper_image1)
+    hdu2 = fits.ImageHDU(data=skipper_image2)
+    hdu3 = fits.ImageHDU(data=skipper_image_start)
+    hdu4 = fits.ImageHDU(data=skipper_image_end)
+    hdu5 = fits.ImageHDU(data=skipper_avg0)
+    hdu6 = fits.ImageHDU(data=skipper_std)
+    hdu7 = fits.ImageHDU(data=skipper_diff_01)
+    hdu8 = fits.ImageHDU(data=skipper_diff)
+    new_hdul = fits.HDUList([hdu0,hdu1,hdu2,hdu3,hdu4,hdu5,hdu6,hdu7,hdu8])
+    new_hdul.writeto(arg3, overwrite=True)

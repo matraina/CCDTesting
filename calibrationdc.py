@@ -151,7 +151,7 @@ def calibrationDC(avgimg,std,reverse,debug):
         print(skipper_avg_cal.ravel())
     
     
-    return parmatrix, reducedchisquared, offset, skipper_avg_cal
+    return parmatrix, reducedchisquared, offset
 
 
 
