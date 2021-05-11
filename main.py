@@ -3,9 +3,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina and Paolo Privitera to study skipper CCD data
-*Adapted from plot_fits-image.py by: Lia R. Corrales, Adrian Price-Whelan, Kelle Cruz*
-*License: BSD*
+*By: Michelangelo Traina to study skipper CCD data
 
 -------------------
 '''
@@ -14,18 +12,20 @@
 
 import sys
 
-#directory where raw images and derivati are found
-arg1 = sys.argv[1]
 #input FITS file
-arg2 = sys.argv[2] + '.fits'
+arg1 = sys.argv[1] + '.fits'
 #output FITS file with skipper images
-arg3 = sys.argv[3] + '.fits'
-#skip to start average/std and difference of skips (after BS=BaselineShift (PedestalShift probably due to reset))
-arg4 = sys.argv[4]
-#skip to end average/std and difference of skips
-arg5 = sys.argv[5]
-#iskipend = nskips if iskipend set negative  (see lines below)
-iskipstart, iskipend = int(arg4), int(arg5)
+arg2 = sys.argv[2] + '.fits'
+
+import json
+with open('config.json') as config_file:
+    config = json.load(config_file)
+default_directory_structure = config['raw_processed_header_reports_dir_structure']
+workingdirectory = config['working_directory']
+
+if default_directory_structure:
+    arg1 = 'raw/' + arg1
+    arg2 = 'processed/' + arg2
 
 ##############################################################################                             
 # Get Numpy, and relevant Scipy
@@ -55,6 +55,7 @@ from astropy.io import fits
 
 import functions
 from functions import reverse, analysisregion
+import reconstruction
 import chargeloss
 import calibrationdc
 import latekreport
@@ -63,36 +64,22 @@ import latekreport
 # Specify path (can be out of the main tree)
 
 import os
-os.chdir(arg1)
+os.chdir(workingdirectory)
 
 ##############################################################################                             
 # Open the data image
 
-image_file = get_pkg_data_filename(arg2)
+image_file = get_pkg_data_filename(arg1)
 
 ##############################################################################
 # Use `astropy.io.fits.info()` to display the structure of the file
 
-if __name__ == '__main__': fits.info(image_file)
-
-##############################################################################
-# Look at the header of the zero extension:
-
-#print('Header Extension 0:')
-#print(repr(fits.getheader(image_file, 0)))
-#print()
-
-##############################################################################
-# Write header in a text file named just like output image, located in 'header' folder:
-
-fileHeader = open(sys.argv[3].replace('processed','header') + '.txt', 'a')
-fileHeader.write(repr(fits.getheader(image_file, 0)))
-fileHeader.close()
+fits.info(image_file)
 
 ##############################################################################      
 # read n. of pixels in x and y axes and number of skips in the image
 # the image has nrows and a total of nallcolumns equivalent to ncolumns*nskips
- 
+
 hdr = fits.getheader(image_file,0)
 nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips  
 nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows 
@@ -103,170 +90,26 @@ exposuretime = hdr['MEXP']
 rdoutime = hdr['MREAD']
 if __name__ == '__main__': print('N. rows columns skips ',nrows,ncolumns,nskips)
 
-##############################################################################
-# Generally the image information is located in the Primary HDU, also known
-# as extension 0. Here, `astropy.io.fits.getdata()` reads the image
-# data from this first extension using the keyword argument ``ext=0``:
-
-image_data0 = fits.getdata(image_file, ext=0)
-
-##############################################################################
-# The data is now stored as a 2D numpy array. Print the dimensions using the
-# shape attribute:
-
-#print('Image ndim: ', image_data0.ndim)
-#print('Image shape:', image_data0.shape)
-#print('Image size: ', image_data0.size)
-#print('Image dtype:', image_data0.dtype)
-
-##############################################################################                             
-# Create the Skipper images arrays
-#row, column                                                                                    
-
-# a copy of the image to correct for LEACH daq
-image_data = np.zeros((nrows, nallcolumns), dtype=np.float64)
-# image for skip 0
-skipper_image0 = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image for skip 1
-skipper_image1 = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image for skip 2
-skipper_image2 = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image for start skip
-skipper_image_start = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image for last skip
-skipper_image_end = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image for average of skip images
-skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image for calibrated average of skip images (offset subtraction + gain rescaling)
-skipper_avg_cal = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image for standard deviation of skips
-skipper_std = np.zeros((nrows, ncolumns), dtype=np.float64)
-# image differences (first-second and second-last)
-skipper_diff_01 = np.zeros((nrows, ncolumns), dtype=np.float64)
-skipper_diff = np.zeros((nrows, ncolumns), dtype=np.float64)
-# select high charge pixels
-skipper_large_charge = np.zeros((nrows, ncolumns), dtype=np.bool)
-
-##############################################################################
-# Initialization of various arrays and parameters
-
-# y = row   x = column
-if iskipstart < 0  or iskipstart > nskips:
-   iskipstart = 0
-if iskipend < 0 or iskipend > nskips:
-   iskipend = nskips - 1
-
-
 ##############################################################################    
-# First fix the LEACH image
+# if leach: image is fixed in reconstruction module
+# image reconstruction
 
-for y in range(0,nrows):
-   if ampl == 'UL':
-      ncoltot = int(nallcolumns/2)
-   else:
-      ncoltot = nallcolumns
-   for x in range(2, ncoltot): 
-      image_data[y,x-2] = image_data0[y,x]
-      if y < nrows-1:
-         image_data[y,ncoltot-2] = image_data0[y+1,0]
-         image_data[y,ncoltot-1] = image_data0[y+1,1]
-      else:
-         image_data[y,ncoltot-2] = image_data0[y,0]
-         image_data[y,ncoltot-1] = image_data0[y,1]
-         
-if ampl == 'UL':
-     for x in range(nallcolumns-3,int(nallcolumns/2)-1,-1):
-         image_data[y,x+2] = image_data0[y,x]
-     if y < nrows-1:
-         image_data[y,int(nallcolumns/2)] = image_data0[y+1,nallcolumns-2]
-         image_data[y,int(nallcolumns/2)+1] = image_data0[y+1,nallcolumns-1]
-     else:
-         image_data[y,int(nallcolumns/2)] = image_data0[y,nallcolumns-2]
-         image_data[y,int(nallcolumns/2)+1] = image_data0[y,nallcolumns-1]
+image_data,skipper_image_start,skipper_image_end,skipper_averages,skipper_diff, skipper_diff_01,skipper_avg0, skipper_std = reconstruction.reconstructSkipperImage(image_file,arg2)
 
 ##############################################################################
-# Set naverages for resolution trend
-
-if nskips < 10: naverages = 0
-elif nskips < 100: naverages = 1
-else:
-   index=1
-   while index <= nskips/100:
-      naverages = index+1; index+=1
-
-#create moving averages 3d image
-movingavg = np.zeros(naverages)
-skipper_averages = np.zeros((nrows, ncolumns, naverages), dtype=np.float64)
-
-#Fill the Skipper images
-#for loop produces y from 0 to nrows-1
-for y in range(0,nrows):
-   xp = -1
-   if nskips == 1:
-      pedestaloneskiprow = np.median(image_data[y,0:nallcolumns:nskips]) #for pedestal subtraction in single-skip images
-   for x in range(0, nallcolumns, nskips): 
-      xp = xp+1
-      xeff = x
-      xeffstart = xeff + iskipstart
-      xeffend = xeff + iskipend #this is used as a range so will be OK when == nskips
-      xeffp1 = xeffstart+1
-      xeffp2 = xeffstart+2
-      #redefine if UL case
-      if ampl == 'UL' and xp>int(ncolumns/2)-1:
-         xeff = x+nskips-1
-         xeffend = xeff - iskipstart
-         xeffstart = xeff - iskipend
-         xeffp1 = xeffstart-1
-         xeffp2 = xeffstart-2
-      #averages and std of the skips of (y, xp) pixel
-      index = 0
-      if nskips > 1:
-         if nskips >= 10: 
-            movingavg[index] = (image_data[y,xeff:xeff+10].mean()); index+=1 #comment this line and while below to speed up
-            if nskips >= 100: 
-                while index <= nskips/100: movingavg[index] = (image_data[y,xeff:xeff+(100*index)].mean()); index+=1
-         avgpixval = image_data[y,xeffstart:xeffend].mean()
-         stdpixval = image_data[y,xeffstart:xeffend].std()
-         for k in range(naverages): skipper_averages[y, xp, k] = movingavg[k]  #comment along with if's above to speed up 
-         skipper_avg0[y,xp] = avgpixval
-         skipper_std[y,xp] = stdpixval
-         skipper_image0[y,xp] = image_data[y,xeff]
-         skipper_image1[y,xp] = image_data[y,xeffp1]
-         skipper_image2[y,xp] = image_data[y,xeffp2]
-         skipper_image_start[y,xp] = image_data[y,xeffstart]
-         skipper_image_end[y,xp] = image_data[y,xeffend]
-         #check charge difference between first & second skips, and start+1 & end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
-         skipper_diff_01[y,xp] = image_data[y,xeff] - image_data[y,xeff+1]
-         skipper_diff[y,xp] = skipper_image1[y,xp] - skipper_image_end[y,xp]
-      #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
-      elif nskips == 1:
-         image_data[y,xp] = image_data[y,xp] - pedestaloneskiprow
-
-
-
-
-
+#HEREON ONLY SKIPPER IMGS PROCESSING #########################################
+##############################################################################
 if __name__ == '__main__':
-    ##############################################################################
-    # Output the single skip image, same header of original file
-
-    if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
-       hdr_copy = hdr.copy()
-       hdu0 = fits.PrimaryHDU(data=image_data,header=hdr_copy)
-       new_hdul = fits.HDUList([hdu0])
-       new_hdul.writeto(arg3, overwrite=True)
-       sys.exit()
-
-    ##############################################################################
-    #HEREON ONLY SKIPPER IMGS PROCESSING #########################################
-    ##############################################################################
-
-    #imageIsGood = True
-
     ##############################################################################
     #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
     ##############################################################################
-
+    
+    if nskips < 10: naverages = 0
+    elif nskips < 100: naverages = 1
+    else:
+        index=1
+        while index <= nskips/100:
+            naverages = index+1; index+=1
     startskipfitpar = functions.sigmaFinder(skipper_image_start, debug=False) #ampss, muss, stdss, stduncss
     #if startskipfitpar[1] < 1E+3: imageIsGood *= False; print('Pedestal value is too small: LEACH might have failed.')
     ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
@@ -295,21 +138,3 @@ if __name__ == '__main__':
     ##############################################################################
 
     latekreport.produceReport(startskipfitpar, mumanyskip, stdmanyskip, stduncmanyskip, PCDDstudyparameters, offset, reducedchisquared, darkcurrentestimateAC, *parametersDCfit)
-
-    ##############################################################################
-    #OUTPUT PROCESSED IMAGE ######################################################
-    ##############################################################################
-
-    # Output the skipper images, same header as original file
-    hdr_copy = hdr.copy()
-    hdu0 = fits.PrimaryHDU(data=skipper_image0,header=hdr_copy)
-    hdu1 = fits.ImageHDU(data=skipper_image1)
-    hdu2 = fits.ImageHDU(data=skipper_image2)
-    hdu3 = fits.ImageHDU(data=skipper_image_start)
-    hdu4 = fits.ImageHDU(data=skipper_image_end)
-    hdu5 = fits.ImageHDU(data=skipper_avg0)
-    hdu6 = fits.ImageHDU(data=skipper_std)
-    hdu7 = fits.ImageHDU(data=skipper_diff_01)
-    hdu8 = fits.ImageHDU(data=skipper_diff)
-    new_hdul = fits.HDUList([hdu0,hdu1,hdu2,hdu3,hdu4,hdu5,hdu6,hdu7,hdu8])
-    new_hdul.writeto(arg3, overwrite=True)

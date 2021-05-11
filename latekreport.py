@@ -40,6 +40,8 @@ def convolutionGaussianPoisson(q, *p):
 import json
 with open('config.json') as config_file:
     config = json.load(config_file)
+default_directory_structure = config['raw_processed_header_reports_dir_structure']
+workingdirectory = config['working_directory']
 reverse = config['reverse']
 registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
@@ -349,7 +351,11 @@ def produceReport(startskipfitpar, mumanyskip, stdmanyskip, stduncmanyskip, PCDD
     #############################################
     #############Produce Report PDF##############
     #############################################
-    doc.generate_pdf(sys.argv[3].replace('processed/','reports/'), clean_tex=False)
+    import os
+    if default_directory_structure: reportname = 'reports/'+sys.argv[2]
+    else: reportname = sys.argv[2]
+    doc.generate_pdf(reportname, clean_tex=False)
+    os.remove(reportname+'.tex')
     
     return 0
 

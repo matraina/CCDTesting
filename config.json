@@ -1,4 +1,9 @@
 {
+    "working_directory" : "./",
+    "raw_processed_header_reports_dir_structure" : true,
+    "skip_start" : 5,
+    "skip_end" : -1,
+    "fix_leach_reconstruction" : true,
     "reverse" : true,
     "ccd_register_size":1036,
     "analysis_region" : "overscan",
