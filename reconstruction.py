@@ -203,3 +203,27 @@ def reconstructSkipperImage(image_file,processedname):
     
     
     return image_data, skipper_image_start, skipper_image_end, skipper_averages, skipper_diff, skipper_diff_01, skipper_avg0, skipper_std
+
+###################################################################################
+################ fast cluster-finding for images plots in report ##################
+###################################################################################
+def findChargedPixelNoBorder(image,sigma):
+    coordinates = []
+    for row in range(1,np.size(image,0)-1):
+        for column in range(1,np.size(image,1)-1):
+            if image[row,column] > 20*sigma:
+                coordinates.append([row,column])
+    return coordinates
+
+def chargedCrown(pixelcoor, image, sigma):
+    from calibrationdc import crownFinder
+    charged = True
+    pathindex = 0
+    while(charged and pathindex <= 7):
+        tmppixelrow, tmppixelcolumn = crownFinder(pathindex, pixelcoor[0], pixelcoor[1])
+        #print('crown finder moved me to: ');print(crownFinder(pathindex, pixelrow, pixelcolumn))
+        if image[tmppixelrow, tmppixelcolumn] < 10*sigma:
+            charged = False
+        else: pathindex += 1
+    return charged
+            

@@ -71,7 +71,6 @@ from functions import make_colorbar_with_padding, gauss, factorial, convolutionG
 import reconstruction
 import chargeloss
 import calibrationdc
-import latekreport
 
 ##############################################################################
 # Specify path (can be out of the main tree)
@@ -203,14 +202,32 @@ if reportHeader:
 #############################################
 ###############Image section#################
 #############################################
-#from main import hdr,image_data,skipper_image_start,skipper_image_end,skipper_avg0,skipper_std,skipper_diff_01,skipper_diff
+
 if reportImage:
+    
+    ampss, muss, stdss, stduncss = startskipfitpar #ss: start skip
+    centeredsstoplot = -int(reverse)*(skipper_image_start - muss)
+    clustercandidates = reconstruction.findChargedPixelNoBorder(centeredsstoplot,stdss)
+    for coor in clustercandidates:
+        isChargedCrown = reconstruction.chargedCrown(coor,centeredsstoplot,stdss)
+        if (isChargedCrown):
+            print(str(coor)+' 3x3 or larger cluster center surrounded by > 10*sigma crown. Plotting image of its surroundings')
+            break
+    if not isChargedCrown: coor = np.size(centeredsstoplot,0)//2, np.size(centeredsstoplot,1)//2
+    halfrangey = 5; halfrangex = 40
+    if coor[0] > halfrangey: deltay = halfrangey,halfrangey
+    else: deltay = coor[0],10-coor[0]
+    if coor[1] > halfrangex: deltax = halfrangex,halfrangex
+    else: deltax = coor[1],80-coor[1]
+    plotrange = [coor[0]-deltay[0],coor[0]+deltay[1],coor[1]-deltax[0],coor[1]+deltax[1]]
+    
+    
     with doc.create(Section('Images')):
 
         fig=plt.figure(figsize=(6,6))
         
         ax1=fig.add_subplot(611)
-        plt.imshow(skipper_image_start[0:10,500:570],cmap=plt.cm.jet,extent=(500,570,10,0))
+        plt.imshow(skipper_image_start[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
         plt.title("Start skip")
         plt.ylabel("row")
         cax1=make_colorbar_with_padding(ax1) # add a colorbar within its own axis the same size as the image plot
@@ -219,35 +236,35 @@ if reportImage:
         fig.subplots_adjust(right=0.9)
         
         ax2=fig.add_subplot(612)
-        plt.imshow(skipper_image_end[0:10,500:570],cmap=plt.cm.jet,extent=(500,570,10,0))
+        plt.imshow(skipper_image_end[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
         plt.title("End skip")
         plt.ylabel("row")
         cax2=make_colorbar_with_padding(ax2) # add a colorbar within its own axis the same size as the image plot
         cb2 = plt.colorbar(cax=cax2)
         
         ax3=fig.add_subplot(613)
-        plt.imshow(skipper_avg0[0:10,500:570],cmap=plt.cm.jet,extent=(500,570,10,0))
+        plt.imshow(skipper_avg0[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
         plt.title("Average")
         plt.ylabel("row")
         cax3=make_colorbar_with_padding(ax3) # add a colorbar within its own axis the same size as the image plot
         cb3 = plt.colorbar(cax=cax3)
         
         ax4=fig.add_subplot(614)
-        plt.imshow(skipper_std[0:10,500:570],cmap=plt.cm.jet,extent=(500,570,10,0))
+        plt.imshow(skipper_std[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
         plt.title("Standard deviation")
         plt.ylabel("row")
         cax4=make_colorbar_with_padding(ax4) # add a colorbar within its own axis the same size as the image plot
         cb4 = plt.colorbar(cax=cax4)
         
         ax5=fig.add_subplot(615)
-        plt.imshow(skipper_diff_01[0:10,500:570],cmap=plt.cm.jet,extent=(500,570,10,0))
+        plt.imshow(skipper_diff_01[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
         plt.title("First-second skip difference")
         plt.ylabel("row")
         cax5=make_colorbar_with_padding(ax5) # add a colorbar within its own axis the same size as the image plot
         cb5 = plt.colorbar(cax=cax5)
         
         ax6=fig.add_subplot(616)
-        plt.imshow(skipper_diff[:10,500:570],cmap=plt.cm.jet,extent=(500,570,10,0))#,extent=(,570,10,0))
+        plt.imshow(skipper_diff[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))#,extent=(,570,10,0))
         plt.title("Second-end skip difference")
         plt.ylabel("row")
         plt.xlabel("column")
@@ -270,7 +287,6 @@ if reportPCD:
         import functions
         
         fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=True, tight_layout=True)
-        ampss, muss, stdss, stduncss = startskipfitpar
         
         skipper_image_start_region = functions.selectImageRegion(skipper_image_start,analysisregion)
         skipper_image_start_ravel = skipper_image_start_region.ravel()
