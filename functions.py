@@ -16,8 +16,13 @@ def selectImageRegion(image,analysisregion):
     if analysisregion == 'full': return image
     elif analysisregion == 'overscan':
         rowidx = np.arange(np.size(image,0))
-        colidx = np.arange(registersize,np.size(image,1))
-        image_overscan = image[np.ix_(rowidx, colidx)]
+        if np.size(image,1) > registersize:
+            colidx = np.arange(registersize,np.size(image,1))
+            image_overscan = image[np.ix_(rowidx, colidx)]
+        else:
+            colidx = np.arange(np.size(image,1))
+            image_overscan = image[np.ix_(rowidx, colidx)]
+            print('Image has no overscan. Falling back to exposed pixels')
         return image_overscan
     elif analysisregion == 'exposed_pixels':
         rowidx = np.arange(np.size(image,0))

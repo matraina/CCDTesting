@@ -112,6 +112,7 @@ image_data,skipper_image_start,skipper_image_end,skipper_averages,skipper_diff,s
 #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
 ##############################################################################
 
+startskipfitpar = functions.sigmaFinder(skipper_image_start, debug=False) #ampss, muss, stdss, stduncss
 if reportPCD or reportCalibrationDarkcurrent:
     if nskips < 10: naverages = 0
     elif nskips < 100: naverages = 1; numberskips=[10]
@@ -120,8 +121,6 @@ if reportPCD or reportCalibrationDarkcurrent:
         while index <= nskips/100:
             numberskips.append(index*100)
             naverages = index+1; index+=1
-    startskipfitpar = functions.sigmaFinder(skipper_image_start, debug=False) #ampss, muss, stdss, stduncss
-    #if startskipfitpar[1] < 1E+3: imageIsGood *= False; print('Pedestal value is too small: LEACH might have failed.')
     ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
     for k in range(naverages): amp, mu, std, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp);mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 
@@ -197,87 +196,109 @@ if reportHeader:
                 if line.split()[0]!='COMMENT': desc.add_item(line,'')
                 #desc.add_item(line.split()[0].replace('=','')+'='+line.split()[-1],'')
                 if line.split()[0]=='MREAD': break
-    doc.append(NewPage())
+doc.append(NewPage())
 
 #############################################
 ###############Image section#################
 #############################################
 
+ampss, muss, stdss, stduncss = startskipfitpar #ss: start skip
+
 if reportImage:
-    
-    ampss, muss, stdss, stduncss = startskipfitpar #ss: start skip
+
     centeredsstoplot = -int(reverse)*(skipper_image_start - muss)
     clustercandidates = reconstruction.findChargedPixelNoBorder(centeredsstoplot,stdss)
+    isChargedCrown = True; coor = np.size(centeredsstoplot,0)//2, np.size(centeredsstoplot,1)//2
     for coor in clustercandidates:
         isChargedCrown = reconstruction.chargedCrown(coor,centeredsstoplot,stdss)
         if (isChargedCrown):
             print(str(coor)+' 3x3 or larger cluster center surrounded by > 10*sigma crown. Plotting image of its surroundings')
             break
     if not isChargedCrown: coor = np.size(centeredsstoplot,0)//2, np.size(centeredsstoplot,1)//2
-    halfrangey = 5; halfrangex = 40
-    if coor[0] > halfrangey: deltay = halfrangey,halfrangey
-    else: deltay = coor[0],10-coor[0]
-    if coor[1] > halfrangex: deltax = halfrangex,halfrangex
-    else: deltax = coor[1],80-coor[1]
-    plotrange = [coor[0]-deltay[0],coor[0]+deltay[1],coor[1]-deltax[0],coor[1]+deltax[1]]
     
+    if nskips!=1:
     
-    with doc.create(Section('Images')):
+        halfrangey = 5; halfrangex = 40
+        if coor[0] > halfrangey: deltay = halfrangey,halfrangey
+        else: deltay = coor[0],10-coor[0]
+        if coor[1] > halfrangex: deltax = halfrangex,halfrangex
+        else: deltax = coor[1],80-coor[1]
+        plotrange = [coor[0]-deltay[0],coor[0]+deltay[1],coor[1]-deltax[0],coor[1]+deltax[1]]
+    
+        with doc.create(Section('Images')):
+    
+            fig=plt.figure(figsize=(10,11))
+            
+            ax1=fig.add_subplot(611)
+            plt.imshow(skipper_image_start[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+            plt.title("Start skip")
+            plt.ylabel("row")
+            cax1=make_colorbar_with_padding(ax1) # add a colorbar within its own axis the same size as the image plot
+            cb1 = plt.colorbar(cax=cax1)
+            
+            fig.subplots_adjust(right=0.9)
+            
+            ax2=fig.add_subplot(612)
+            plt.imshow(skipper_image_end[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+            plt.title("End skip")
+            plt.ylabel("row")
+            cax2=make_colorbar_with_padding(ax2) # add a colorbar within its own axis the same size as the image plot
+            cb2 = plt.colorbar(cax=cax2)
+        
+            ax3=fig.add_subplot(613)
+            plt.imshow(skipper_avg0[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+            plt.title("Average")
+            plt.ylabel("row")
+            cax3=make_colorbar_with_padding(ax3) # add a colorbar within its own axis the same size as the image plot
+            cb3 = plt.colorbar(cax=cax3)
+            
+            ax4=fig.add_subplot(614)
+            plt.imshow(skipper_std[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+            plt.title("Standard deviation")
+            plt.ylabel("row")
+            cax4=make_colorbar_with_padding(ax4) # add a colorbar within its own axis the same size as the image plot
+            cb4 = plt.colorbar(cax=cax4)
+            
+            ax5=fig.add_subplot(615)
+            plt.imshow(skipper_diff_01[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+            plt.title("First-second skip difference")
+            plt.ylabel("row")
+            cax5=make_colorbar_with_padding(ax5) # add a colorbar within its own axis the same size as the image plot
+            cb5 = plt.colorbar(cax=cax5)
+            
+            ax6=fig.add_subplot(616)
+            plt.imshow(skipper_diff[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))#,extent=(,570,10,0))
+            plt.title("Second-end skip difference")
+            plt.ylabel("row")
+            plt.xlabel("column")
+            cax6=make_colorbar_with_padding(ax6) # add a colorbar within its own axis the same size as the image plot
+            cb6 = plt.colorbar(cax=cax6)
 
-        fig=plt.figure(figsize=(6,6))
-        
-        ax1=fig.add_subplot(611)
-        plt.imshow(skipper_image_start[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
-        plt.title("Start skip")
-        plt.ylabel("row")
-        cax1=make_colorbar_with_padding(ax1) # add a colorbar within its own axis the same size as the image plot
-        cb1 = plt.colorbar(cax=cax1)
-        
-        fig.subplots_adjust(right=0.9)
-        
-        ax2=fig.add_subplot(612)
-        plt.imshow(skipper_image_end[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
-        plt.title("End skip")
-        plt.ylabel("row")
-        cax2=make_colorbar_with_padding(ax2) # add a colorbar within its own axis the same size as the image plot
-        cb2 = plt.colorbar(cax=cax2)
-        
-        ax3=fig.add_subplot(613)
-        plt.imshow(skipper_avg0[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
-        plt.title("Average")
-        plt.ylabel("row")
-        cax3=make_colorbar_with_padding(ax3) # add a colorbar within its own axis the same size as the image plot
-        cb3 = plt.colorbar(cax=cax3)
-        
-        ax4=fig.add_subplot(614)
-        plt.imshow(skipper_std[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
-        plt.title("Standard deviation")
-        plt.ylabel("row")
-        cax4=make_colorbar_with_padding(ax4) # add a colorbar within its own axis the same size as the image plot
-        cb4 = plt.colorbar(cax=cax4)
-        
-        ax5=fig.add_subplot(615)
-        plt.imshow(skipper_diff_01[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
-        plt.title("First-second skip difference")
-        plt.ylabel("row")
-        cax5=make_colorbar_with_padding(ax5) # add a colorbar within its own axis the same size as the image plot
-        cb5 = plt.colorbar(cax=cax5)
-        
-        ax6=fig.add_subplot(616)
-        plt.imshow(skipper_diff[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))#,extent=(,570,10,0))
-        plt.title("Second-end skip difference")
-        plt.ylabel("row")
-        plt.xlabel("column")
-        cax6=make_colorbar_with_padding(ax6) # add a colorbar within its own axis the same size as the image plot
-        cb6 = plt.colorbar(cax=cax6)
+    else:
+        with doc.create(Section('Images')):
+            halfrangey = 40; halfrangex = 40
+            if coor[0] > halfrangey: deltay = halfrangey,halfrangey
+            else: deltay = coor[0],80-coor[0]
+            if coor[1] > halfrangex: deltax = halfrangex,halfrangex
+            else: deltax = coor[1],80-coor[1]
+            plotrange = [coor[0]-deltay[0],coor[0]+deltay[1],coor[1]-deltax[0],coor[1]+deltax[1]]
+            plotrange = [coor[0]-deltay[0],coor[0]+deltay[1],coor[1]-deltax[0],coor[1]+deltax[1]]
+            fig=plt.figure(figsize=(8,8))
+            
+            ax1=fig.add_subplot(111)
+            plt.imshow(skipper_image_start[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+            plt.title("Start skip")
+            plt.ylabel("row")
+            cax1=make_colorbar_with_padding(ax1) # add a colorbar within its own axis the same size as the image plot
+            cb1 = plt.colorbar(cax=cax1)
 
         fig.tight_layout(pad=.001)
         
-        with doc.create(Figure(position='htb!')) as plot:
-            plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Exposed pixels region for various images.')
-        plt.clf()
-        doc.append(NewPage())
+    with doc.create(Figure(position='htb!')) as plot:
+        plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+        plot.add_caption('Exposed pixels region for various images.')
+    plt.clf()
+    doc.append(NewPage())
             
 #############################################
 #Pixel charge distribution and noise section#
@@ -468,26 +489,26 @@ if (reportFFTskips or reportFFTrow):
     nrows = hdr['NAXIS2']
     nskips = hdr['NDCMS']
     samplet = hdr['MREAD']*0.001 #MREAD is in ms. Convert in s
-
-if reportFFTskips and nskips!=1:
-    samplet /= (nrows*nallcolumns)
-    ncolumns = int(nallcolumns/nskips) # n of columns in the image
-    functions.pixelFFT(image_data, nrows-1, ncolumns-1, nskips, samplet)
     with doc.create(Section('Fourier Analysis')):
-        with doc.create(Figure(position='htb!')) as plot:
-            plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Full image Fast Fourier Transform (first to last skip).')
-        plt.clf()
 
-if reportFFTrow:
-    samplet *= nskips
-    if nskips!=1: functions.rowFFT(skipper_avg0, nrows-1, ncolumns-1, samplet)
-    else: functions.rowFFT(image_data, nrows-1, ncolumns-1, samplet)
-    with doc.create(Figure(position='htb!')) as plot:
-        plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-        plot.add_caption('Average image Fast Fourier Transform (all row pixels).')
-    plt.clf()
-    doc.append(NewPage())
+        if reportFFTskips and nskips!=1:
+            samplet /= (nrows*nallcolumns)
+            ncolumns = int(nallcolumns/nskips) # n of columns in the image
+            functions.pixelFFT(image_data, nrows-1, ncolumns-1, nskips, samplet)
+            with doc.create(Figure(position='htb!')) as plot:
+                plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+                plot.add_caption('Full image Fast Fourier Transform (first to last skip).')
+            plt.clf()
+    
+        if reportFFTrow:
+            samplet *= nskips
+            if nskips!=1: functions.rowFFT(skipper_avg0, nrows-1, ncolumns-1, samplet)
+            else: functions.rowFFT(image_data, nrows-1, ncolumns-1, samplet)
+            with doc.create(Figure(position='htb!')) as plot:
+                plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+                plot.add_caption('Average image Fast Fourier Transform (all row pixels).')
+            plt.clf()
+            doc.append(NewPage())
     
 #############################################
 #############Produce Report PDF##############
