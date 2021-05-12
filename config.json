@@ -6,14 +6,14 @@
     "fix_leach_reconstruction" : true,
     "reverse" : true,
     "ccd_register_size":1036,
-    "analysis_region" : "overscan",
+    "analysis_region" : "full",
     "report" :
     [{
-        "header" : false,
-        "image" : false,
+        "header" : true,
+        "image" : true,
         "pcds" : true,
-        "chargeloss" : false,
-        "calibration_darkcurrent" : false,
+        "chargeloss" : true,
+        "calibration_darkcurrent" : true,
         "fft_skips" : true,
         "fft_row" : true
     }]

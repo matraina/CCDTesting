@@ -3,10 +3,6 @@
 # *License: BSD*
 
 import numpy as np
-import matplotlib.pyplot as plt
-plt.rc('text',usetex = True)
-from astropy.visualization import astropy_mpl_style
-plt.style.use(astropy_mpl_style)
 
 from astropy.utils.data import get_pkg_data_filename
 from astropy.io import fits
@@ -83,9 +79,6 @@ def reconstructSkipperImage(image_file,processedname):
     nskips = hdr['NDCMS']  # n of skips
     ncolumns = int(nallcolumns/nskips) # n of columns in the image
     ampl = hdr['AMPL']
-    exposuretime = hdr['MEXP']
-    rdoutime = hdr['MREAD']
-    print('N. rows columns skips ',nrows,ncolumns,nskips)
     
     # Write header in a text file named just like output image, located (or not) in 'header' folder:
     workingdirectory = config['working_directory']
@@ -184,6 +177,7 @@ def reconstructSkipperImage(image_file,processedname):
                 skipper_diff[y,xp] = skipper_image1[y,xp] - skipper_image_end[y,xp]
             #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
             elif nskips == 1:
+                skipper_image_start[y,xp] = image_data[y,xp]
                 image_data[y,xp] = image_data[y,xp] - pedestaloneskiprow
     
     processedfits = workingdirectory + processedname

@@ -31,6 +31,15 @@ def selectImageRegion(image,analysisregion):
         return image_no_borders
 ##############################################################################
 
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+def make_colorbar_with_padding(ax):
+    """
+    Create colorbar axis that fits the size of a plot - detailed here: http://chris35wills.github.io/matplotlib_axis/
+    """
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.1)
+    return(cax)
+
 def plot_spectrum(im_fft):
     from matplotlib.colors import LogNorm
     # A logarithmic colormap
@@ -51,6 +60,24 @@ def gauss(x, *p):
     import numpy as np
     A, mu, sigma = p
     return A*np.exp(-(x-mu)**2/(2*sigma**2))
+    
+def factorial(n):
+    facto=1
+    for f in range(2,n+1): facto*=f
+    return facto
+        
+def convolutionGaussianPoisson(q, *p):
+    dcratep, npeaksp, amplip, sigmap = p
+    f = 0
+    npeaksp = 3
+    for peaks in range(npeaksp):
+        f +=  ( (dcratep**peaks * np.exp(-dcratep) / factorial(peaks)) * (amplip / np.sqrt(2 * np.pi * sigmap**2)) * np.exp( - (q - peaks)**2 / (2 * sigmap**2)) )
+    return f
+    
+from math import log10, floor
+def round_sig_2(x, sig=2):
+    if x == 0: x = 0.00001
+    return round(x, sig-int(floor(log10(abs(x))))-1)
 
 def sigmaFinder(image, debug):
     import numpy as np
@@ -140,7 +167,7 @@ def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     fftdata = np.zeros(Nskips, dtype=np.float64)
     
     for row in range(rows):
-        for clmn in range(columns):
+        for clmn in range(0,columns*Nskips,Nskips):
             fftskips = fft(skipimage[row,clmn:clmn+Nskips]-skipimage[row,clmn:clmn+Nskips].mean())
             fftdata += np.abs(fftskips)
     
