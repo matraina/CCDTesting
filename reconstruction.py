@@ -18,6 +18,7 @@ fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
 registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
+printheader = config['print_header']
 reportHeader = config['report'][-1]['header']
 reportImage = config['report'][-1]['image']
 reportPCD = config['report'][-1]['pcds']
@@ -86,9 +87,10 @@ def reconstructSkipperImage(image_file,processedname):
     if default_directory_structure:
         headername = headername.replace('processed','header')
         headername = workingdirectory + headername
-    fileHeader = open(headername, 'a')
-    fileHeader.write(repr(fits.getheader(image_file, 0)))
-    fileHeader.close()
+    if printheader:
+        fileHeader = open(headername, 'a')
+        fileHeader.write(repr(fits.getheader(image_file, 0)))
+        fileHeader.close()
     
     # Initialization of various arrays and parameters
     iskipstart = config['skip_start']

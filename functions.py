@@ -93,7 +93,7 @@ def sigmaFinder(image, debug):
     pcd = [s for s in pcd if s != 0]
     bins = int(max(pcd) - min(pcd))
     pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-    if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std()
+    if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std(); fwhm,fwhmcounts = float('nan'),float('nan')
     else:
         while bins - np.argmax(pcdhistogram) < 30:
             bins += 10
@@ -116,6 +116,7 @@ def sigmaFinder(image, debug):
             sigma = abs(mostlikelyentry - fwhm)
             sigma = sigma/np.sqrt(2*np.log(2))
         except:
+            fwhm, fwhmcounts = float('nan'),float('nan')
             mostlikelyentry=np.array(pcd).mean()
             sigma=np.array(pcd).std()
             print('Accurate noise estimation failed. Using pcd array statistics as fit guess: mean ='+str(round(mostlikelyentry,2))+' ADU and std= '+str(round(sigma,4))+' ADU')
@@ -130,6 +131,8 @@ def sigmaFinder(image, debug):
         pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
         pcdhistfit = gauss(bincenters,*pfit)
         amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
+        #print(mu,np.sqrt(np.diag(varmatrix))[1])
+        if abs(np.sqrt(np.diag(varmatrix))[1]/mu) > 0.5: mu = mostlikelyentry #should be fine
         stdunc = np.sqrt(np.diag(varmatrix))[-1]
     except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); stdunc=0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
     

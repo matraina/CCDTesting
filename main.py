@@ -28,6 +28,7 @@ fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
 registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
+printheader = config['print_header']
 reportHeader = config['report'][-1]['header']
 reportImage = config['report'][-1]['image']
 reportPCD = config['report'][-1]['pcds']
@@ -130,9 +131,9 @@ if reportPCD or reportCalibrationDarkcurrent:
     
 if reportChargeLoss and nskips!=1:
     diff_image_core = functions.selectImageRegion(skipper_diff,'no_borders')
-    PCDDstudyparameters = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD
+    PCDDstudyparameters = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
     kclsignificance = PCDDstudyparameters[2]/PCDDstudyparameters[3]
-    if abs(kclsignificance) > 3: imageIsGood *= False; print('Kcl value flags probable charge loss')
+    if abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
 
 ##############################################################################
 #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
@@ -186,10 +187,10 @@ doc.append(NoEscape(r'\maketitle'))
 #Print acqusition parameters value in report#
 #############################################
 if reportHeader:
-    if default_directory_structure:
-        fileheader = open(workingdirectory + 'header/' + sys.argv[2] + '.txt', 'r')
-    else: fileheader = open(workingdirectory + sys.argv[2] + '.txt', 'r')
-    lines = fileheader.readlines()
+    if default_directory_structure: fileheader = open(workingdirectory + 'header/' + sys.argv[2] + '.txt', 'r')
+    elif printheader: fileheader = open(workingdirectory + sys.argv[2] + '.txt', 'r')
+    if default_directory_structure or printheader: lines = fileheader.readlines()
+    else: lines = repr(fits.getheader(image_file, 0)).splitlines()
     with doc.create(Section('Image Acquisition Parameters')):
         with doc.create(Description()) as desc:
             for line in lines[0:100]:
@@ -212,7 +213,7 @@ if reportImage:
     for coor in clustercandidates:
         isChargedCrown = reconstruction.chargedCrown(coor,centeredsstoplot,stdss)
         if (isChargedCrown):
-            print(str(coor)+' 3x3 or larger cluster center surrounded by > 10*sigma crown. Plotting image of its surroundings')
+            #print(str(coor)+' 3x3 or larger cluster center surrounded by > 10*sigma crown. Plotting image of its surroundings')
             break
     if not isChargedCrown: coor = np.size(centeredsstoplot,0)//2, np.size(centeredsstoplot,1)//2
     
@@ -307,7 +308,7 @@ if reportPCD:
     with doc.create(Section('Pixel Charge Distributions and Noise')):
         import functions
         
-        fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=True, tight_layout=True)
+        fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
         
         skipper_image_start_region = functions.selectImageRegion(skipper_image_start,analysisregion)
         skipper_image_start_ravel = skipper_image_start_region.ravel()
@@ -328,16 +329,22 @@ if reportPCD:
 
         
         if nskips!=1:
+            try: calibrationconstant
+            except: calibrationconstant = 10; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using toy value 10 ADU/e-')
             averageimageoffset = functions.sigmaFinder(skipper_avg0, debug=False)[1]
             skipper_avg0_region = functions.selectImageRegion(skipper_avg0,analysisregion)
             avg_image_0ravel = skipper_avg0_region.ravel()
             avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
             avg_image_unsaturated = [s for s in avg_image_unsaturated if averageimageoffset - 5*calibrationconstant < s < averageimageoffset + calibrationconstant]
+            rangeadhoc =  (averageimageoffset - 5*calibrationconstant, averageimageoffset + calibrationconstant)
+            if len(avg_image_unsaturated) < 50:
+                        avg_image_unsaturated = [s for s in np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False) if averageimageoffset - 10*calibrationconstant < s < averageimageoffset + 10*calibrationconstant]
+                        rangeadhoc =  (averageimageoffset - 20*calibrationconstant, averageimageoffset + 20*calibrationconstant)
             avg_image_hist, binedges = np.histogram(avg_image_unsaturated, bins = 200, density=False)
             ampls = avg_image_hist[np.argmax(avg_image_hist)]
             bincenters = np.arange(averageimageoffset - 3*stdmanyskip[-1], averageimageoffset + 3*stdmanyskip[-1] + 6*stdmanyskip[-1]/200, 6*stdmanyskip[-1]/200)
             axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,stdmanyskip[-1]), label='gaussian fit curve', linewidth=1, color='red')
-            axs[1].hist(avg_image_0ravel, 200, range = (averageimageoffset - 5*calibrationconstant, averageimageoffset + calibrationconstant), density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+            axs[1].hist(avg_image_0ravel, 200, rangeadhoc, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
             axs[1].legend(loc='upper left',prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
@@ -376,7 +383,7 @@ if reportPCD:
         
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Resolution trend computed on '+analysisregion+', as function of average image skip number.')
+            plot.add_caption('Resolution trend computed on '+analysisregion+' image, as function of average image skip number.')
         plt.clf()
         doc.append(NewPage())
         
@@ -385,7 +392,7 @@ if reportPCD:
 #############################################
 if reportChargeLoss and nskips!=1:
     with doc.create(Section('Charge-loss')):
-        skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, muPCDD, stdPCDD = PCDDstudyparameters
+        skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD = PCDDstudyparameters
         fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
         
         skipperdiffcoreravelled = diff_image_core.ravel()
@@ -401,9 +408,9 @@ if reportChargeLoss and nskips!=1:
         numbins = int(max(skipperdiffcoreravelledinrange) - min(skipperdiffcoreravelledinrange))
         skipperdiffcoreravelledinrangehist, binedges = np.histogram(skipperdiffcoreravelledinrange, numbins, density=False)
         bincenters=(binedges[:-1] + binedges[1:])/2
-        pguess = [1E+2,muPCDD,stdPCDD]
-        pfit, varmatrix = curve_fit(gauss, bincenters, skipperdiffcoreravelledinrangehist, p0=pguess)
-        PCDDhistfit = gauss(bincenters,*pfit)
+        pguess = [ampPCDD,muPCDD,stdPCDD]
+        try: pfit, varmatrix = curve_fit(gauss, bincenters, skipperdiffcoreravelledinrangehist, p0=pguess); PCDDhistfit = gauss(bincenters,*pfit)
+        except: pfit = pguess; PCDDhistfit = gauss(bincenters,*pfit)
         axs[1].plot(bincenters, PCDDhistfit, label='gaussian fit curve', linewidth=1, color='red')
         axs[1].hist(skipperdiffcoreravelledinrange, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
             #axs[1].plot(bincenters,skipperdiffcoreravelledinrangehist, label='pixel charge difference distribution', color='teal')
@@ -488,11 +495,10 @@ if (reportFFTskips or reportFFTrow):
     nallcolumns = hdr['NAXIS1']
     nrows = hdr['NAXIS2']
     nskips = hdr['NDCMS']
-    samplet = hdr['MREAD']*0.001 #MREAD is in ms. Convert in s
     with doc.create(Section('Fourier Analysis')):
 
         if reportFFTskips and nskips!=1:
-            samplet /= (nrows*nallcolumns)
+            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
             ncolumns = int(nallcolumns/nskips) # n of columns in the image
             functions.pixelFFT(image_data, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
@@ -501,7 +507,7 @@ if (reportFFTskips or reportFFTrow):
             plt.clf()
     
         if reportFFTrow:
-            samplet *= nskips
+            samplet = hdr['MREAD']*0.001/(nrows*ncolumns)
             if nskips!=1: functions.rowFFT(skipper_avg0, nrows-1, ncolumns-1, samplet)
             else: functions.rowFFT(image_data, nrows-1, ncolumns-1, samplet)
             with doc.create(Figure(position='htb!')) as plot:
