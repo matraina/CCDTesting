@@ -30,7 +30,10 @@ fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
 registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
+calibrationguess = config['calibration_constant_guess']
 printheader = config['print_header']
+linearitytest = config['linearity_test'][-1]['perform']
+linearitytest = config['linearity_test'][-1]['max_electrons']
 reportHeader = config['report'][-1]['header']
 reportImage = config['report'][-1]['image']
 reportPCD = config['report'][-1]['pcds']
@@ -332,8 +335,8 @@ if reportPCD:
 
         
         if nskips!=1:
-            try: calibrationconstant; toyCC = False
-            except: calibrationconstant = 10; toyCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using toy value 10 ADU/e-')
+            try: calibrationconstant; guessCC = False
+            except: calibrationconstant = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
             averageimageoffset = functions.sigmaFinder(skipper_avg0, debug=False)[1]
             skipper_avg0_region = functions.selectImageRegion(skipper_avg0,analysisregion)
             avg_image_0ravel = skipper_avg0_region.ravel()
@@ -353,7 +356,7 @@ if reportPCD:
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[1].get_yticklabels(), visible=True)
             axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
-            if toyCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU')
+            if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU')
         
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:

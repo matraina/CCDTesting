@@ -95,7 +95,7 @@ def sigmaFinder(image, debug):
     pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
     if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std(); fwhm,fwhmcounts = float('nan'),float('nan')
     else:
-        while (bins - np.argmax(pcdhistogram) and reverse) < 30 or (np.argmax(pcdhistogram) < 30 and not reverse):
+        while (bins - np.argmax(pcdhistogram) < 30 and reverse) or (np.argmax(pcdhistogram) < 30 and (not reverse)):
             bins += 10
             pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
         mostlikelyentry = 0.5*(binedges[np.argmax(pcdhistogram)]+binedges[np.argmax(pcdhistogram)+1]) #pedestal estimation

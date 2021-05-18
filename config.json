@@ -7,7 +7,13 @@
     "reverse" : true,
     "ccd_register_size": 1036,
     "analysis_region" : "full",
+    "calibration_constant_guess" : 10,
     "print_header" : false,
+    "linearity_test" :
+    [{
+        "perform" : false,
+        "max_electrons" : 4
+    }],
     "report" :
     [{
         "header" : false,
