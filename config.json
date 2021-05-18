@@ -1,20 +1,20 @@
 {
-    "working_directory" : "/Users/mtraina/Downloads/raw1/",
-    "raw_processed_header_reports_dir_structure" : false,
+    "working_directory" : "./",
+    "raw_processed_header_reports_dir_structure" : true,
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
     "reverse" : true,
     "ccd_register_size": 1036,
-    "analysis_region" : "overscan",
+    "analysis_region" : "full",
     "print_header" : false,
     "report" :
     [{
-        "header" : true,
+        "header" : false,
         "image" : true,
         "pcds" : true,
         "chargeloss" : true,
-        "calibration_darkcurrent" : true,
+        "calibration_darkcurrent" : false,
         "fft_skips" : true,
         "fft_row" : true
     }]

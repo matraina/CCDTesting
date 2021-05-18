@@ -10,6 +10,8 @@
 ##############################################################################                             
 # Input values from command line
 
+import time
+start = time.perf_counter()
 import sys
 
 #input FITS file
@@ -130,10 +132,11 @@ if reportPCD or reportCalibrationDarkcurrent:
 ##############################################################################
     
 if reportChargeLoss and nskips!=1:
-    diff_image_core = functions.selectImageRegion(skipper_diff,'no_borders')
+    diff_image_core_01,diff_image_core = functions.selectImageRegion(skipper_diff_01,'no_borders'),functions.selectImageRegion(skipper_diff,'no_borders')
+    PCDDstudyparameters01 = chargeloss.firstLastSkipPCDDCheck(diff_image_core_01, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD,
     PCDDstudyparameters = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
-    kclsignificance = PCDDstudyparameters[2]/PCDDstudyparameters[3]
-    if abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
+    kclsignificance01,kclsignificance = PCDDstudyparameters01[2]/PCDDstudyparameters01[3],PCDDstudyparameters[2]/PCDDstudyparameters[3]
+    if abs(kclsignificance01) or abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
 
 ##############################################################################
 #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
@@ -187,9 +190,9 @@ doc.append(NoEscape(r'\maketitle'))
 #Print acqusition parameters value in report#
 #############################################
 if reportHeader:
-    if default_directory_structure: fileheader = open(workingdirectory + 'header/' + sys.argv[2] + '.txt', 'r')
-    elif printheader: fileheader = open(workingdirectory + sys.argv[2] + '.txt', 'r')
-    if default_directory_structure or printheader: lines = fileheader.readlines()
+    if printheader and default_directory_structure: fileheader = open(workingdirectory + 'header/' + sys.argv[2] + '.txt', 'r')
+    elif printheader and not default_directory_structure: fileheader = open(workingdirectory + sys.argv[2] + '.txt', 'r')
+    if printheader: lines = fileheader.readlines()
     else: lines = repr(fits.getheader(image_file, 0)).splitlines()
     with doc.create(Section('Image Acquisition Parameters')):
         with doc.create(Description()) as desc:
@@ -324,13 +327,13 @@ if reportPCD:
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
-        try: axs[0].set_title('First skip pixel charge distribution in '+analysisregion+': $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU; estimated noise: ' + str(round(stdss/calibrationconstant,4)) + ' $e^{-}$')
-        except: axs[0].set_title('First skip pixel charge distribution in '+analysisregion+': $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU')
+        try: axs[0].set_title('First skip pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU; estimated noise: ' + str(round(stdss/calibrationconstant,4)) + ' $e^{-}$')
+        except: axs[0].set_title('First skip pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU')
 
         
         if nskips!=1:
-            try: calibrationconstant
-            except: calibrationconstant = 10; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using toy value 10 ADU/e-')
+            try: calibrationconstant; toyCC = False
+            except: calibrationconstant = 10; toyCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using toy value 10 ADU/e-')
             averageimageoffset = functions.sigmaFinder(skipper_avg0, debug=False)[1]
             skipper_avg0_region = functions.selectImageRegion(skipper_avg0,analysisregion)
             avg_image_0ravel = skipper_avg0_region.ravel()
@@ -349,7 +352,8 @@ if reportPCD:
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[1].get_yticklabels(), visible=True)
-            axs[1].set_title('Average image pixel charge distribution in '+analysisregion+': $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
+            axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
+            if toyCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU')
         
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
@@ -392,17 +396,29 @@ if reportPCD:
 #############################################
 if reportChargeLoss and nskips!=1:
     with doc.create(Section('Charge-loss')):
+        skewnessPCDD01, skewnessPCDDuncertainty01, kclPCDD01, kclPCDDuncertainty01, ampPCDD01, muPCDD01, stdPCDD01 = PCDDstudyparameters01
         skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD = PCDDstudyparameters
         fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
         
+        skipperdiffcoreravelled01 = diff_image_core_01.ravel()
         skipperdiffcoreravelled = diff_image_core.ravel()
-        skipper_imagehist, binedges = np.histogram(skipper_image_unsaturated, bins = 800, density=False)
-        axs[0].hist(skipperdiffcoreravelled, 400, density = False, histtype='step', linewidth=2, log = True, color='teal', label='pixel charge difference distribution')
-        axs[0].legend(loc="upper right",prop={'size': 14})
+        
+        skipperdiffcoreravelledinrange01 = [s for s in skipperdiffcoreravelled01 if s > muPCDD01 - 3*stdPCDD01 and s < muPCDD01 + 3*stdPCDD01 and s != 0]
+        numbins = int(max(skipperdiffcoreravelledinrange01) - min(skipperdiffcoreravelledinrange01))
+        skipperdiffcoreravelledinrangehist01, binedges = np.histogram(skipperdiffcoreravelledinrange01, numbins, density=False)
+        bincenters=(binedges[:-1] + binedges[1:])/2
+        pguess = [ampPCDD01,muPCDD01,stdPCDD01]
+        try: pfit, varmatrix = curve_fit(gauss, bincenters, skipperdiffcoreravelledinrangehist01, p0=pguess); PCDDhistfit01 = gauss(bincenters,*pfit)
+        except: pfit = pguess; PCDDhistfit01 = gauss(bincenters,*pfit)
+        axs[0].plot(bincenters, PCDDhistfit01, label='gaussian fit curve', linewidth=1, color='red')
+        axs[0].hist(skipperdiffcoreravelledinrange01, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
+        #axs[0].plot(bincenters,skipperdiffcoreravelledinrangehist01, label='pixel charge difference distribution', color='teal')
+        axs[0].legend(loc='upper right',prop={'size': 14})
+        axs[0].set_yscale('linear')
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
-        axs[0].set_title('Estimated width : $\sigma_{dif}~=~$' + str(round(stdPCDD,4)) + 'ADU')
+        axs[0].set_title('$\mu_{PCDD}~=~$' + str(round(pfit[1],1)) + ' ADU, $\sigma_{PCDD}~=~$' + str(round(pfit[2],1)) + ' ADU')
         
         skipperdiffcoreravelledinrange = [s for s in skipperdiffcoreravelled if s > muPCDD - 3*stdPCDD and s < muPCDD + 3*stdPCDD and s != 0]
         numbins = int(max(skipperdiffcoreravelledinrange) - min(skipperdiffcoreravelledinrange))
@@ -426,22 +442,34 @@ if reportChargeLoss and nskips!=1:
             ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Full image pixel charge difference distribution (PCDD) in full and limited range (for fit). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
+            plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
         plt.clf()
         doc.append(NewPage())
         
+        fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
+        
+        centeredskipperdiffcore01 = [s for s in skipperdiffcoreravelled01-muPCDD01 if s != -muPCDD01]
+        axs[0].hist(centeredskipperdiffcore01, 600, range = (-20*stdPCDD01,10*stdPCDD01), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
+        axs[0].legend(loc='upper right',prop={'size': 14})
+        axs[0].tick_params(axis='both', which='both', length=10, direction='in')
+        axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.setp(axs[0].get_yticklabels(), visible=True)
+        axs[0].set_title('$k_{cl}~=~$' + str(round(kclPCDD01,4)) + '$\pm$'+ str(round(kclPCDDuncertainty01,4)) + ', $S(k_{cl})~=~$' + str(round(kclPCDD01/kclPCDDuncertainty01,4)) + ', skewness = ' + str(round(skewnessPCDD01,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty01,4)))
+
         centeredskipperdiffcore = [s for s in skipperdiffcoreravelled-muPCDD if s != -muPCDD]
-        plt.hist(centeredskipperdiffcore, 600, range = (-20*stdPCDD,10*stdPCDD), density = False, histtype='step', linewidth=2, log = True, color='teal',label='centered pixel charge difference distribution')
-        plt.legend(loc='upper right',prop={'size': 20})
-        plt.xlabel('pixel value [ADU]')
-        plt.ylabel('counts per ADU')
-        plt.tick_params(axis='both', which='both', length=10, direction='in')
-        plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
-        plt.setp(ax.get_yticklabels(), visible=True)
-        plt.title( '$k_{cl}~=~$' + str(round(kclPCDD,4)) + '$\pm$'+ str(round(kclPCDDuncertainty,4)) + ', $S(k_{cl})~=~$' + str(round(kclPCDD/kclPCDDuncertainty,4)) + ', skewness = ' + str(round(skewnessPCDD,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty,4)))
+        axs[1].hist(centeredskipperdiffcore, 600, range = (-20*stdPCDD,10*stdPCDD), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
+        axs[1].legend(loc='upper right',prop={'size': 14})
+        axs[1].tick_params(axis='both', which='both', length=10, direction='in')
+        axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.setp(axs[0].get_yticklabels(), visible=True)
+        axs[1].set_title('$k_{cl}~=~$' + str(round(kclPCDD,4)) + '$\pm$'+ str(round(kclPCDDuncertainty,4)) + ', $S(k_{cl})~=~$' + str(round(kclPCDD/kclPCDDuncertainty,4)) + ', skewness = ' + str(round(skewnessPCDD,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty,4)))
+
+        plt.subplots_adjust(hspace=0.5)
+        for ax in axs.flat:
+            ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Pedestal-subtracted full-image PCDD.')
+            plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom).')
         plt.clf()
         doc.append(NewPage())
         
@@ -476,12 +504,13 @@ if reportCalibrationDarkcurrent and nskips!=1:
     plt.tick_params(axis='both', which='both', length=10, direction='in')
     plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
     #plt.setp(ax.get_yticklabels(), visible=True)
-    plt.title('$I_{darkCF}~=~$' + str(round(dcpar[0],6)) + '$\pm$' + str(round_sig_2(dcparunc[0])) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(darkcurrentestimateAC,6)) + ' $e^-$pix$^{-1}$')
+    try: plt.title('$I_{darkCF}~=~$' + str(round(dcpar[0],6)) + '$\pm$' + str(round_sig_2(dcparunc[0])) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(darkcurrentestimateAC,6)) + ' $e^-$pix$^{-1}$')
+    except: plt.title('$I_{darkCF}~=~$' + str(round(dcpar[0],6)) + '$\pm$' + str(dcparunc[0]) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(darkcurrentestimateAC,6)) + ' $e^-$pix$^{-1}$')
     
     with doc.create(Section('Dark Current')):
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image) and anticlustering (on '+analysisregion+')')
+            plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image) and anticlustering (on '+analysisregion+' image)')
         calibrationline = 'Calibration constant is: '+str(round(calibrationconstant,4))+'±'+str(round_sig_2(dcparunc[4]))+' ADU per electron.'
         doc.append(calibrationline)
         plt.clf()
@@ -524,3 +553,6 @@ if default_directory_structure: reportname = 'reports/'+sys.argv[2]
 else: reportname = sys.argv[2]
 doc.generate_pdf(reportname, clean_tex=False)
 os.remove(reportname+'.tex')
+
+end = time.perf_counter()
+print('Code execution took ' + str(round((end-start),4)) + ' seconds')
