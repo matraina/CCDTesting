@@ -173,16 +173,6 @@ def sigmaFinder(image, debug):
         plt.show()
         
     return amp, mu, std, munc, stdunc
-    
-def scanPlotsFile(scanparametername, firstskipnoise, avgimgnoise, kclsignificance, rscore, gain, dc1, dc2):
-    import sys
-    fsne = firstskipnoise/gain
-    aine = avgimgnoise/gain
-    fileplots = open(sys.argv[1]+'/reports/'+scanparametername+'_scan_output', 'a+')
-    fileplots.write(str(firstskipnoise)+' '+str(avgimgnoise)+' '+str(fsne)+' '+str(aine)+' '+str(kclsignificance)+' '+str(rscore)+' '+str(gain)+' '+str(dc1)+' '+str(dc2)+'\n')
-    fileplots.close()
-    return 0
-
 
 from math import ceil,log
 

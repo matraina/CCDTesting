@@ -13,7 +13,12 @@
     "linearity_test" :
     [{
         "calibrate" : false,
-        "multiple_images" : false,
+        "multiple_images" :
+        [{
+            "use_multiple_images" : true,
+            "lower_index" : 8,
+            "upper_index" : 9
+        }],
         "max_electrons" : 6
     }],
     "report" :

@@ -267,12 +267,31 @@ def chargedCrown(pixelcoor, image, sigma):
     return charged
             
 ###################################################################################
-# merge multiple img method: produce a single img starting from many w same-size ##
+# append multiple img methods:  produce single array starting from same-size many #
 ###################################################################################
 
-def cumulatePCDistributions(imagetensor): #imagetensor is the 3D stack of calibrated images to merge
-    ravelledimagetensor = imagetensor.ravel()
-    return ravelledimagetensor
+def reconstructAvgImageStack(imageprefix, lowerindex, upperindex):
+    image = get_pkg_data_filename(imageprefix+str(lowerindex)+'.fits')
+    hdr = fits.getheader(image,0)
+    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
+    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
+    nskips = hdr['NDCMS']  # n of skips
+    nimages = abs(upperindex - lowerindex + 1)
+    #image_stack = np.zeros((nrows, nallcolumns, nimages), dtype=np.float64)
+    #j = 0
+    #for i in range(lowerindex,upperindex+1):
+    #    image_stack[:,:,j] = get_pkg_data_filename(imageprefix+str(i)+'.fits')
+    #    j += 1
+    skipper_avg_stack = np.zeros((nrows, int(nallcolumns/nskips), nimages), dtype=np.float64)
+    #for i in range(nimages+1):
+    for i in range(lowerindex,upperindex+1):
+        skipper_avg_stack[:,:,i-lowerindex] = getAverageSkipperImage(get_pkg_data_filename(imageprefix+str(i)+'.fits'))
+        #print(skipper_avg_stack[:,:,i-lowerindex])
+    return skipper_avg_stack
+
+def cumulatePCDistributions(imagestack): #imagestack is the 3D stack of independent images
+    ravelledimagestack = imagestack.ravel()
+    return ravelledimagestack
 
     
     
