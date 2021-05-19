@@ -6,15 +6,22 @@
 import json
 import numpy as np
 
+#def infomod(): #to get functions.py function caller module)
+#    import inspect
+#    f = inspect.stack()[-1][1]
+#    return f
+
 with open('config.json') as config_file:
     config = json.load(config_file)
+test = config['test']
 reverse = config['reverse']
 registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
 
 def selectImageRegion(image,analysisregion):
-    if analysisregion == 'full': return image
+    if analysisregion == 'full' or test == 'linearity': return image
     elif analysisregion == 'overscan':
+        print('selecting overscan')
         rowidx = np.arange(np.size(image,0))
         if np.size(image,1) > registersize:
             colidx = np.arange(registersize,np.size(image,1))
@@ -34,6 +41,10 @@ def selectImageRegion(image,analysisregion):
         colidx = np.arange(1,np.size(image,1)-1)
         image_no_borders = image[np.ix_(rowidx, colidx)]
         return image_no_borders
+    else:
+        print('WARNING: Analysis region defined incorrectly. Falling back to full image')
+        return image
+
 ##############################################################################
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -60,6 +71,9 @@ def reject_outliers1(data, m = 2.):
     mdev = np.median(d)
     s = d/mdev if mdev else 0.
     return data[s<m]
+
+def linefunction(x, q, m):
+    return q+m*x
 
 def gauss(x, *p):
     import numpy as np
@@ -88,11 +102,16 @@ def sigmaFinder(image, debug):
     import numpy as np
     from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
-    image = selectImageRegion(image,analysisregion)
-    pcd = image.ravel()
-    pcd = [s for s in pcd if s != 0]
-    bins = int(max(pcd) - min(pcd))
-    pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
+    if type(image) is np.ndarray:
+        image = selectImageRegion(image,analysisregion)
+        pcd = image.ravel()
+        pcd = [s for s in pcd if s != 0]
+        bins = int(max(pcd) - min(pcd))
+    else:
+        pcd = image; bins = 100
+        if test != 'linearity': print("WARNING: Image provided in form of list (1D array). You're good if this is linearity test, else, check your code")
+    try: pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
+    except: pcdhistogram, binedges = np.histogram(pcd, 100, density=False)
     if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std(); fwhm,fwhmcounts = float('nan'),float('nan')
     else:
         while (bins - np.argmax(pcdhistogram) < 30 and reverse) or (np.argmax(pcdhistogram) < 30 and (not reverse)):
@@ -124,8 +143,8 @@ def sigmaFinder(image, debug):
     fitrange = 2.
     pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
     pguess = [mostlikelyentrycounts,mostlikelyentry,sigma]
-    binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange))
-    pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
+    try: binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange)); pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
+    except: binsinrange = 100+int(bins/100)*int(max(pcdinrange) - min(pcdinrange)); pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
     bincenters=(binedges[:-1] + binedges[1:])/2
     try:
         pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
@@ -133,8 +152,9 @@ def sigmaFinder(image, debug):
         amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
         #print(mu,np.sqrt(np.diag(varmatrix))[1])
         if abs(np.sqrt(np.diag(varmatrix))[1]/mu) > 0.5: mu = mostlikelyentry #should be fine
+        munc = np.sqrt(np.diag(varmatrix))[1]
         stdunc = np.sqrt(np.diag(varmatrix))[-1]
-    except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); stdunc=0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
+    except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); munc,stdunc=0,0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
     
     if debug:
         #bincenters=0.5*(binedges[1:] + binedges[:-1])
@@ -152,7 +172,7 @@ def sigmaFinder(image, debug):
         plt.title('$\mu=$' + str(round(mu,1)) + ' ADU, $\sigma=$' + str(round(std,3)) + ' ADU')
         plt.show()
         
-    return amp, mu, std, stdunc
+    return amp, mu, std, munc, stdunc
     
 def scanPlotsFile(scanparametername, firstskipnoise, avgimgnoise, kclsignificance, rscore, gain, dc1, dc2):
     import sys

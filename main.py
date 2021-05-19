@@ -32,8 +32,6 @@ registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
 calibrationguess = config['calibration_constant_guess']
 printheader = config['print_header']
-linearitytest = config['linearity_test'][-1]['perform']
-linearitytest = config['linearity_test'][-1]['max_electrons']
 reportHeader = config['report'][-1]['header']
 reportImage = config['report'][-1]['image']
 reportPCD = config['report'][-1]['pcds']
@@ -73,7 +71,7 @@ from astropy.io import fits
 # Get processing modules
 
 import functions
-from functions import make_colorbar_with_padding, gauss, factorial, convolutionGaussianPoisson, round_sig_2, reverse, analysisregion
+from functions import make_colorbar_with_padding, gauss, factorial, convolutionGaussianPoisson, round_sig_2
 import reconstruction
 import chargeloss
 import calibrationdc
@@ -128,7 +126,7 @@ if reportPCD or reportCalibrationDarkcurrent:
             numberskips.append(index*100)
             naverages = index+1; index+=1
     ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
-    for k in range(naverages): amp, mu, std, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp);mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
+    for k in range(naverages): amp, mu, std, munc, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp);mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 
 ##############################################################################
 #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
@@ -209,7 +207,7 @@ doc.append(NewPage())
 ###############Image section#################
 #############################################
 
-ampss, muss, stdss, stduncss = startskipfitpar #ss: start skip
+ampss, muss, stdss, muncss, stduncss = startskipfitpar #ss: start skip
 
 if reportImage:
 

@@ -3,7 +3,7 @@
 # *License: BSD*
 
 import numpy as np
-
+import sys
 from astropy.utils.data import get_pkg_data_filename
 from astropy.io import fits
 
@@ -19,13 +19,6 @@ reverse = config['reverse']
 registersize = config['ccd_register_size']
 analysisregion = config['analysis_region']
 printheader = config['print_header']
-reportHeader = config['report'][-1]['header']
-reportImage = config['report'][-1]['image']
-reportPCD = config['report'][-1]['pcds']
-reportChargeLoss = config['report'][-1]['chargeloss']
-reportCalibrationDarkcurrent = config['report'][-1]['calibration_darkcurrent']
-reportFFTskips = config['report'][-1]['fft_skips']
-reportFFTrow = config['report'][-1]['fft_row']
 
 ####################################################################
 ### function used to correct image from leach reconstruction bug ###
@@ -113,8 +106,6 @@ def reconstructSkipperImage(image_file,processedname):
     skipper_image_end = np.zeros((nrows, ncolumns), dtype=np.float64)
     #image for average of skip images
     skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
-    #image for calibrated average of skip images (offset subtraction + gain rescaling)
-    skipper_avg_cal = np.zeros((nrows, ncolumns), dtype=np.float64)
     #image for standard deviation of skips
     skipper_std = np.zeros((nrows, ncolumns), dtype=np.float64)
     #image differences (first-second and second-last)
@@ -205,6 +196,52 @@ def reconstructSkipperImage(image_file,processedname):
     
     
     return image_data, skipper_image_start, skipper_image_end, skipper_averages, skipper_diff, skipper_diff_01, skipper_avg0, skipper_std
+    
+###################################################################################
+# lighter reconstruction function: produces average images only .fits #############
+###################################################################################
+def getAverageSkipperImage(image_file):
+    
+    hdr = fits.getheader(image_file,0)
+    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
+    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
+    nskips = hdr['NDCMS']  # n of skips
+    ncolumns = int(nallcolumns/nskips) # n of columns in the image
+    ampl = hdr['AMPL']
+    
+    if nskips <= 1: print('ERROR: Single skip image cannot be averaged over skips. Exiting'); sys.exit()
+    
+    # Initialization of various arrays and parameters
+    iskipstart = config['skip_start']
+    iskipend = config['skip_end']
+    if iskipstart < 0 or iskipstart > nskips: iskipstart = 0
+    if iskipend < 0 or iskipend > nskips: iskipend = nskips - 1
+    
+    #declare numpy arrays for images
+    #full image
+    image_data = np.zeros((nrows, nallcolumns), dtype=np.float64)
+    #image for average of skip images
+    skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
+    
+    #fix leach image if necessary
+    if fixLeachReco: image_data = fixLeachReconstruction(image_file)
+    else: image_data = fits.getdata(image_file, ext=0)
+    
+    #Fill the Skipper images
+    #for loop produces y from 0 to nrows-1
+    for y in range(0,nrows):
+        xp = -1
+        for x in range(0, nallcolumns, nskips):
+            xp = xp+1
+            xeff = x
+            xeffstart = xeff + iskipstart
+            xeffend = xeff + iskipend #this is used as a range so will be OK when == nskips
+            #averages and std of the skips of (y, xp) pixel
+            index = 0
+            avgpixval = image_data[y,xeffstart:xeffend].mean()
+            skipper_avg0[y,xp] = avgpixval
+        
+    return skipper_avg0
 
 ###################################################################################
 ################ fast cluster-finding for images plots in report ##################
@@ -229,3 +266,14 @@ def chargedCrown(pixelcoor, image, sigma):
         else: pathindex += 1
     return charged
             
+###################################################################################
+# merge multiple img method: produce a single img starting from many w same-size ##
+###################################################################################
+
+def cumulatePCDistributions(imagetensor): #imagetensor is the 3D stack of calibrated images to merge
+    ravelledimagetensor = imagetensor.ravel()
+    return ravelledimagetensor
+
+    
+    
+    

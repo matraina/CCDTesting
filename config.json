@@ -1,4 +1,5 @@
 {
+    "test" : "linearity",
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
     "skip_start" : 5,
@@ -11,16 +12,17 @@
     "print_header" : false,
     "linearity_test" :
     [{
-        "perform" : false,
-        "max_electrons" : 4
+        "calibrate" : false,
+        "multiple_images" : false,
+        "max_electrons" : 6
     }],
     "report" :
     [{
-        "header" : false,
+        "header" : true,
         "image" : true,
         "pcds" : true,
         "chargeloss" : true,
-        "calibration_darkcurrent" : false,
+        "calibration_darkcurrent" : true,
         "fft_skips" : true,
         "fft_row" : true
     }]
