@@ -277,13 +277,7 @@ def reconstructAvgImageStack(imageprefix, lowerindex, upperindex):
     nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
     nskips = hdr['NDCMS']  # n of skips
     nimages = abs(upperindex - lowerindex + 1)
-    #image_stack = np.zeros((nrows, nallcolumns, nimages), dtype=np.float64)
-    #j = 0
-    #for i in range(lowerindex,upperindex+1):
-    #    image_stack[:,:,j] = get_pkg_data_filename(imageprefix+str(i)+'.fits')
-    #    j += 1
     skipper_avg_stack = np.zeros((nrows, int(nallcolumns/nskips), nimages), dtype=np.float64)
-    #for i in range(nimages+1):
     for i in range(lowerindex,upperindex+1):
         skipper_avg_stack[:,:,i-lowerindex] = getAverageSkipperImage(get_pkg_data_filename(imageprefix+str(i)+'.fits'))
         #print(skipper_avg_stack[:,:,i-lowerindex])

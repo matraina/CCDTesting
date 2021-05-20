@@ -13,8 +13,6 @@ It can use one single image with high exposure, but also several images (accumul
 ##############################################################################
 # Input values from command line
 
-import time
-start = time.perf_counter()
 import sys
 
 #input FITS file
@@ -36,12 +34,23 @@ registersize = config['ccd_register_size']
 analysisregion = 'full'
 calibrationguess = config['calibration_constant_guess']
 printheader = False
-calibrate = config['linearity_test'][-1]['calibrate']
-multipleimages = config['linearity_test'][-1]['multiple_images'][-1]['use_multiple_images']
-maxelectrons = config['linearity_test'][-1]['max_electrons']
-reportHeader = config['report'][-1]['header']
-reportImage = config['report'][-1]['image']
-reportCalibrationDarkcurrent = config['report'][-1]['calibration_darkcurrent']
+calibrate = config['linearity_analysis'][-1]['calibrate']
+multipleimages = config['linearity_analysis'][-1]['multiple_images'][-1]['use_multiple_images']
+maxelectrons = config['linearity_analysis'][-1]['max_electrons']
+reportHeader = config['linearity_analysis'][-1]['report'][-1]['header']
+reportImage = config['linearity_analysis'][-1]['report'][-1]['image']
+reportCalibrationDarkcurrent = config['linearity_analysis'][-1]['report'][-1]['calibration_darkcurrent']
+reportLinearityCurves = config['linearity_analysis'][-1]['report'][-1]['linearity_curves']
+
+if test != 'linearity':
+    proceed = ''
+    while proceed != 'yes' and proceed !='no':
+        proceed = input("You are running the code for linearity analysis. Test selected in configuration file is different from 'linearity': do you want to perform linearity analysis? Please answer 'yes' or 'no': ")
+        if proceed == 'no': sys.exit()
+        elif proceed == 'yes': print('Proceeding with linearity analysis')
+
+import time
+start = time.perf_counter()
 
 if default_directory_structure:
     arg1 = 'raw/' + arg1
@@ -121,8 +130,8 @@ if not multipleimages:
 ##############################################################################
 
 if multipleimages:
-    lowerindex = config['linearity_test'][-1]['multiple_images'][-1]['lower_index']
-    upperindex = config['linearity_test'][-1]['multiple_images'][-1]['upper_index']
+    lowerindex = config['linearity_analysis'][-1]['multiple_images'][-1]['lower_index']
+    upperindex = config['linearity_analysis'][-1]['multiple_images'][-1]['upper_index']
     print('I am going to cumulate statistics from multiple images for linearity test')
     nameprefix = ''.join([i for i in arg1 if not i.isdigit()]).replace('.fits','')
     avgimagestack = reconstructAvgImageStack(nameprefix,lowerindex,upperindex)
@@ -260,7 +269,7 @@ if reportCalibrationDarkcurrent:
 #############################################
 #########Linearity curves section############
 #############################################
-if test == 'linearity' and maxelectrons>=0:
+if reportLinearityCurves and maxelectrons>=0:
     nelectrons = np.arange(0,maxelectrons+1,1)
     import warnings
     warnings.filterwarnings("error")
@@ -304,6 +313,8 @@ if test == 'linearity' and maxelectrons>=0:
         doc.append(calibrationline2)
         plt.clf()
         doc.append(NewPage())
+
+if reportLinearityCurves and maxelectrons < 0: print('Linearity curves plots not produced: 0 points to plot. Check PCDs')
     
 #############################################
 #############Produce Report PDF##############

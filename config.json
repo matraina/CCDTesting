@@ -1,7 +1,9 @@
 {
     "test" : "linearity",
+    
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
+    
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
@@ -9,26 +11,39 @@
     "ccd_register_size": 1036,
     "analysis_region" : "full",
     "calibration_constant_guess" : 10,
+    
     "print_header" : false,
-    "linearity_test" :
+    
+    "tuning_analysis":
     [{
-        "calibrate" : false,
+        "report" :
+        [{
+            "header" : true,
+            "image" : true,
+            "pcds" : true,
+            "chargeloss" : true,
+            "calibration_darkcurrent" : true,
+            "fft_skips" : true,
+            "fft_row" : true
+        }]
+    }],
+    
+    "linearity_analysis" :
+    [{
+        "calibrate" : true,
+        "max_electrons" : 6,
         "multiple_images" :
         [{
-            "use_multiple_images" : true,
+            "use_multiple_images" : false,
             "lower_index" : 8,
             "upper_index" : 9
         }],
-        "max_electrons" : 6
-    }],
-    "report" :
-    [{
-        "header" : true,
-        "image" : true,
-        "pcds" : true,
-        "chargeloss" : true,
-        "calibration_darkcurrent" : true,
-        "fft_skips" : true,
-        "fft_row" : true
+        "report" :
+        [{
+            "header" : true,
+            "image" : true,
+            "calibration_darkcurrent" : true,
+            "linearity_curves" : true
+        }]
     }]
 }
