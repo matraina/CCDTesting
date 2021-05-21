@@ -371,11 +371,11 @@ if reportLinearityCurves:
     if reportLinearityCurves and maxelectrons < 0: print('Linearity curves plots not produced: 0 points to plot. Check PCDs')
         
     if stddeVSmeans_multimg:
-        #try:
+        try:
         #sttdevsindices = np.argsort(means); means = np.sort(means); stddevs = stddevs[sttdevsindices]; sttdevsunc = stddevsunc[sttdevsindices]
-        pfit, varmatrix = curve_fit(linefunction, means, stddevs, sigma=stddevsunc, absolute_sigma=True); punc = np.sqrt(np.diag(varmatrix))
-        plt.plot(np.array(means),linefunction(np.array(means),pfit[0],pfit[1]),'k--',color='red',label='measurements weighed fit line: '+str(round_sig_2(pfit[0]))+'+'+str(round(pfit[1],4))+'$\cdot \mu_{0_e}$')
-        #except: pass
+            pfit, varmatrix = curve_fit(linefunction, means, stddevs, sigma=stddevsunc, absolute_sigma=True); punc = np.sqrt(np.diag(varmatrix))
+            plt.plot(np.array(means),linefunction(np.array(means),pfit[0],pfit[1]),'k--',color='red',label='measurements weighed fit line: '+str(round_sig_2(pfit[0]))+'+'+str(round(pfit[1],4))+'$\cdot \mu_{0_e}$')
+        except: pass
         stdvsmean = plt.errorbar(means,stddevs,stddevsunc,xerr=meansunc,fmt='.',ecolor='red',marker='o', mfc='red', mec='red', ms=4, label='measurements')
         plt.legend(loc='upper left',prop={'size': 14})
         plt.ylabel('standard deviation of 0-$e^-$ peak [ADU]')
