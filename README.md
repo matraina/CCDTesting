@@ -4,6 +4,7 @@ HOW TO:
 
 #####Directory structure#####
 Analysis directory (tipically CCDName/date/) must contain raw/, processed/ , header/ and reports/ directories if raw_processed_header_reports_dir_structure set to true in config.json
+Alternatively, it is possible to have input and output files all in the same directory; this should be set in 'working_directory' in config.json 
 Using multi_Image_Analysis.sh, the latter 3 (processed/ header/ and reports/) will be created if not there, but having raw/ with .fits files is a requirement (if raw_processed_header_reports_dir_structure set to true in config.json).
 
 
@@ -14,31 +15,59 @@ In the case of line above images: Image_LPNHE_VDD_16.fits, Image_LPNHE_VDD_17.fi
 Headers and reports of all images will be in the respective directories inside path/to/CCDTesting/directory (if selected in config.json)
 
 #####Configuration file#####
+- test should be stated in config file before running the corresponding analysis script. Current options: 'tuning', 'linearity'
 Structure of the configuration file:
+
 {
-    "working_directory" : "/Users/mtraina/Downloads/raw1/", #mother directory where images or directory structure (raw/, processed/, etc.) are located
-    "raw_processed_header_reports_dir_structure" : false, #using raw/, processed/, header, reports/ directory structure?
-    "skip_start" : 5, #start skip used for single skip noise, difference and average image 
+    "test" : "linearity",
+    "working_directory" : "./", #mother directory where images or directory structure (raw/, processed/, etc.) are located
+    "raw_processed_header_reports_dir_structure" : true, #using raw/, processed/, header, reports/ directory structure?
+    "skip_start" : 5, #start skip used for single skip noise, difference and average image
     "skip_end" : -1, #end skip for difference and average image
     "fix_leach_reconstruction" : true, #correct reconstruction bug due to leach
     "reverse" : true, #number of electrons increasing (true) or decreasing (false) as ADU value decreases
-    "ccd_register_size": 1036, #size of register for overscan location
-    "analysis_region" : "overscan", #where to compute noise and dark current (anticlustering only)
-    "print_header" : false, #print header.txt in header or mother dir
-    "report" : #compute and report on below objects
+    "ccd_register_size": 1036,  #size of register for overscan location
+    "analysis_region" : "full", #where to compute noise and dark current (anticlustering only)
+    "calibration_constant_guess" : 10, #guess for calibration constant used if calibration fails (or not performed)
+    "print_header" : false, #print header.txt? (in /header or mother dir) 
+    "tuning_analysis":  #configure tuning analysis
     [{
-        "header" : true, #print header in report
-        "image" : true, #print start,end,avg,std,diff01skips,diffStartEnd selected regions with cluster for rapid visual assessment
-        "pcds" : true, #start and avg imgs pcds with fit and noise
-        "chargeloss" : true, #diffStartEnd PCDD and compute kcl and skewness
-        "calibration_darkcurrent" : true, #calibrate and compute dc with gausspoisson fit
-        "fft_skips" : true, #perform fft across skip time sequence and average over all pixel
-        "fft_row" : true #perform fft across row time sequence and average over row pixels
+        "report" : #compute and report on below objects (tuning)
+        [{
+            "header" : true, #extract and print header in report
+            "image" : true, #extract and print image sample region in report
+            "pcds" : true,  #extract and print pcds in report
+            "chargeloss" : true, #study and print chargeloss in report
+            "calibration_darkcurrent" : true, #study and print calibration and dc estimations in report
+            "fft_skips" : true, #study and print fft across skips in report
+            "fft_row" : true #study and print fft across row pixels in report
+        }]
+    }],
+    "linearity_analysis" : #extract information about ccd response linearity using a single (high exposure) image or multiple images (same or different params)
+    [{
+        "calibrate" : true, #perform calibration of average image pcd and use cal constant in linearity analysis 
+        "max_electrons" : 2, #select the maximum n of electrons for comparison between measured and expected n electrons
+        "multiple_images" : #configuration for multiple image usage
+        [{
+            "use_multiple_images" : true, #analysis using multiple images?
+            "measured_vs_expected_e_with_multiple_images" : true, #cumulate imgs statistics electron by electron to check linearity (same-parameter imgs)
+            "stddevs_vs_means_0_e_peaks" : true, #extract mean and sigma of 0-e peaks and assess linearity sigma=q+m*mean (different-parameter imgs)
+            "lower_index" : 8, #lower index when multimg, in img dir we want imgs named: imagenameprefix+index (eg image8.fits,image9.fits,...,image20.fits)
+            "upper_index" : 20 #upper index when multimg, in img dir we want imgs named: imagenameprefix+index (eg image8.fits,image9.fits,...,image20.fits)
+        }],
+        "report" : #compute and report on below objects (linearity)
+        [{
+            "header" : true, #extract and print header in report
+            "image" : true, #extract and print image sample region in report
+            "calibration_darkcurrent" : true, #print avg img pcd and gauss poisson fit (if chose to calibrate) (1st image pcd for multimg)
+            "linearity_curves" : true #report available linearity curves plots
+        }]
     }]
 }
 
-#####Run main.py analysis script (usually automated to analyze and report on several images from e.g. parameter scan)#####
-python3      main.py       raw_Image_Name        processed_Img_Name    
+
+#####Run tuning.py (linearity.py, etc.) analysis script (can be automated to analyze and report on several images from e.g. parameter scan)#####
+python3      tuning.py       raw_Image_Name        processed_Img_Name   #.fits must be omitted for both arguments    
 e.g.: python3 main.py Image_LPNHE_VDD_16 Img_VDD_16
 
 
