@@ -193,7 +193,7 @@ from scipy.optimize import curve_fit
 #setup document parameters
 geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
-doc.preamble.append(Command('title', 'Image Analysis Report'))
+doc.preamble.append(Command('title', 'Image Analysis Report on Tuning'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
 doc.append(NoEscape(r'\maketitle'))
 #############################################

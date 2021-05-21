@@ -31,10 +31,12 @@
     "linearity_analysis" :
     [{
         "calibrate" : true,
-        "max_electrons" : 6,
+        "max_electrons" : 2,
         "multiple_images" :
         [{
-            "use_multiple_images" : false,
+            "use_multiple_images" : true,
+            "measured_vs_expected_e_with_multiple_images" : true,
+            "stddevs_vs_means_0_e_peaks" : true,
             "lower_index" : 8,
             "upper_index" : 9
         }],

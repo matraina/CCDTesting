@@ -267,8 +267,15 @@ def chargedCrown(pixelcoor, image, sigma):
     return charged
             
 ###################################################################################
-# append multiple img methods:  produce single array starting from same-size many #
+# append multiple img methods: array from same-size many, ADU stds and means ######
 ###################################################################################
+def getADUMeansStds(imagestack, lowerindex, upperindex):
+    from functions import sigmaFinder
+    means,stddevs,meansunc,stddevsunc = [],[],[],[]
+    for i in range(lowerindex,upperindex+1):
+        tmpmu,tmpstd,tmpmunc,tmpstunc = sigmaFinder(imagestack[:,:,i-lowerindex],debug=False)[1:5]
+        means.append(tmpmu);stddevs.append(tmpstd);meansunc.append(tmpmunc);stddevsunc.append(tmpstunc)
+    return means,stddevs,meansunc,stddevsunc
 
 def reconstructAvgImageStack(imageprefix, lowerindex, upperindex):
     image = get_pkg_data_filename(imageprefix+str(lowerindex)+'.fits')
@@ -286,7 +293,3 @@ def reconstructAvgImageStack(imageprefix, lowerindex, upperindex):
 def cumulatePCDistributions(imagestack): #imagestack is the 3D stack of independent images
     ravelledimagestack = imagestack.ravel()
     return ravelledimagestack
-
-    
-    
-    
