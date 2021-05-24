@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
 -------------------
@@ -30,7 +30,9 @@ iskipstart = config['skip_start']
 iskipend = config['skip_end']
 fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
-registersize = config['ccd_register_size']
+registersize = config['ccd_active_register_size']
+prescan = config['prescan']
+overscan = config['overscan']
 analysisregion = 'full'
 calibrationguess = config['calibration_constant_guess']
 printheader = False
@@ -39,10 +41,11 @@ multipleimages = config['linearity_analysis'][-1]['multiple_images'][-1]['use_mu
 measVSexp_e_multimg = config['linearity_analysis'][-1]['multiple_images'][-1]['measured_vs_expected_e_with_multiple_images']
 stddeVSmeans_multimg = config['linearity_analysis'][-1]['multiple_images'][-1]['stddevs_vs_means_0_e_peaks']
 if not multipleimages: measVSexp_e_multimg = False; stddeVSmeans_multimg = False
+elif (not measVSexp_e_multimg) and (not stddeVSmeans_multimg): print('ERROR: You have selected multiple images analysis but none of the corresponding tests is set to true. Please update config file. Exiting'); sys.exit()
 maxelectrons = config['linearity_analysis'][-1]['max_electrons']
 reportHeader = config['linearity_analysis'][-1]['report'][-1]['header']
 reportImage = config['linearity_analysis'][-1]['report'][-1]['image']
-reportCalibrationDarkcurrent = config['linearity_analysis'][-1]['report'][-1]['calibration_darkcurrent']
+reportCalibrationDarkcurrent = config['linearity_analysis'][-1]['report'][-1]['calibration']
 reportLinearityCurves = config['linearity_analysis'][-1]['report'][-1]['linearity_curves']
 
 if test != 'linearity':
@@ -115,14 +118,14 @@ if not multipleimages:
     ampl = hdr['AMPL']
     exposuretime = hdr['MEXP']
     rdoutime = hdr['MREAD']
-    if __name__ == '__main__': print('N. rows columns skips ',nrows,ncolumns,nskips)
+    print('N. rows columns skips ',nrows,ncolumns,nskips)
 
 ##############################################################################
 ##############################################################################
 ##############################################################################
 ##############################################################################
 ##############################################################################
-# Start processing for linearity test
+# Start processing for linearity analysis
 # if leach: image is fixed in reconstruction module
 ##############################################################################
 #AVERAGE SKIPPER IMGS FROM ISKIPSTART TO ISKIPEND#############################
@@ -267,7 +270,7 @@ if reportImage:
         plt.ylabel("row")
         cax1=make_colorbar_with_padding(ax1) # add a colorbar within its own axis the same size as the image plot
         cb1 = plt.colorbar(cax=cax1)
-
+        
         fig.tight_layout(pad=.001)
     
     with doc.create(Figure(position='htb!')) as plot:

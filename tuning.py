@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
 -------------------
@@ -27,7 +27,9 @@ iskipstart = config['skip_start']
 iskipend = config['skip_end']
 fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
-registersize = config['ccd_register_size']
+registersize = config['ccd_active_register_size']
+prescan = config['prescan']
+overscan = config['overscan']
 analysisregion = config['analysis_region']
 calibrationguess = config['calibration_constant_guess']
 printheader = config['print_header']
@@ -113,7 +115,7 @@ ncolumns = int(nallcolumns/nskips) # n of columns in the image
 ampl = hdr['AMPL']
 exposuretime = hdr['MEXP']
 rdoutime = hdr['MREAD']
-if __name__ == '__main__': print('N. rows columns skips ',nrows,ncolumns,nskips)
+print('N. rows columns skips ',nrows,ncolumns,nskips)
 
 ##############################################################################    
 # if leach: image is fixed in reconstruction module
@@ -453,6 +455,8 @@ if reportChargeLoss and nskips!=1:
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
+        fitjusticationlineline = "A good gaussian fit of pcdd's is essential for Kcl to be an effective charge loss classifier"
+        doc.append(fitjusticationlineline)
         plt.clf()
         doc.append(NewPage())
         

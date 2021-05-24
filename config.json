@@ -1,5 +1,5 @@
 {
-    "test" : "linearity",
+    "test" : "chargetransfer",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -8,7 +8,11 @@
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
     "reverse" : true,
-    "ccd_register_size": 1036,
+    
+    "ccd_active_register_size": 1024,
+    "prescan" : 8,
+    "overscan" : 60,
+    
     "analysis_region" : "full",
     "calibration_constant_guess" : 10,
     
@@ -36,7 +40,7 @@
         [{
             "use_multiple_images" : true,
             "measured_vs_expected_e_with_multiple_images" : true,
-            "stddevs_vs_means_0_e_peaks" : true,
+            "stddevs_vs_means_0_e_peaks" : false,
             "lower_index" : 8,
             "upper_index" : 9
         }],
@@ -44,8 +48,21 @@
         [{
             "header" : true,
             "image" : true,
-            "calibration_darkcurrent" : true,
+            "calibration" : true,
             "linearity_curves" : true
         }]
+    }],
+    
+    "transfer_analysis" :
+    [{
+        "clocks_CTE_EPER": false,
+        "skip_CTE_Kcl": true,
+        "report" :
+        [{
+            "header" : false,
+            "image" : false,
+            "CTE_plots": true
+        }]
     }]
+    
 }

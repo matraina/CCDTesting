@@ -15,16 +15,23 @@ with open('config.json') as config_file:
     config = json.load(config_file)
 test = config['test']
 reverse = config['reverse']
-registersize = config['ccd_register_size']
+registersize = config['ccd_active_register_size']
+prescan = config['prescan']
+overscan = config['overscan']
 analysisregion = config['analysis_region']
 
+
+#####################################################################
+#prescan+activeregion+prescan(physical)+overscan(unphysical)#########
 def selectImageRegion(image,analysisregion):
+    import warnings
     if analysisregion == 'full' or test == 'linearity': return image
+    
     elif analysisregion == 'overscan':
         print('selecting overscan')
         rowidx = np.arange(np.size(image,0))
-        if np.size(image,1) > registersize:
-            colidx = np.arange(registersize,np.size(image,1))
+        if np.size(image,1) > prescan+registersize+prescan:
+            colidx = np.arange(prescan+registersize+prescan,np.size(image,1))
             image_overscan = image[np.ix_(rowidx, colidx)]
         else:
             colidx = np.arange(np.size(image,1))
@@ -33,7 +40,7 @@ def selectImageRegion(image,analysisregion):
         return image_overscan
     elif analysisregion == 'exposed_pixels':
         rowidx = np.arange(np.size(image,0))
-        colidx = np.arange(registersize)
+        colidx = np.arange(prescan,prescan+registersize)
         image_exposed = image[np.ix_(rowidx, colidx)]
         return image_exposed
     elif analysisregion == 'no_borders':
@@ -41,6 +48,14 @@ def selectImageRegion(image,analysisregion):
         colidx = np.arange(1,np.size(image,1)-1)
         image_no_borders = image[np.ix_(rowidx, colidx)]
         return image_no_borders
+    elif analysisregion == 'EPER':
+        if np.size(image,1) > prescan+registersize:
+            rowidx = np.arange(np.size(image,0))
+            colidx = np.arange(prescan+registersize-10,prescan+registersize+10)
+            image_eper = image[np.ix_(rowidx, colidx)]
+            return image_eper
+        else:
+            warnings.warn('WARNING: Image has no overscan. EPER CTE estimation cannot be carried out.')
     else:
         print('WARNING: Analysis region defined incorrectly. Falling back to full image')
         return image

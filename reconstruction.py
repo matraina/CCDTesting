@@ -16,7 +16,9 @@ iskipstart = config['skip_start']
 iskipend = config['skip_end']
 fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
-registersize = config['ccd_register_size']
+registersize = config['ccd_active_register_size']
+prescan = config['prescan']
+overscan = config['overscan']
 analysisregion = config['analysis_region']
 printheader = config['print_header']
 
@@ -36,10 +38,8 @@ def fixLeachReconstruction(image_file):
     image_data = np.zeros((nrows, nallcolumns), dtype=np.float64)
     
     for y in range(0,nrows):
-        if ampl == 'UL':
-            ncoltot = int(nallcolumns/2)
-        else:
-            ncoltot = nallcolumns
+        if ampl == 'UL': ncoltot = int(nallcolumns/2)
+        else: ncoltot = nallcolumns
         for x in range(2, ncoltot):
             image_data[y,x-2] = image_data0[y,x]
             if y < nrows-1:
@@ -198,8 +198,25 @@ def reconstructSkipperImage(image_file,processedname):
     return image_data, skipper_image_start, skipper_image_end, skipper_averages, skipper_diff, skipper_diff_01, skipper_avg0, skipper_std
     
 ###################################################################################
-# lighter reconstruction function: produces average images only .fits #############
+#lighter reconstruction functions: prod. single skip or average images only .fits #
 ###################################################################################
+def getSingleSkipImage(image_file):
+    
+    hdr = fits.getheader(image_file,0)
+    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
+    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
+    nskips = hdr['NDCMS']  # n of skips
+    ncolumns = int(nallcolumns/nskips) # n of columns in the image
+    ampl = hdr['AMPL']
+    
+    if nskips != 1: print('ERROR: getSingleSkipImage() is meant to extract data from single skip image. Nskip =/= 1. Exiting'); sys.exit()
+    
+    image_data = np.zeros((nrows, nallcolumns), dtype=np.float64)
+    if fixLeachReco: image_data = fixLeachReconstruction(image_file)
+    else: image_data = fits.getdata(image_file, ext=0)
+    
+    return image_data
+
 def getAverageSkipperImage(image_file):
     
     hdr = fits.getheader(image_file,0)
@@ -250,8 +267,7 @@ def findChargedPixelNoBorder(image,sigma):
     coordinates = []
     for row in range(1,np.size(image,0)-1):
         for column in range(1,np.size(image,1)-1):
-            if image[row,column] > 20*sigma:
-                coordinates.append([row,column])
+            if image[row,column] > 20*sigma: coordinates.append([row,column])
     return coordinates
 
 def chargedCrown(pixelcoor, image, sigma):
@@ -293,3 +309,19 @@ def reconstructAvgImageStack(imageprefix, lowerindex, upperindex):
 def cumulatePCDistributions(imagestack): #imagestack is the 3D stack of independent images
     ravelledimagestack = imagestack.ravel()
     return ravelledimagestack
+
+
+'''
+###################################################################################
+# compute clock charge transfer efficiency with extended pixel edge response (EPER) ######
+###################################################################################
+
+def computeOverscanPedestal(image_data):
+    import warnings
+    from functions import selectImageRegion
+    warnings.filterwarnings("error")
+    try: overscan_image = selectImageRegion(image_data,'overscan')
+    except: print('ERROR: Image has no overscan. Cannot estimate parallel/serial with EPER')
+'''
+    
+    
