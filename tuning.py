@@ -455,7 +455,7 @@ if reportChargeLoss and nskips!=1:
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
-        fitjusticationlineline = "A good gaussian fit of pcdd's is essential for Kcl to be an effective charge loss classifier"
+        fitjusticationlineline = "NOTE: A good gaussian fit of pcdd's is essential for Kcl to be an effective charge loss classifier"
         doc.append(fitjusticationlineline)
         plt.clf()
         doc.append(NewPage())

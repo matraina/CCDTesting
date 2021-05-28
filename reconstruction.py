@@ -40,27 +40,40 @@ def fixLeachReconstruction(image_file):
     for y in range(0,nrows):
         if ampl == 'UL': ncoltot = int(nallcolumns/2)
         else: ncoltot = nallcolumns
-        for x in range(2, ncoltot):
-            image_data[y,x-2] = image_data0[y,x]
-            if y < nrows-1:
-                image_data[y,ncoltot-2] = image_data0[y+1,0]
-                image_data[y,ncoltot-1] = image_data0[y+1,1]
-            else:
-                image_data[y,ncoltot-2] = image_data0[y,0]
-                image_data[y,ncoltot-1] = image_data0[y,1]
-         
-    if ampl == 'UL':
-        for x in range(nallcolumns-3,int(nallcolumns/2)-1,-1):
-            image_data[y,x+2] = image_data0[y,x]
-        if y < nrows-1:
-            image_data[y,int(nallcolumns/2)] = image_data0[y+1,nallcolumns-2]
-            image_data[y,int(nallcolumns/2)+1] = image_data0[y+1,nallcolumns-1]
-        else:
-            image_data[y,int(nallcolumns/2)] = image_data0[y,nallcolumns-2]
-            image_data[y,int(nallcolumns/2)+1] = image_data0[y,nallcolumns-1]
+        #for x in range(2, ncoltot):
+        #    image_data[y,x-2] = image_data0[y,x]
+        #    if y < nrows-1:
+        #        image_data[y,ncoltot-2] = image_data0[y+1,0]
+        #        image_data[y,ncoltot-1] = image_data0[y+1,1]
+        #    else:
+        #        image_data[y,ncoltot-2] = image_data0[y,0]
+        #        image_data[y,ncoltot-1] = image_data0[y,1]
+        image_data[0:nrows,0:ncoltot-2] = image_data0[0:nrows,2:ncoltot]
+        image_data[0:nrows-1,ncoltot-2] = image_data0[1:nrows,0]
+        image_data[0:nrows-1,ncoltot-1] = image_data0[1:nrows,1]
+        #image_data[nrows-1,ncoltot-2] = image_data0[nrows-1,0]
+        #image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,1]
+        image_data[-1,ncoltot-2] = image_data0[0,0]
+        image_data[-1,ncoltot-1] = image_data0[0,1]
+        #if ampl == 'UL':
+        #    for x in range(nallcolumns-3,int(nallcolumns/2)-1,-1):
+        #        image_data[y,x+2] = image_data0[y,x]
+        #    if y < nrows-1:
+        #        image_data[y,int(nallcolumns/2)] = image_data0[y+1,nallcolumns-2]
+        #        image_data[y,int(nallcolumns/2)+1] = image_data0[y+1,nallcolumns-1]
+        #    else:
+        #        image_data[y,int(nallcolumns/2)] = image_data0[y,nallcolumns-2]
+        #        image_data[y,int(nallcolumns/2)+1] = image_data0[y,nallcolumns-1]
+        if ampl == 'UL':
+            image_data[0:nrows,ncoltot+2:nallcolumns] = image_data0[0:nrows,ncoltot:nallcolumns-2]
+            image_data[0:nrows-1,ncoltot] = image_data0[1:nrows,nallcolumns-2]
+            image_data[0:nrows-1,ncoltot+1] = image_data0[1:nrows,nallcolumns-1]
+            #image_data[nrows-1,ncoltot] = image_data0[nrows-1,nallcolumns-2]
+            #image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,nallcolumns-1]
+            image_data[-1,-2] = image_data0[0,-2]
+            image_data[-1,-1] = image_data0[0,-1]
             
     return image_data
-
 
 ###################################################################################
 # primary reconstruction function: produces imgs for analysis and processed .fits #
@@ -259,6 +272,24 @@ def getAverageSkipperImage(image_file):
             skipper_avg0[y,xp] = avgpixval
         
     return skipper_avg0
+    
+def reverseImage(image_data):
+    from functions import sigmaFinder
+    offset = sigmaFinder(image_data,debug=False)[1]
+    reversed_image_data = offset - image_data
+    return reversed_image_data
+    
+def subtractOvscPedestalRowByRow(image_data):
+    from functions import selectImageRegion
+    image_overscan = selectImageRegion(image_data,'overscan') #if there is no overscan pedestal is computed on exposed pixels row
+    nrows = np.size(image_overscan,0) #it is assumed that nrows always identical for image_data and its overscan
+    row_pedestals = np.zeros(nrows,dtype=np.float64)
+    ncolumns  = np.size(image_data,1) #ncolumns taken from image_data
+    pedestal_subtracted_image = np.zeros((nrows,ncolumns),dtype=np.float64)
+    for row in range(nrows):
+        row_pedestals[row] = np.median(image_overscan[row,:])
+        pedestal_subtracted_image[row,:] = image_data[row,:] - row_pedestals[row]
+    return pedestal_subtracted_image, row_pedestals
 
 ###################################################################################
 ################ fast cluster-finding for images plots in report ##################

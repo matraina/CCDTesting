@@ -1,5 +1,5 @@
 {
-    "test" : "chargetransfer",
+    "test" : "tuning",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
