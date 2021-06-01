@@ -1,5 +1,5 @@
 {
-    "test" : "tuning",
+    "test" : "quality",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -18,19 +18,43 @@
     
     "print_header" : false,
     
+    
+    
     "tuning_analysis":
     [{
         "report" :
         [{
-            "header" : true,
-            "image" : true,
-            "pcds" : true,
-            "chargeloss" : true,
-            "calibration_darkcurrent" : true,
-            "fft_skips" : true,
-            "fft_row" : true
+            "header" : false,
+            "image" : false,
+            "pcds" : false,
+            "chargeloss" : false,
+            "calibration_darkcurrent" : false,
+            "fft_skips" : false,
+            "fft_row" : false
         }]
     }],
+    
+    
+    
+    "quality_analysis":
+    [{
+        "multiple_images" :
+        [{
+            "use_multiple_images" : true,
+            "mask" : false,
+            "lower_index" : 8,
+            "upper_index" : 9
+        }],
+        "report" :
+        [{
+            "header" : true,
+            "image" : true,
+            "quality" : true,
+            "quality_plots" : [{ "log_scale" : false }]
+        }]
+    }],
+    
+    
     
     "linearity_analysis" :
     [{
@@ -46,12 +70,14 @@
         }],
         "report" :
         [{
-            "header" : true,
-            "image" : true,
-            "calibration" : true,
-            "linearity_curves" : true
+            "header" : false,
+            "image" : false,
+            "calibration" : false,
+            "linearity_curves" : false
         }]
     }],
+    
+    
     
     "transfer_analysis" :
     [{
@@ -61,7 +87,7 @@
         [{
             "header" : false,
             "image" : false,
-            "CTE_plots": true
+            "CTE_plots": false
         }]
     }]
     

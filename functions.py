@@ -1,8 +1,16 @@
-# VARIOUS FUNCTIONS
+# -*- coding: utf-8 -*-
+
+'''
+-------------------
+
+*By: Michelangelo Traina to study skipper CCD data
+Various functions used in the CCD testing package
+
+-------------------
+'''
 
 ##############################################################################
 # import json and read configuration file
-
 import json
 import numpy as np
 
@@ -26,9 +34,7 @@ analysisregion = config['analysis_region']
 def selectImageRegion(image,analysisregion):
     import warnings
     if analysisregion == 'full' or test == 'linearity': return image
-    
     elif analysisregion == 'overscan':
-        print('selecting overscan')
         rowidx = np.arange(np.size(image,0))
         if np.size(image,1) > prescan+registersize+prescan:
             colidx = np.arange(prescan+registersize+prescan,np.size(image,1))

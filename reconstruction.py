@@ -1,6 +1,13 @@
-# function(s) to reconstruct images of interest starting from raw .fits file
-# *Adapted from plot_fits-image.py by: Lia R. Corrales, Adrian Price-Whelan, Kelle Cruz*
-# *License: BSD*
+# -*- coding: utf-8 -*-
+
+'''
+-------------------
+
+*By: Michelangelo Traina to study skipper CCD data
+Function(s) for image reconstruction starting from raw .fits file
+
+-------------------
+'''
 
 import numpy as np
 import sys
@@ -230,6 +237,29 @@ def getSingleSkipImage(image_file):
     
     return image_data
 
+def getManySkipImageStack(image_file):
+    
+    hdr = fits.getheader(image_file,0)
+    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
+    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
+    nskips = hdr['NDCMS']  # n of skips
+    ncolumns = int(nallcolumns/nskips) # n of columns in the image
+    ampl = hdr['AMPL']
+    
+    if nskips == 1: print('ERROR: getManySkipImageStack() is meant to extract data from a many skip image. Nskip == 1. Exiting'); sys.exit()
+    
+    image_data = np.zeros((nrows, nallcolumns), dtype=np.float64)
+    if fixLeachReco: image_data = fixLeachReconstruction(image_file)
+    else: image_data = fits.getdata(image_file, ext=0)
+    
+    skip_images_stack = np.zeros((nrows, ncolumns, nskips), dtype=np.float64)
+    for y in range(0,nrows):
+        for x in range(0, nallcolumns, nskips):
+            for z in range(0,nskips):
+                skip_images_stack[y,int((x-z)/nskips),z] = image_data[y,x+z]
+    
+    return skip_images_stack
+
 def getAverageSkipperImage(image_file):
     
     hdr = fits.getheader(image_file,0)
@@ -291,6 +321,33 @@ def subtractOvscPedestalRowByRow(image_data):
         pedestal_subtracted_image[row,:] = image_data[row,:] - row_pedestals[row]
     return pedestal_subtracted_image, row_pedestals
 
+def medianMadRowByRow(image_data):
+    nrows = np.size(image_data,0)
+    ncolumns = np.size(image_data,1)
+    row_medians, row_mads = np.zeros(nrows,dtype=np.float64), np.zeros(nrows,dtype=np.float64)
+    for row in range(nrows):
+        row_medians[row] = np.median(image_data[row,:])
+        row_mads[row] = np.median(abs( image_data[row,:] - row_medians[row]))
+    return row_medians, row_mads
+
+def medianMadColByCol(image_data):
+    nrows = np.size(image_data,0)
+    ncolumns = np.size(image_data,1)
+    column_medians, column_mads = np.zeros(ncolumns,dtype=np.float64), np.zeros(ncolumns,dtype=np.float64)
+    for col in range(ncolumns):
+        column_medians[col] = np.median(image_data[:,col])
+        column_mads[col] = np.median(abs( image_data[:,col] - column_medians[col]))
+    return column_medians, column_mads
+    
+def findOutliers(image_data,row_pedestals,row_mads):
+    nrows = np.size(image_data,0)
+    ncolumns = np.size(image_data,1)
+    mask = np.zeros((nrows,ncolumns),dtype=np.float64)
+    for row in range(nrows):
+        for col in range(ncolumns):
+            if abs(image_data[row,col] - row_pedestals[row]) > 3*row_mads[row]: mask[row,col] = 1.
+    return mask
+
 ###################################################################################
 ################ fast cluster-finding for images plots in report ##################
 ###################################################################################
@@ -314,7 +371,7 @@ def chargedCrown(pixelcoor, image, sigma):
     return charged
             
 ###################################################################################
-# append multiple img methods: array from same-size many, ADU stds and means ######
+# multiple img methods: array from same-size many, ADU stds and means #############
 ###################################################################################
 def getADUMeansStds(imagestack, lowerindex, upperindex):
     from functions import sigmaFinder
@@ -337,22 +394,34 @@ def reconstructAvgImageStack(imageprefix, lowerindex, upperindex):
         #print(skipper_avg_stack[:,:,i-lowerindex])
     return skipper_avg_stack
 
+def reconstructSkipNImageStack(imageprefix, lowerindex, upperindex):
+    image = get_pkg_data_filename(imageprefix+str(lowerindex)+'.fits')
+    hdr = fits.getheader(image,0)
+    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
+    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
+    nskips = hdr['NDCMS']  # n of skips
+    nimages = abs(upperindex - lowerindex + 1)
+    skip_N_stack = np.zeros((nrows, int(nallcolumns/nskips), nimages), dtype=np.float64)
+    for i in range(lowerindex,upperindex+1):
+        skip_N_stack[:,:,i-lowerindex] = getManySkipImageStack(get_pkg_data_filename(imageprefix+str(i)+'.fits'))[:,:,iskipstart]
+    return skip_N_stack
+    
+def getManySingleImageStack(imageprefix, lowerindex, upperindex):
+    image = get_pkg_data_filename(imageprefix+str(lowerindex)+'.fits')
+    hdr = fits.getheader(image,0)
+    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
+    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
+    nskips = hdr['NDCMS']  # n of skips
+    nimages = abs(upperindex - lowerindex + 1)
+    if nskips != 1: print('ERROR: using single skip image method getManySingleImageStack() on multiskip image. Exiting'); from sys import exit; exit()
+    single_image_stack = np.zeros((nrows, int(nallcolumns/nskips), nimages), dtype=np.float64)
+    for i in range(lowerindex,upperindex+1):
+        single_image_stack[:,:,i-lowerindex] = getSingleSkipImage(imageprefix+str(i)+'.fits')
+    return single_image_stack
+
 def cumulatePCDistributions(imagestack): #imagestack is the 3D stack of independent images
     ravelledimagestack = imagestack.ravel()
     return ravelledimagestack
 
-
-'''
-###################################################################################
-# compute clock charge transfer efficiency with extended pixel edge response (EPER) ######
-###################################################################################
-
-def computeOverscanPedestal(image_data):
-    import warnings
-    from functions import selectImageRegion
-    warnings.filterwarnings("error")
-    try: overscan_image = selectImageRegion(image_data,'overscan')
-    except: print('ERROR: Image has no overscan. Cannot estimate parallel/serial with EPER')
-'''
     
     

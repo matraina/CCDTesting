@@ -1,4 +1,13 @@
-#charge loss check function(s). Will output kcl, skewness and respective uncertainties. Will also output plot for latek summary
+# -*- coding: utf-8 -*-
+
+'''
+-------------------
+
+*By: Michelangelo Traina to study skipper CCD data
+Charge loss check functions. Will output kcl, skewness and respective uncertainties. Will also output plot for latek summary
+
+-------------------
+'''
 
 from reconstruction import reverse
 

@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+
+'''
+-------------------
+
+*By: Michelangelo Traina to study skipper CCD data
+Module devoted to the ADU-electron image calibration and dark current estimation
+
+-------------------
+'''
+
 import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt

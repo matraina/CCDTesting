@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 '''
 -------------------
 
 *By: Michelangelo Traina
-
-This module is devoted to assessing the charge transfer efficiency of the CCD.
+Module devoted to assessing the charge transfer efficiency of the CCD.
 It uses a single image: single- or multiple-skip to assess parallel/serial or skip charge transfer efficiency (CTE), respectively. For simplicity EPER is not carried out on multiskip images
 
 -------------------
 '''
+
 ##############################################################################
 # Input values from command line
 import sys
@@ -34,7 +35,6 @@ reverse = config['reverse']
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
-analysisregion = 'overscan'
 calibrationguess = config['calibration_constant_guess']
 printheader = False
 clocksCTE = config['transfer_analysis'][-1]['clocks_CTE_EPER']
@@ -42,13 +42,13 @@ skipsCTE = config['transfer_analysis'][-1]['skip_CTE_Kcl']
 reportHeader = config['transfer_analysis'][-1]['report'][-1]['header']
 reportImage = config['transfer_analysis'][-1]['report'][-1]['image']
 reportCTE = config['transfer_analysis'][-1]['report'][-1]['CTE_plots']
-if clocksCTE or skipsCTE: reportCTE = True
+if clocksCTE or skipsCTE: pass
 else: print('ERROR: You are running the code for charge transfer analysis but none of the corresponding tests is set to true. Please update config file. Exiting'); sys.exit()
 
 if clocksCTE and skipsCTE:
     whichCTE = ''
     while whichCTE != 'clocksCTE' and whichCTE != 'skipsCTE':
-        whichCTE = input("ERROR: You are running the code for charge transfer analysis with both tests are set to true. Please select one. Which one do you want to carry out? Please answer 'clocksCTE' or 'skipsCTE': ")
+        whichCTE = input("ERROR: You are running the code for charge transfer analysis with both tests are set to true. Please select one. Which one do you want to carry out?\nPlease answer 'clocksCTE' or 'skipsCTE': ")
         if whichCTE == 'clocksCTE': skipsCTE = False
         elif whichCTE == 'skipsCTE': clocksCTE = False
     
@@ -56,7 +56,7 @@ if clocksCTE and skipsCTE:
 if test != 'chargetransfer':
     proceed = ''
     while proceed != 'yes' and proceed !='no':
-        proceed = input("You are running the code for charge transfer analysis. Test selected in configuration file is different from 'transfer': do you want to perform charge transfer analysis? Please answer 'yes' or 'no': ")
+        proceed = input("You are running the code for charge transfer analysis. Test selected in configuration file is different from 'transfer': do you want to perform charge transfer analysis?\nPlease answer 'yes' or 'no': ")
         if proceed == 'no': sys.exit()
         elif proceed == 'yes': print('Proceeding with charge transfer analysis')
 
@@ -68,12 +68,9 @@ if default_directory_structure:
     arg2 = 'processed/' + arg2
 
 ##############################################################################
-# Get Numpy and Scipy
+# Get Numpy and Matplotlib
 
 import numpy as np
-
-##############################################################################
-# Set up matplotlib and use a nicer set of plot parameters
 
 import matplotlib.pyplot as plt
 plt.rc('text',usetex = True)
@@ -99,6 +96,11 @@ import calibrationdc
 
 import os
 os.chdir(workingdirectory)
+
+##############################################################################
+# Import warnings for warning control
+
+import warnings
 
 ##############################################################################
 # Open the data image
@@ -130,11 +132,12 @@ print('N. rows columns skips ',nrows,ncolumns,nskips)
 #RECONSTRUCT SINGLE SKIP IMAGE FOR EXTENDED PIXEL EDGE RESPONSE###############
 ##############################################################################
 
-if clocksCTE:
-    import warnings; warnings.filterwarnings("error")
+if clocksCTE and nskips==1:
+    warnings.filterwarnings("error")
     image_data = getSingleSkipImage(image_file)
     try: image_eper = selectImageRegion(image_data,'EPER')
     except: print('ERROR: Image has no overscan. Cannot estimate parallel/serial with EPER'); sys.exit()
+    warnings.filterwarnings("default")
     
     columnsarray = np.arange(prescan+registersize-10,prescan+registersize+10)#np.size(image_data,1))
     meanoverrows = []
@@ -145,18 +148,21 @@ if clocksCTE:
     print('Average charge in first overscan column: '+str(meanfirstovsccolumn)+' ADU')
     print('Average charge in last exposed column: '+str(meanlastexposedcolumn)+' ADU')
     print('EPER-estimated CTE is: ',eperCTE)
+elif clocksCTE and nskips!=1:  print('ERROR: You are running the code for single-skip charge transfer analysis but image has multiple skips. Please review image or config file. Exiting'); sys.exit()
+
 
 ##############################################################################
 #COMPUTE CHARGE LOSS COEFFICIENT FOR MANY SKIP IMAGE##########################
 ##############################################################################
 
-if skipsCTE:
+if skipsCTE and nskips!=1:
     skipper_diff,skipper_diff_01 = reconstructSkipperImage(image_file,arg2)[4:6]
     diff_image_exposed_01,diff_image_exposed = selectImageRegion(skipper_diff_01,'exposed_pixels'),selectImageRegion(skipper_diff,'exposed_pixels')
     PCDDstudyparameters01 = chargeloss.firstLastSkipPCDDCheck(diff_image_exposed_01, debug=False)
     PCDDstudyparameters = chargeloss.firstLastSkipPCDDCheck(diff_image_exposed, debug=False) #skewness, skewness_unc, kcl, kcl_unc, amp, mu, std
     kclsignificance01,kclsignificance = PCDDstudyparameters01[2]/PCDDstudyparameters01[3],PCDDstudyparameters[2]/PCDDstudyparameters[3]
     if abs(kclsignificance01) or abs(kclsignificance) > 3: print('Kcl value(s) flag probable charge loss')
+elif skipsCTE and nskips==1: print('ERROR: You are running the code for multiskip charge transfer analysis but image only has one skip. Please review image or config file. Exiting'); sys.exit()
 
 ##############################################################################
 ##############################################################################
@@ -186,6 +192,8 @@ if skipsCTE:
 ##############################################################################
 ##############################################################################
 
+if not (reportHeader or reportImage or reportCTE): print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
+
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
 import matplotlib
 matplotlib.use('Agg')  # Not to use X server. For TravisCI.
@@ -193,7 +201,7 @@ from scipy.optimize import curve_fit
 #setup document parameters
 geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
-doc.preamble.append(Command('title', 'Image Analysis Report on Linearity'))
+doc.preamble.append(Command('title', 'Image Analysis Report on Charge Transfer'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
 doc.append(NoEscape(r'\maketitle'))
 

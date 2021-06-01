@@ -27,7 +27,7 @@ Structure of the configuration file:
     "fix_leach_reconstruction" : true, #correct reconstruction bug due to leach
     "reverse" : true, #number of electrons increasing (true) or decreasing (false) as ADU value decreases
     "ccd_register_size": 1036,  #size of register for overscan location
-    "analysis_region" : "full", #where to compute noise and dark current (anticlustering only)
+    "analysis_region" : "full", #where to compute noise and dark current (anticlustering only). Accepted values: 'full', 'exposed_pixels', 'overscan'
     "calibration_constant_guess" : 10, #guess for calibration constant used if calibration fails (or not performed)
     "print_header" : false, #print header.txt? (in /header or mother dir) 
     "tuning_analysis":  #configure tuning analysis
@@ -77,3 +77,7 @@ General Notes:
 - Setting -1 (or any other impossible value) for skip number arguments: start_skip and end_skip will set them to 0 (first skip) and N_tot_skip-1, respectively
 - Set starting and end skips hold for all processing (avg image, std image, difference image (start+1-end to avoid using first skip), etc.) except for noise trend. The noise trend is computed for all skips regardless
 - There is no .fits extension at the end of image name (for raw and for processed image) both in shell and python scripts
+
+Acknowledgements:
+- The code used few basic lines of plot_fits-image.py (By: Lia R. Corrales, Adrian Price-Whelan, Kelle Cruz. License: BSD) to display info and open .fits files with python
+-

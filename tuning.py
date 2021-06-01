@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 '''
 -------------------
 
 *By: Michelangelo Traina to study skipper CCD data
+Module devoted to guide the clocks/bias parameters tuning process in skipper CCD and achieve optimal performance.
 
 -------------------
 '''
+
 ##############################################################################                             
 # Input values from command line
 
@@ -17,6 +20,8 @@ arg1 = sys.argv[1] + '.fits'
 #output FITS file with skipper images
 arg2 = sys.argv[2] + '.fits'
 
+##############################################################################
+# Input values from configuration file. Setting analysis logic
 import json
 with open('config.json') as config_file:
     config = json.load(config_file)
@@ -44,7 +49,7 @@ reportFFTrow = config['tuning_analysis'][-1]['report'][-1]['fft_row']
 if test != 'tuning':
     proceed = ''
     while proceed != 'yes' and proceed !='no':
-        proceed = input("You are running the code for tuning analysis. Test selected in configuration file is different from 'tuning': do you want to perform tuning analysis? Please answer 'yes' or 'no': ")
+        proceed = input("You are running the code for tuning analysis. Test selected in configuration file is different from 'tuning': do you want to perform tuning analysis?\nPlease answer 'yes' or 'no': ")
         if proceed == 'no': sys.exit()
         elif proceed == 'yes': print('Proceeding with tuning analysis')
 
@@ -56,16 +61,9 @@ if default_directory_structure:
     arg2 = 'processed/' + arg2
 
 ##############################################################################                             
-# Get Numpy, and relevant Scipy
+# Get Numpy and Matplotlib
 
 import numpy as np
-import scipy.fftpack
-from scipy import stats
-from scipy.stats import norm
-from scipy import signal
-
-##############################################################################
-# Set up matplotlib and use a nicer set of plot parameters
 
 import matplotlib.pyplot as plt
 plt.rc('text',usetex = True)
@@ -188,6 +186,9 @@ if reportCalibrationDarkcurrent and nskips!=1:
 ##############################################################################
 ##############################################################################
 
+if not (reportHeader or reportImage or reportPCD or reportChargeLoss or reportCalibrationDarkcurrent or reportFFTrow or reportFFTskips):
+    print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
+
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
 import matplotlib
 matplotlib.use('Agg')  # Not to use X server. For TravisCI.
@@ -195,7 +196,7 @@ from scipy.optimize import curve_fit
 #setup document parameters
 geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
-doc.preamble.append(Command('title', 'Image Analysis Report on Tuning'))
+doc.preamble.append(Command('title', 'Image Analysis Report on Parameter Tuning'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
 doc.append(NoEscape(r'\maketitle'))
 #############################################

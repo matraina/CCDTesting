@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 '''
 -------------------
 
 *By: Michelangelo Traina
-
-This module is devoted to assessing the linearity of the signal.
+Module devoted to assessing the linearity of the signal.
 It can use one single image with high exposure, but also several images (check that (0-e) peak std dev increases with mean & accumulate statistics with cumulatePCDistributions method in reconstruction.py)
 
 -------------------
 '''
+
 ##############################################################################
 # Input values from command line
 
@@ -20,6 +21,8 @@ arg1 = sys.argv[1] + '.fits'
 #output FITS file with skipper images
 arg2 = sys.argv[2] + '.fits'
 
+##############################################################################
+# Input values from configuration file. Setting analysis logic
 import json
 with open('config.json') as config_file:
     config = json.load(config_file)
@@ -51,7 +54,7 @@ reportLinearityCurves = config['linearity_analysis'][-1]['report'][-1]['linearit
 if test != 'linearity':
     proceed = ''
     while proceed != 'yes' and proceed !='no':
-        proceed = input("You are running the code for linearity analysis. Test selected in configuration file is different from 'linearity': do you want to perform linearity analysis? Please answer 'yes' or 'no': ")
+        proceed = input("You are running the code for linearity analysis. Test selected in configuration file is different from 'linearity': do you want to perform linearity analysis?\nPlease answer 'yes' or 'no': ")
         if proceed == 'no': sys.exit()
         elif proceed == 'yes': print('Proceeding with linearity analysis')
 
@@ -98,6 +101,11 @@ import calibrationdc
 
 import os
 os.chdir(workingdirectory)
+
+##############################################################################
+# Import warnings for warning control
+
+import warnings
 
 ##############################################################################
 # Open the data image
@@ -209,6 +217,8 @@ if (not multipleimages) or measVSexp_e_multimg:
 ##############################################################################
 ##############################################################################
 ##############################################################################
+
+if not (reportHeader or reportImage or reportCalibrationDarkcurrent or reportLinearityCurves): print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
 
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
 import matplotlib
@@ -328,7 +338,6 @@ if reportLinearityCurves:
     if maxelectrons>=0:
         if (not multipleimages) or measVSexp_e_multimg:
             nelectrons = np.arange(0,maxelectrons+1,1)
-            import warnings
             warnings.filterwarnings("error")
             fit = True
             try: pfit, varmatrix = curve_fit(linefunction, nelectrons, peakmus, sigma=peakmuncs, absolute_sigma=True); punc = np.sqrt(np.diag(varmatrix))
