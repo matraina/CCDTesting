@@ -108,6 +108,14 @@ os.chdir(workingdirectory)
 import warnings
 
 ##############################################################################
+# WARN about image structure requirement
+proceed = ''
+while proceed != 'yes' and proceed !='no':
+    proceed = input("You are running the code for linearity analysis. This code assumes resolved single electrons for input images (except when comparing means and std deviations of 0-e peaks). If this is not the case code may fail.\nDo you want to continue? Please answer 'yes' or 'no': ")
+    if proceed == 'no': sys.exit()
+    elif proceed == 'yes': print('Proceeding with image(s) linearity analysis')
+
+##############################################################################
 # Open the data image
 
 if not multipleimages:
@@ -127,61 +135,27 @@ if not multipleimages:
     exposuretime = hdr['MEXP']
     rdoutime = hdr['MREAD']
     print('N. rows columns skips ',nrows,ncolumns,nskips)
-
-##############################################################################
-##############################################################################
-##############################################################################
-##############################################################################
-##############################################################################
-# Start processing for linearity analysis
-# if leach: image is fixed in reconstruction module
-##############################################################################
-#AVERAGE SKIPPER IMGS FROM ISKIPSTART TO ISKIPEND#############################
-##############################################################################
-
-if not multipleimages:
+    
+    ##############################################################################
+    ##############################################################################
+    ##############################################################################
+    ##############################################################################
+    ##############################################################################
+    # Start processing for linearity analysis
+    # if leach: image is fixed in reconstruction module
+    ##############################################################################
+    #SINGLE IMAGE LINEARITY STUDY: MEASURED VS EXPECTED N ELECTRONS###############
+    ##############################################################################
     skipper_avg0 = getAverageSkipperImage(image_file)
     offset, avg0_std = sigmaFinder(skipper_avg0, debug = False)[1:3]
-
-##############################################################################
-#STUDY DIFFERENT DATA FROM MANY AVERAGE IMAGES ###############################
-##############################################################################
-
-if multipleimages:
-    lowerindex = config['linearity_analysis'][-1]['multiple_images'][-1]['lower_index']
-    upperindex = config['linearity_analysis'][-1]['multiple_images'][-1]['upper_index']
-    nameprefix = ''.join([i for i in arg1 if not i.isdigit()]).replace('.fits','')
-    avgimagestack = reconstructAvgImageStack(nameprefix,lowerindex,upperindex)
-    offset, avg0_std = sigmaFinder(avgimagestack[:,:,0], debug = False)[1:3]
-    if stddeVSmeans_multimg:
-        print('I am going to compute 0-electron peak means and std deviations')
-        means,stddevs,meansunc,stddevsunc = getADUMeansStds(avgimagestack,lowerindex,upperindex)
-
-##############################################################################
-#ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
-##############################################################################
-
-if calibrate:
-    if not multipleimages:
+    if calibrate:
         parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, avg0_std, reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
         skipper_avg_cal = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant
-    if multipleimages:
-        parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(avgimagestack[:,:,0], avg0_std, reverse, debug=False)
-        calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
-        avgimagestack_cal = -int(reverse)*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
-if not calibrate:
-    calibrationconstant = calibrationguess; calibratedsigma = avg0_std/calibrationconstant; print('WARNING: using calibration constant guess for linearity test')
-    if not multipleimages: skipper_avg_cal = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant
-    if multipleimages: avgimagestack_cal = -int(reverse)*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
-    
-if not multipleimages: skipper_avg_cal_ravelled = skipper_avg_cal.ravel()
-if measVSexp_e_multimg: print('I am going to cumulate statistics from multiple images for linearity test'); skipper_avg_cal_ravelled = cumulatePCDistributions(avgimagestack_cal)
-
-##############################################################################
-#CHECK LINEARITY UP TO MAX ELECTRONS #########################################
-##############################################################################
-if (not multipleimages) or measVSexp_e_multimg:
+    else:
+        calibrationconstant = calibrationguess; calibratedsigma = avg0_std/calibrationconstant; print('WARNING: using calibration constant guess for linearity test')
+        skipper_avg_cal = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant
+    skipper_avg_cal_ravelled = skipper_avg_cal.ravel()
     peakmus,peakstds,peakmuncs,peakstduncs = [],[],[],[]
     for npeakelectron in range(maxelectrons+1):
         npeakarray = [s for s in skipper_avg_cal_ravelled if s > npeakelectron - 3*calibratedsigma and s < npeakelectron + 3*calibratedsigma]
@@ -189,6 +163,38 @@ if (not multipleimages) or measVSexp_e_multimg:
         tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, debug = False)[1:5]
         #print(tmpmu, tmpstd)
         peakmus.append(tmpmu); peakstds.append(tmpstd); peakmuncs.append(tmpmunc); peakstduncs.append(tmpstdunc)
+
+##############################################################################
+#MULTIPLE IMAGES LINEARITY STUDY: STDDEVS VS MEANS & MEAS VS EXP NE###########
+##############################################################################
+
+if multipleimages:
+    lowerindex = config['linearity_analysis'][-1]['multiple_images'][-1]['lower_index']
+    upperindex = config['linearity_analysis'][-1]['multiple_images'][-1]['upper_index']
+    nameprefix = ''.join([i for i in arg1 if not i.isdigit()]).replace('.fits','')
+    hdr = fits.getheader(nameprefix+str(lowerindex)+'.fits',0)
+    nskips = hdr['NDCMS']  # n of skips
+    avgimagestack = reconstructAvgImageStack(nameprefix,lowerindex,upperindex)
+    offset, avg0_std = sigmaFinder(avgimagestack[:,:,0], debug = False)[1:3]
+    if stddeVSmeans_multimg:
+        print('I am going to compute 0-electron peak means and std deviations')
+        means,stddevs,meansunc,stddevsunc = getADUMeansStds(avgimagestack,lowerindex,upperindex)
+    if calibrate:
+        parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(avgimagestack[:,:,0], avg0_std, reverse, debug=False)
+        calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
+        avgimagestack_cal = -int(reverse)*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
+    else:
+        calibrationconstant = calibrationguess; calibratedsigma = avg0_std/calibrationconstant; print('WARNING: using calibration constant guess for linearity test')
+        avgimagestack_cal = -int(reverse)*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
+    if measVSexp_e_multimg:
+        print('I am going to cumulate statistics from multiple images for linearity test'); skipper_avg_cal_ravelled = cumulatePCDistributions(avgimagestack_cal)
+        peakmus,peakstds,peakmuncs,peakstduncs = [],[],[],[]
+        for npeakelectron in range(maxelectrons+1):
+            npeakarray = [s for s in skipper_avg_cal_ravelled if s > npeakelectron - 3*calibratedsigma and s < npeakelectron + 3*calibratedsigma]
+            if len(npeakarray) == 0: maxelectrons = npeakelectron - 1; break
+            tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, debug = False)[1:5]
+            #print(tmpmu, tmpstd)
+            peakmus.append(tmpmu); peakstds.append(tmpstd); peakmuncs.append(tmpmunc); peakstduncs.append(tmpstdunc)
 
 ##############################################################################
 ##############################################################################

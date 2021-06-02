@@ -1,5 +1,5 @@
 {
-    "test" : "quality",
+    "test" : "linearity",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -64,16 +64,16 @@
         [{
             "use_multiple_images" : true,
             "measured_vs_expected_e_with_multiple_images" : true,
-            "stddevs_vs_means_0_e_peaks" : false,
-            "lower_index" : 8,
-            "upper_index" : 9
+            "stddevs_vs_means_0_e_peaks" : true,
+            "lower_index" : 22,
+            "upper_index" : 25
         }],
         "report" :
         [{
             "header" : false,
             "image" : false,
             "calibration" : false,
-            "linearity_curves" : false
+            "linearity_curves" : true
         }]
     }],
     

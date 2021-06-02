@@ -15,7 +15,7 @@ In the case of line above images: Image_LPNHE_VDD_16.fits, Image_LPNHE_VDD_17.fi
 Headers and reports of all images will be in the respective directories inside path/to/CCDTesting/directory (if selected in config.json)
 
 #####Configuration file#####
-- test should be stated in config file before running the corresponding analysis script. Current options: 'tuning', 'linearity'
+- test should be stated in config file before running the corresponding analysis script. Current options: 'tweaking', 'linearity'
 Structure of the configuration file:
 
 {
@@ -30,9 +30,9 @@ Structure of the configuration file:
     "analysis_region" : "full", #where to compute noise and dark current (anticlustering only). Accepted values: 'full', 'exposed_pixels', 'overscan'
     "calibration_constant_guess" : 10, #guess for calibration constant used if calibration fails (or not performed)
     "print_header" : false, #print header.txt? (in /header or mother dir) 
-    "tuning_analysis":  #configure tuning analysis
+    "tweaking_analysis":  #configure tweaking analysis
     [{
-        "report" : #compute and report on below objects (tuning)
+        "report" : #compute and report on below objects (tweaking)
         [{
             "header" : true, #extract and print header in report
             "image" : true, #extract and print image sample region in report
@@ -66,8 +66,8 @@ Structure of the configuration file:
 }
 
 
-#####Run tuning.py (linearity.py, etc.) analysis script (can be automated to analyze and report on several images from e.g. parameter scan)#####
-python3      tuning.py       raw_Image_Name        processed_Img_Name   #.fits must be omitted for both arguments    
+#####Run tweaking.py (linearity.py, etc.) analysis script (can be automated to analyze and report on several images from e.g. parameter scan)#####
+python3      tweaking.py       raw_Image_Name        processed_Img_Name   #.fits must be omitted for both arguments    
 e.g.: python3 main.py Image_LPNHE_VDD_16 Img_VDD_16
 
 
