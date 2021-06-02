@@ -20,7 +20,7 @@
     
     
     
-    "tuning_analysis":
+    "tweaking_analysis":
     [{
         "report" :
         [{
@@ -41,7 +41,7 @@
         "multiple_images" :
         [{
             "use_multiple_images" : true,
-            "mask" : false,
+            "produce_mask" : false,
             "lower_index" : 8,
             "upper_index" : 9
         }],
