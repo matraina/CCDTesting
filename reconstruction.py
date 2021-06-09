@@ -4,7 +4,7 @@
 -------------------
 
 *By: Michelangelo Traina to study skipper CCD data
-Function(s) for image reconstruction starting from raw .fits file
+Module for image reconstruction starting from raw .fits file
 
 -------------------
 '''
@@ -314,12 +314,14 @@ def subtractOvscPedestalRowByRow(image_data):
     image_overscan = selectImageRegion(image_data,'overscan') #if there is no overscan pedestal is computed on exposed pixels row
     nrows = np.size(image_overscan,0) #it is assumed that nrows always identical for image_data and its overscan
     row_pedestals = np.zeros(nrows,dtype=np.float64)
+    row_mads = np.zeros(nrows,dtype=np.float64)
     ncolumns  = np.size(image_data,1) #ncolumns taken from image_data
     pedestal_subtracted_image = np.zeros((nrows,ncolumns),dtype=np.float64)
     for row in range(nrows):
         row_pedestals[row] = np.median(image_overscan[row,:])
+        row_mads[row] = np.median(abs( image_overscan[row,:] - row_pedestals[row]))
         pedestal_subtracted_image[row,:] = image_data[row,:] - row_pedestals[row]
-    return pedestal_subtracted_image, row_pedestals
+    return pedestal_subtracted_image, row_pedestals, row_mads
 
 def medianMadRowByRow(image_data):
     nrows = np.size(image_data,0)

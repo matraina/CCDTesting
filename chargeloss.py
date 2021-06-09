@@ -4,7 +4,7 @@
 -------------------
 
 *By: Michelangelo Traina to study skipper CCD data
-Charge loss check functions. Will output kcl, skewness and respective uncertainties. Will also output plot for latek summary
+Charge loss check module. Will output kcl, skewness and respective uncertainties. Will also output plot for latek summary
 
 -------------------
 '''

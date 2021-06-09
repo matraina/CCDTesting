@@ -5,7 +5,7 @@
 -------------------
 
 *By: Michelangelo Traina
-Module devoted to monitor the quality of data produced by the CCD.
+Executable devoted to monitor the quality of data produced by the CCD.
 
 -------------------
 '''
@@ -104,6 +104,53 @@ import warnings
 # Start processing for data quality analysis
 # if leach: image is fixed in reconstruction module
 ##############################################################################
+#SINGLE IMAGE ANALYSIS: FIND ROW/COLUMN MEDIANS AND MADS######################
+##############################################################################
+if not multipleimages:
+    ##############################################################################
+    # Open the data image
+    image_file = get_pkg_data_filename(arg1)
+    ##############################################################################
+    # Use `astropy.io.fits.info()` to display the structure of the file
+    fits.info(image_file)
+    ##############################################################################
+    # read n. of pixels in x and y axes and number of skips in the image
+    # the image has nrows and a total of nallcolumns equivalent to ncolumns*nskips
+    hdr = fits.getheader(image_file,0)
+    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
+    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
+    nskips = hdr['NDCMS']  # n of skips
+    ncolumns = int(nallcolumns/nskips) # n of columns in the image
+    ampl = hdr['AMPL']
+    exposuretime = hdr['MEXP']
+    rdoutime = hdr['MREAD']
+    print('N. rows columns skips ',nrows,ncolumns,nskips)
+    ##############################################################################
+    warnings.filterwarnings("error")
+    if nskips == 1:
+        image_data = getSingleSkipImage(image_file)
+        image_data0 = image_data
+        try: image_overscan = selectImageRegion(image_data,'overscan')
+        except: print('ERROR: Image has no overscan. Cannot estimate median and MAD in overscan. Exiting'); sys.exit()
+        overscanmedian = np.median(image_overscan.ravel())
+        overscanMAD = np.median(abs(image_overscan.ravel()-overscanmedian))
+        rowmedian,rowmad = medianMadRowByRow(image_data)
+        colmedian,colmad = medianMadColByCol(image_data)
+    else:
+        skip_image_stack = getManySkipImageStack(image_file)
+        overscanmedian,overscanMAD = [],[]
+        for skip in range(nskips):
+            try: image_overscan = selectImageRegion(skip_image_stack[:,:,skip],'overscan')
+            except: print('ERROR: Image has no overscan. Cannot estimate median and MAD in overscan. Exiting'); sys.exit()
+            overscanmedian.append(np.median(image_overscan.ravel()))
+            overscanMAD.append(np.median(abs(image_overscan.ravel()-overscanmedian[-1])))
+        skipper_average = getAverageSkipperImage(image_file)
+        image_data0 = skipper_average
+        rowmedian,rowmad = medianMadRowByRow(skipper_average)
+        colmedian,colmad = medianMadColByCol(skipper_average)
+    warnings.filterwarnings("default")
+
+##############################################################################
 #MULTIPLE IMAGES ANALYSIS: FIND BASELINES AND MAKE MASK#######################
 ##############################################################################
 if multipleimages: #this analysis carried out on single skip image by default. If nskips > 1, iskipstart is used for the study
@@ -178,53 +225,6 @@ if multipleimages: #this analysis carried out on single skip image by default. I
         new_hdul = fits.HDUList([hdu0])
         if default_directory_structure: new_hdul.writeto('processed/MASK_'+str(lowerindex)+'_'+str(upperindex)+'.fits', overwrite=True)
         else: new_hdul.writeto('MASK_'+str(lowerindex)+'_'+str(upperindex)+'.fits', overwrite=True)
-
-##############################################################################
-#SINGLE IMAGE ANALYSIS: FIND ROW/COLUMN MEDIANS AND MADS######################
-##############################################################################
-if not multipleimages:
-    ##############################################################################
-    # Open the data image
-    image_file = get_pkg_data_filename(arg1)
-    ##############################################################################
-    # Use `astropy.io.fits.info()` to display the structure of the file
-    fits.info(image_file)
-    ##############################################################################
-    # read n. of pixels in x and y axes and number of skips in the image
-    # the image has nrows and a total of nallcolumns equivalent to ncolumns*nskips
-    hdr = fits.getheader(image_file,0)
-    nallcolumns = hdr['NAXIS1'] # n of pixels in the x axis, include the skips
-    nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
-    nskips = hdr['NDCMS']  # n of skips
-    ncolumns = int(nallcolumns/nskips) # n of columns in the image
-    ampl = hdr['AMPL']
-    exposuretime = hdr['MEXP']
-    rdoutime = hdr['MREAD']
-    print('N. rows columns skips ',nrows,ncolumns,nskips)
-    ##############################################################################
-    warnings.filterwarnings("error")
-    if nskips == 1:
-        image_data = getSingleSkipImage(image_file)
-        image_data0 = image_data
-        try: image_overscan = selectImageRegion(image_data,'overscan')
-        except: print('ERROR: Image has no overscan. Cannot estimate median and MAD in overscan. Exiting'); sys.exit()
-        overscanmedian = np.median(image_overscan.ravel())
-        overscanMAD = np.median(abs(image_overscan.ravel()-overscanmedian))
-        rowmedian,rowmad = medianMadRowByRow(image_data)
-        colmedian,colmad = medianMadColByCol(image_data)
-    else:
-        skip_image_stack = getManySkipImageStack(image_file)
-        overscanmedian,overscanMAD = [],[]
-        for skip in range(nskips):
-            try: image_overscan = selectImageRegion(skip_image_stack[:,:,skip],'overscan')
-            except: print('ERROR: Image has no overscan. Cannot estimate median and MAD in overscan. Exiting'); sys.exit()
-            overscanmedian.append(np.median(image_overscan.ravel()))
-            overscanMAD.append(np.median(abs(image_overscan.ravel()-overscanmedian[-1])))
-        skipper_average = getAverageSkipperImage(image_file)
-        image_data0 = skipper_average
-        rowmedian,rowmad = medianMadRowByRow(skipper_average)
-        colmedian,colmad = medianMadColByCol(skipper_average)
-    warnings.filterwarnings("default")
 
 ##############################################################################
 ##############################################################################

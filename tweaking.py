@@ -5,7 +5,7 @@
 -------------------
 
 *By: Michelangelo Traina to study skipper CCD data
-Module devoted to guide the clocks/bias parameters tweaking process in skipper CCD and achieve optimal performance.
+Executable devoted to guide the clocks/bias parameters tweaking process in skipper CCD and achieve optimal performance.
 
 -------------------
 '''
