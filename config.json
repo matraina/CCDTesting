@@ -1,5 +1,5 @@
 {
-    "test" : "linearity",
+    "test" : "clusters_depth_calibration",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -7,7 +7,7 @@
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
-    "reverse" : true,
+    "reverse" : false,
     
     "ccd_active_register_size": 1024,
     "prescan" : 8,
@@ -26,7 +26,7 @@
         [{
             "header" : false,
             "image" : false,
-            "pcds" : false,
+            "pcds" : true,
             "chargeloss" : false,
             "calibration_darkcurrent" : false,
             "fft_skips" : false,
@@ -42,8 +42,8 @@
         [{
             "use_multiple_images" : true,
             "produce_mask" : false,
-            "lower_index" : 8,
-            "upper_index" : 9
+            "lower_index" : 74,
+            "upper_index" : 75
         }],
         "report" :
         [{
@@ -88,6 +88,38 @@
             "header" : false,
             "image" : false,
             "CTE_plots": false
+        }]
+    }],
+
+    
+    
+    "clusters_depth_analysis" :
+    [{
+        "calibrate" : true,
+        "global_threshold_in_sigma": 10,
+        "maximum_pixel_value_threshold_in_sigma": 20,
+        "use_mask" : false,
+        "mask_path" : "/Users/mtraina/repositories/CCDTesting/processed/MASK_74_75.fits",
+        "multiple_images" :
+        [{
+            "use_multiple_images" : false,
+            "a" : true,
+            "b" : true,
+            "lower_index" : 8,
+            "upper_index" : 9
+        }],
+        "report" :
+        [{
+            "header" : false,
+            "image" : false,
+            "calibration" : false,
+            "clusters" :
+            [{
+                "clusters_plots" : true,
+                "lower_energy_bound_keV" : 10,
+                "upper_energy_bound_keV" : 100
+            }],
+            "depth_calibration_plots": false
         }]
     }]
     
