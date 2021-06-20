@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to assessing the linearity of the signal.
 It can use one single image with high exposure, but also several images (check that (0-e) peak std dev increases with mean & accumulate statistics with cumulatePCDistributions method in reconstruction.py)
 
@@ -33,6 +33,8 @@ iskipstart = config['skip_start']
 iskipend = config['skip_end']
 fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
+reversign = 1
+if reverse: reversign = -1
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
@@ -151,10 +153,10 @@ if not multipleimages:
     if calibrate:
         parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, avg0_std, reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
-        skipper_avg_cal = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant
+        skipper_avg_cal = reversign*(skipper_avg0 - offset)/calibrationconstant
     else:
         calibrationconstant = calibrationguess; calibratedsigma = avg0_std/calibrationconstant; print('WARNING: using calibration constant guess for linearity test')
-        skipper_avg_cal = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant
+        skipper_avg_cal = reversign*(skipper_avg0 - offset)/calibrationconstant
     skipper_avg_cal_ravelled = skipper_avg_cal.ravel()
     peakmus,peakstds,peakmuncs,peakstduncs = [],[],[],[]
     for npeakelectron in range(maxelectrons+1):
@@ -182,10 +184,10 @@ if multipleimages:
     if calibrate:
         parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(avgimagestack[:,:,0], avg0_std, reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
-        avgimagestack_cal = -int(reverse)*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
+        avgimagestack_cal = reversign*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
     else:
         calibrationconstant = calibrationguess; calibratedsigma = avg0_std/calibrationconstant; print('WARNING: using calibration constant guess for linearity test')
-        avgimagestack_cal = -int(reverse)*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
+        avgimagestack_cal = reversign*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
     if measVSexp_e_multimg:
         print('I am going to cumulate statistics from multiple images for linearity test'); skipper_avg_cal_ravelled = cumulatePCDistributions(avgimagestack_cal)
         peakmus,peakstds,peakmuncs,peakstduncs = [],[],[],[]
