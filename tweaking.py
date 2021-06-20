@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina to study skipper CCD data
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to guide the clocks/bias parameters tweaking process in skipper CCD and achieve optimal performance.
 
 -------------------
@@ -32,10 +32,13 @@ iskipstart = config['skip_start']
 iskipend = config['skip_end']
 fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
+reversign = 1
+if reverse: reversign = -1
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
 analysisregion = config['analysis_region']
+kclthreshold = config['kcl_threshold']
 calibrationguess = config['calibration_constant_guess']
 printheader = config['print_header']
 reportHeader = config['tweaking_analysis'][-1]['report'][-1]['header']
@@ -155,7 +158,7 @@ if reportChargeLoss and nskips!=1:
 if reportCalibrationDarkcurrent and nskips!=1:
     parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse, debug=False)
     calibrationconstant = parametersDCfit[0][5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
-    skipper_avg_cal = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant
+    skipper_avg_cal = reversign*(skipper_avg0 - offset)/calibrationconstant
     darkcurrentestimateAC = calibrationdc.anticlusteringDarkCurrent(functions.selectImageRegion(skipper_avg_cal,analysisregion), calibratedsigma, debug=False)
 
 ##############################################################################
@@ -223,7 +226,7 @@ ampss, muss, stdss, muncss, stduncss = startskipfitpar #ss: start skip
 
 if reportImage:
 
-    centeredsstoplot = -int(reverse)*(skipper_image_start - muss)
+    centeredsstoplot = reversign*(skipper_image_start - muss)
     clustercandidates = reconstruction.findChargedPixelNoBorder(centeredsstoplot,stdss)
     isChargedCrown = True; coor = np.size(centeredsstoplot,0)//2, np.size(centeredsstoplot,1)//2
     for coor in clustercandidates:
@@ -336,7 +339,8 @@ if reportPCD:
         axs[0].hist(skipper_image_start_ravel, 800, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='start skip pixel charge distribution')
         bincenters = np.arange(muss - 3*stdss, muss + 3*stdss + 6*stdss/100, 6*stdss/100) #last term in upper bound to get ~sym drawing
         axs[0].plot(bincenters, gauss(bincenters,ampss,muss,stdss), label='gaussian fit curve', linewidth=1, color='red')
-        axs[0].legend(loc='upper left',prop={'size': 14})
+        if reverse: axs[0].legend(loc='upper left',prop={'size': 14})
+        else: axs[0].legend(loc='upper right',prop={'size': 14})
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
@@ -351,17 +355,22 @@ if reportPCD:
             skipper_avg0_region = functions.selectImageRegion(skipper_avg0,analysisregion)
             avg_image_0ravel = skipper_avg0_region.ravel()
             avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
-            avg_image_unsaturated = [s for s in avg_image_unsaturated if averageimageoffset - 5*calibrationconstant < s < averageimageoffset + calibrationconstant]
-            rangeadhoc =  (averageimageoffset - 5*calibrationconstant, averageimageoffset + calibrationconstant)
+            if reverse:
+                avg_image_unsaturated = [s for s in avg_image_unsaturated if averageimageoffset - 5*calibrationconstant < s < averageimageoffset + calibrationconstant]
+                rangeadhoc =  (averageimageoffset - 5*calibrationconstant, averageimageoffset + calibrationconstant)
+            else:
+                avg_image_unsaturated = [s for s in avg_image_unsaturated if averageimageoffset - calibrationconstant < s < 5*averageimageoffset + calibrationconstant]
+                rangeadhoc =  (averageimageoffset - calibrationconstant, averageimageoffset + 5*calibrationconstant)
             if len(avg_image_unsaturated) < 50:
-                        avg_image_unsaturated = [s for s in np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False) if averageimageoffset - 10*calibrationconstant < s < averageimageoffset + 10*calibrationconstant]
-                        rangeadhoc =  (averageimageoffset - 20*calibrationconstant, averageimageoffset + 20*calibrationconstant)
-            avg_image_hist, binedges = np.histogram(avg_image_unsaturated, bins = 200, density=False)
+                avg_image_unsaturated = [s for s in np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False) if averageimageoffset - 20*calibrationconstant < s < averageimageoffset + 20*calibrationconstant]
+                rangeadhoc =  (averageimageoffset - 20*calibrationconstant, averageimageoffset + 20*calibrationconstant)
+            avg_image_hist, binedges = np.histogram([s for s in avg_image_0ravel if s != 0], range=rangeadhoc, bins = 200, density=False)
             ampls = avg_image_hist[np.argmax(avg_image_hist)]
             bincenters = np.arange(averageimageoffset - 3*stdmanyskip[-1], averageimageoffset + 3*stdmanyskip[-1] + 6*stdmanyskip[-1]/200, 6*stdmanyskip[-1]/200)
             axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,stdmanyskip[-1]), label='gaussian fit curve', linewidth=1, color='red')
             axs[1].hist(avg_image_0ravel, 200, rangeadhoc, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
-            axs[1].legend(loc='upper left',prop={'size': 14})
+            if reverse: axs[1].legend(loc='upper left',prop={'size': 14})
+            else: axs[1].legend(loc='upper right',prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[1].get_yticklabels(), visible=True)
@@ -380,7 +389,7 @@ if reportPCD:
             return stdss/np.sqrt(ns)
         fig, axs = plt.subplots(1, 1, figsize=(8,6), sharey=True, tight_layout=True)
         #numberSkips = [10,100,200,300,400,500,600,700,800,900,1000]
-        ns = np.arange(1,1000,1)
+        ns = np.arange(1,nskips,1)
         #resolution = plt.plot(1,stdss,'ro',numberSkips[0:len(stdmanyskip)],stdmanyskip,'ro',ns,r(ns),'k-')
         if nskips!=1: resolution = plt.errorbar(numberskips[0:len(stdmanyskip)],stdmanyskip,stduncmanyskip,xerr=None,fmt='.',ecolor='red',marker='o', mfc='red', mec='red', ms=4, label='measured resolution in ADU')
         else: resolution = plt.errorbar([],[])
@@ -485,6 +494,9 @@ if reportChargeLoss and nskips!=1:
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom).')
+            from scipy.stats import norm
+            doc.append('First-second skip lower tail entries: '+str(len([s for s in centeredskipperdiffcore01 if s < -kclthreshold*stdPCDD01]))+'. First-second skip upper tail entries: '+str(len([s for s in centeredskipperdiffcore01 if s > kclthreshold*stdPCDD01]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffcore01)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.\n Second-last skip lower tail entries: '+str(len([s for s in centeredskipperdiffcore if s < -kclthreshold*stdPCDD]))+'. Second-last skip upper tail entries: '+str(len([s for s in centeredskipperdiffcore if s > kclthreshold*stdPCDD]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffcore)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.')
+
         plt.clf()
         doc.append(NewPage())
         
@@ -494,10 +506,10 @@ if reportChargeLoss and nskips!=1:
 if reportCalibrationDarkcurrent and nskips!=1:
     skipperavgcalibrated = skipper_avg_cal.ravel()
     try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
-        if calibrationconstant == 10: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
+        if calibrationconstant == calibrationguess: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
         else: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
         nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
-    except:#if so we keep skipperavgcalibratedravel without range
+    except: #if so we keep skipperavgcalibratedravel without range
         skipperavgcalibratedravel = skipperavgcalibrated
         nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
     if nbins == 0: nbins=100
