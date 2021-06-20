@@ -94,9 +94,9 @@ from astropy.io import fits
 ##############################################################################
 # Get processing modules
 
-from reconstruction import getAverageSkipperImage, reconstructAvgImageStack, cumulatePCDistributions, getADUMeansStds, findChargedPixelNoBorder, chargedCrown
-from functions import sigmaFinder, convolutionGaussianPoisson, round_sig_2, linefunction, make_colorbar_with_padding
-import calibrationdc
+from m_reconstruction import getAverageSkipperImage, reconstructAvgImageStack, cumulatePCDistributions, getADUMeansStds, findChargedPixelNoBorder, chargedCrown
+from m_functions import sigmaFinder, convolutionGaussianPoisson, round_sig_2, linefunction, make_colorbar_with_padding
+import m_calibrationdc
 
 ##############################################################################
 # Specify path (can be out of the main tree)
@@ -151,7 +151,7 @@ if not multipleimages:
     skipper_avg0 = getAverageSkipperImage(image_file)
     offset, avg0_std = sigmaFinder(skipper_avg0, debug = False)[1:3]
     if calibrate:
-        parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, avg0_std, reverse, debug=False)
+        parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(skipper_avg0, avg0_std, reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
         skipper_avg_cal = reversign*(skipper_avg0 - offset)/calibrationconstant
     else:
@@ -182,7 +182,7 @@ if multipleimages:
         print('I am going to compute 0-electron peak means and std deviations')
         means,stddevs,meansunc,stddevsunc = getADUMeansStds(avgimagestack,lowerindex,upperindex)
     if calibrate:
-        parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(avgimagestack[:,:,0], avg0_std, reverse, debug=False)
+        parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(avgimagestack[:,:,0], avg0_std, reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
         avgimagestack_cal = reversign*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
     else:

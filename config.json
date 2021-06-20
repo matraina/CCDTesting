@@ -1,5 +1,5 @@
 {
-    "test" : "clusters_depth_calibration",
+    "test" : "chargetransfer",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -29,9 +29,9 @@
             "image" : true,
             "pcds" : true,
             "chargeloss" : true,
-            "calibration_darkcurrent" : false,
-            "fft_skips" : false,
-            "fft_row" : false
+            "calibration_darkcurrent" : true,
+            "fft_skips" : true,
+            "fft_row" : true
         }]
     }],
     

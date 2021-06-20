@@ -14,7 +14,7 @@ with open('config.json') as config_file:
     config = json.load(config_file)
 kclthreshold = config['kcl_threshold']
 
-from reconstruction import reverse
+from m_reconstruction import reverse
 
 def gauss(x, *p):
     import numpy as np

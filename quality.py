@@ -37,10 +37,11 @@ overscan = config['overscan']
 calibrationguess = config['calibration_constant_guess']
 printheader = False
 multipleimages = config['quality_analysis'][-1]['multiple_images'][-1]['use_multiple_images']
-if multipleimages: makemask = config['quality_analysis'][-1]['multiple_images'][-1]['produce_mask']
-if makemask:
-    imfrhotp = config['quality_analysis'][-1]['multiple_images'][-1]['image_fraction_hot_pixel']
-    pfrhotcl = config['quality_analysis'][-1]['multiple_images'][-1]['pixel_fraction_hot_column']
+if multipleimages:
+    makemask = config['quality_analysis'][-1]['multiple_images'][-1]['produce_mask']
+    if makemask:
+        imfrhotp = config['quality_analysis'][-1]['multiple_images'][-1]['image_fraction_hot_pixel']
+        pfrhotcl = config['quality_analysis'][-1]['multiple_images'][-1]['pixel_fraction_hot_column']
 reportHeader = config['quality_analysis'][-1]['report'][-1]['header']
 reportImage = config['quality_analysis'][-1]['report'][-1]['image']
 reportQuality = config['quality_analysis'][-1]['report'][-1]['quality']
@@ -83,10 +84,10 @@ from astropy.io import fits
 ##############################################################################
 # Get processing modules
 
-from functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss
-from reconstruction import *
-import chargeloss
-import calibrationdc
+from m_functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss
+from m_reconstruction import *
+import m_chargeloss
+import m_calibrationdc
 
 ##############################################################################
 # Specify path (can be out of the main tree)

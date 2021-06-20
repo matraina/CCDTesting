@@ -104,7 +104,7 @@ def clusterImage(image,cut,**kwargs):
     mask = kwargs.get('mask', None)
     
     from astropy.utils.data import get_pkg_data_filename
-    from reconstruction import getSingleSkipImage
+    from m_reconstruction import getSingleSkipImage
     import json
     with open('config.json') as config_file:
         config = json.load(config_file)

@@ -87,10 +87,10 @@ from astropy.io import fits
 ##############################################################################
 # Get processing modules
 
-from functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss, round_sig_2
-from reconstruction import getSingleSkipImage,findChargedPixelNoBorder,chargedCrown,reconstructSkipperImage
-import chargeloss
-import calibrationdc
+from m_functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss, round_sig_2
+from m_reconstruction import getSingleSkipImage,findChargedPixelNoBorder,chargedCrown,reconstructSkipperImage
+import m_chargeloss
+import m_calibrationdc
 
 ##############################################################################
 # Specify path (can be out of the main tree)
@@ -159,8 +159,8 @@ elif clocksCTE and nskips!=1:  print('ERROR: You are running the code for single
 if skipsCTE and nskips!=1:
     skipper_diff,skipper_diff_01 = reconstructSkipperImage(image_file,arg2)[4:6]
     diff_image_exposed_01,diff_image_exposed = selectImageRegion(skipper_diff_01,'exposed_pixels'),selectImageRegion(skipper_diff,'exposed_pixels')
-    PCDDstudyparameters01 = chargeloss.firstLastSkipPCDDCheck(diff_image_exposed_01, debug=False)
-    PCDDstudyparameters = chargeloss.firstLastSkipPCDDCheck(diff_image_exposed, debug=False) #skewness, skewness_unc, kcl, kcl_unc, amp, mu, std
+    PCDDstudyparameters01 = m_chargeloss.firstLastSkipPCDDCheck(diff_image_exposed_01, debug=False)
+    PCDDstudyparameters = m_chargeloss.firstLastSkipPCDDCheck(diff_image_exposed, debug=False) #skewness, skewness_unc, kcl, kcl_unc, amp, mu, std
     kclsignificance01,kclsignificance = PCDDstudyparameters01[2]/PCDDstudyparameters01[3],PCDDstudyparameters[2]/PCDDstudyparameters[3]
     if abs(kclsignificance01) or abs(kclsignificance) > 3: print('Kcl value(s) flag probable charge loss')
 elif skipsCTE and nskips==1: print('ERROR: You are running the code for multiskip charge transfer analysis but image only has one skip. Please review image or config file. Exiting'); sys.exit()

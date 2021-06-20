@@ -304,13 +304,13 @@ def getAverageSkipperImage(image_file):
     return skipper_avg0
     
 def reverseImage(image_data):
-    from functions import sigmaFinder
+    from m_functions import sigmaFinder
     offset = sigmaFinder(image_data,debug=False)[1]
     reversed_image_data = offset - image_data
     return reversed_image_data
     
 def subtractOvscPedestalRowByRow(image_data):
-    from functions import selectImageRegion
+    from m_functions import selectImageRegion
     image_overscan = selectImageRegion(image_data,'overscan') #if there is no overscan pedestal is computed on exposed pixels row
     nrows = np.size(image_overscan,0) #it is assumed that nrows always identical for image_data and its overscan
     row_pedestals = np.zeros(nrows,dtype=np.float64)
@@ -361,7 +361,7 @@ def findChargedPixelNoBorder(image,sigma):
     return coordinates
 
 def chargedCrown(pixelcoor, image, sigma):
-    from calibrationdc import crownFinder
+    from m_calibrationdc import crownFinder
     charged = True
     pathindex = 0
     while(charged and pathindex <= 7):
@@ -376,7 +376,7 @@ def chargedCrown(pixelcoor, image, sigma):
 # multiple img methods: array from same-size many, ADU stds and means #############
 ###################################################################################
 def getADUMeansStds(imagestack, lowerindex, upperindex):
-    from functions import sigmaFinder
+    from m_functions import sigmaFinder
     means,stddevs,meansunc,stddevsunc = [],[],[],[]
     for i in range(lowerindex,upperindex+1):
         tmpmu,tmpstd,tmpmunc,tmpstunc = sigmaFinder(imagestack[:,:,i-lowerindex],debug=False)[1:5]

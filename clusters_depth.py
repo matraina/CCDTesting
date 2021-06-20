@@ -90,10 +90,10 @@ from astropy.io import fits
 ##############################################################################
 # Get processing modules
 
-from functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss, round_sig_2, convolutionGaussianPoisson
-from reconstruction import *
-import calibrationdc
-from clusters import *
+from m_functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss, round_sig_2, convolutionGaussianPoisson
+from m_reconstruction import *
+import m_calibrationdc
+from m_clusters import *
 
 ##############################################################################
 # Specify path (can be out of the main tree)
@@ -169,7 +169,7 @@ if not multipleimages:
         #plt.show()
         mu_avg0, sigma_avg0 = sigmaFinder(skipper_avg0,debug=False)[1:3]
         if calibrate:
-            parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, sigma_avg0, reverse, debug=False)
+            parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(skipper_avg0, sigma_avg0, reverse, debug=False)
             calibrationconstant = parametersDCfit[0][5]; calibratedsigma = sigma_avg0/calibrationconstant
             skipper_avg = reversign*(skipper_avg0 - offset)
         else: skipper_avg = reversign*(skipper_avg0 - mu_avg0); calibrationconstant = calibrationguess; offset = mu_avg0
@@ -245,7 +245,7 @@ if multipleimages:
         skipper_avg0 = single_skip_image_stack[:,:,0]
         mu_avg0, sigma_avg0 = sigmaFinder(skipper_avg0,debug=False)[1:3]
         if calibrate:
-            parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(single_skip_image_stack[:,:,0], sigma_avg0, reverse, debug=False)
+            parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(single_skip_image_stack[:,:,0], sigma_avg0, reverse, debug=False)
             calibrationconstant = parametersDCfit[0][5]; calibratedsigma = sigma_avg0/calibrationconstant
         else: calibrationconstant = calibrationguess; offset = mu_avg0
         ncolumnsexp = min(ncolumns,registersize)

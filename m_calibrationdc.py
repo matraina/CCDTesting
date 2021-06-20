@@ -220,7 +220,7 @@ def emptyCrown(pixelrow, pixelcolumn, avgimginelectrons, imageregion, sigma, nro
     return empty
 
 def anticlusteringDarkCurrent(avgimginelectrons,std,debug):
-    import functions
+    import m_functions
     import numpy as np
     import matplotlib.pyplot as plt
     from scipy.optimize import curve_fit

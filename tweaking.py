@@ -82,11 +82,11 @@ from astropy.io import fits
 ##############################################################################
 # Get processing modules
 
-import functions
-from functions import make_colorbar_with_padding, gauss, factorial, convolutionGaussianPoisson, round_sig_2
-import reconstruction
-import chargeloss
-import calibrationdc
+import m_functions
+from m_functions import make_colorbar_with_padding, gauss, factorial, convolutionGaussianPoisson, round_sig_2
+import m_reconstruction
+import m_chargeloss
+import m_calibrationdc
 
 ##############################################################################
 # Specify path (can be out of the main tree)
@@ -122,13 +122,13 @@ print('N. rows columns skips ',nrows,ncolumns,nskips)
 # if leach: image is fixed in reconstruction module
 # image reconstruction
 
-image_data,skipper_image_start,skipper_image_end,skipper_averages,skipper_diff,skipper_diff_01,skipper_avg0,skipper_std = reconstruction.reconstructSkipperImage(image_file,arg2)
+image_data,skipper_image_start,skipper_image_end,skipper_averages,skipper_diff,skipper_diff_01,skipper_avg0,skipper_std = m_reconstruction.reconstructSkipperImage(image_file,arg2)
 
 ##############################################################################
 #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
 ##############################################################################
 
-startskipfitpar = functions.sigmaFinder(skipper_image_start, debug=False) #ampss, muss, stdss, stduncss
+startskipfitpar = m_functions.sigmaFinder(skipper_image_start, debug=False) #ampss, muss, stdss, stduncss
 if reportPCD or reportCalibrationDarkcurrent:
     if nskips < 10: naverages = 0
     elif nskips < 100: naverages = 1; numberskips=[10]
@@ -138,16 +138,16 @@ if reportPCD or reportCalibrationDarkcurrent:
             numberskips.append(index*100)
             naverages = index+1; index+=1
     ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
-    for k in range(naverages): amp, mu, std, munc, stdunc = functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp);mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
+    for k in range(naverages): amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp);mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 
 ##############################################################################
 #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
 ##############################################################################
     
 if reportChargeLoss and nskips!=1:
-    diff_image_core_01,diff_image_core = functions.selectImageRegion(skipper_diff_01,'no_borders'),functions.selectImageRegion(skipper_diff,'no_borders')
-    PCDDstudyparameters01 = chargeloss.firstLastSkipPCDDCheck(diff_image_core_01, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD,
-    PCDDstudyparameters = chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
+    diff_image_core_01,diff_image_core = m_functions.selectImageRegion(skipper_diff_01,'no_borders'),m_functions.selectImageRegion(skipper_diff,'no_borders')
+    PCDDstudyparameters01 = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD,
+    PCDDstudyparameters = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
     kclsignificance01,kclsignificance = PCDDstudyparameters01[2]/PCDDstudyparameters01[3],PCDDstudyparameters[2]/PCDDstudyparameters[3]
     if abs(kclsignificance01) or abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
 
@@ -156,10 +156,10 @@ if reportChargeLoss and nskips!=1:
 ##############################################################################
 
 if reportCalibrationDarkcurrent and nskips!=1:
-    parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse, debug=False)
+    parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse, debug=False)
     calibrationconstant = parametersDCfit[0][5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
     skipper_avg_cal = reversign*(skipper_avg0 - offset)/calibrationconstant
-    darkcurrentestimateAC = calibrationdc.anticlusteringDarkCurrent(functions.selectImageRegion(skipper_avg_cal,analysisregion), calibratedsigma, debug=False)
+    darkcurrentestimateAC = m_calibrationdc.anticlusteringDarkCurrent(m_functions.selectImageRegion(skipper_avg_cal,analysisregion), calibratedsigma, debug=False)
 
 ##############################################################################
 ##############################################################################
@@ -227,10 +227,10 @@ ampss, muss, stdss, muncss, stduncss = startskipfitpar #ss: start skip
 if reportImage:
 
     centeredsstoplot = reversign*(skipper_image_start - muss)
-    clustercandidates = reconstruction.findChargedPixelNoBorder(centeredsstoplot,stdss)
+    clustercandidates = m_reconstruction.findChargedPixelNoBorder(centeredsstoplot,stdss)
     isChargedCrown = True; coor = np.size(centeredsstoplot,0)//2, np.size(centeredsstoplot,1)//2
     for coor in clustercandidates:
-        isChargedCrown = reconstruction.chargedCrown(coor,centeredsstoplot,stdss)
+        isChargedCrown = m_reconstruction.chargedCrown(coor,centeredsstoplot,stdss)
         if (isChargedCrown):
             #print(str(coor)+' 3x3 or larger cluster center surrounded by > 10*sigma crown. Plotting image of its surroundings')
             break
@@ -325,11 +325,11 @@ if reportImage:
 #############################################
 if reportPCD:
     with doc.create(Section('Pixel Charge Distributions and Noise')):
-        import functions
+        import m_functions
         
         fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
         
-        skipper_image_start_region = functions.selectImageRegion(skipper_image_start,analysisregion)
+        skipper_image_start_region = m_functions.selectImageRegion(skipper_image_start,analysisregion)
         skipper_image_start_ravel = skipper_image_start_region.ravel()
         #instead of removing 0-entries from histogram use numpy mask to avoid discrepancies between gaussian and plotted PCD skipper_image0ravel
         #skipper_image = [s for s in skipper_image_start_ravel if s != 0]
@@ -351,8 +351,8 @@ if reportPCD:
         if nskips!=1:
             try: calibrationconstant; guessCC = False
             except: calibrationconstant = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
-            averageimageoffset = functions.sigmaFinder(skipper_avg0, debug=False)[1]
-            skipper_avg0_region = functions.selectImageRegion(skipper_avg0,analysisregion)
+            averageimageoffset = m_functions.sigmaFinder(skipper_avg0, debug=False)[1]
+            skipper_avg0_region = m_functions.selectImageRegion(skipper_avg0,analysisregion)
             avg_image_0ravel = skipper_avg0_region.ravel()
             avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
             if reverse:
@@ -547,7 +547,7 @@ if reportCalibrationDarkcurrent and nskips!=1:
 #######Fast Fourier Transform section #######
 #############################################
 if (reportFFTskips or reportFFTrow):
-    import functions
+    import m_functions
     nallcolumns = hdr['NAXIS1']
     nrows = hdr['NAXIS2']
     nskips = hdr['NDCMS']
@@ -556,7 +556,7 @@ if (reportFFTskips or reportFFTrow):
         if reportFFTskips and nskips!=1:
             samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
             ncolumns = int(nallcolumns/nskips) # n of columns in the image
-            functions.pixelFFT(image_data, nrows-1, ncolumns-1, nskips, samplet)
+            m_functions.pixelFFT(image_data, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Full image Fast Fourier Transform (first to last skip).')
@@ -564,8 +564,8 @@ if (reportFFTskips or reportFFTrow):
     
         if reportFFTrow:
             samplet = hdr['MREAD']*0.001/(nrows*ncolumns)
-            if nskips!=1: functions.rowFFT(skipper_avg0, nrows-1, ncolumns-1, samplet)
-            else: functions.rowFFT(image_data, nrows-1, ncolumns-1, samplet)
+            if nskips!=1: m_functions.rowFFT(skipper_avg0, nrows-1, ncolumns-1, samplet)
+            else: m_functions.rowFFT(image_data, nrows-1, ncolumns-1, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Average image Fast Fourier Transform (all row pixels).')
