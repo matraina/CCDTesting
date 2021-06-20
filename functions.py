@@ -3,7 +3,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina to study skipper CCD data
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Module with various functions used in the CCD testing package
 
 -------------------
@@ -46,7 +46,8 @@ def selectImageRegion(image,analysisregion):
         return image_overscan
     elif analysisregion == 'exposed_pixels':
         rowidx = np.arange(np.size(image,0))
-        colidx = np.arange(prescan,prescan+registersize)
+        lastexposedcolumn = min(np.size(image,1),prescan+registersize)
+        colidx = np.arange(prescan,lastexposedcolumn)
         image_exposed = image[np.ix_(rowidx, colidx)]
         return image_exposed
     elif analysisregion == 'no_borders':
@@ -135,9 +136,15 @@ def sigmaFinder(image, debug):
     except: pcdhistogram, binedges = np.histogram(pcd, 100, density=False)
     if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std(); fwhm,fwhmcounts = float('nan'),float('nan')
     else:
-        while (bins - np.argmax(pcdhistogram) < 30): #and reverse) or (np.argmax(pcdhistogram) < 30 and (not reverse)):
-            bins += 10
-            pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
+        if reverse: #works well
+            while (bins - np.argmax(pcdhistogram) < 30): #and reverse) or (np.argmax(pcdhistogram) < 30 and (not reverse)):
+                bins += 10
+                pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
+        #else: # did not understand wth is going on with four lines below
+        #    while (np.argmax(pcdhistogram) < 30):
+        #        bins += 10
+        #        print(np.argmax(pcdhistogram))
+        #        pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
         mostlikelyentry = 0.5*(binedges[np.argmax(pcdhistogram)]+binedges[np.argmax(pcdhistogram)+1]) #pedestal estimation
         #find sigma using FWHM
         mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
