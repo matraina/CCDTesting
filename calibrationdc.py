@@ -3,7 +3,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina to study skipper CCD data
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Module devoted to the ADU-electron image calibration and dark current estimation
 
 -------------------
@@ -17,7 +17,12 @@ import lmfit
 
 #functions performing gaussPoisson convolution fit. Using lmfit library. Adapted from A. Piers https://github.com/alexanderpiers/damicm-image-preproc/
 
-def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess=10, darkcurrent=-1, npoisson=6):
+import json
+with open('config.json') as config_file:
+    config = json.load(config_file)
+    calibrationguess = config['calibration_constant_guess']
+    
+def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess=calibrationguess, darkcurrent=-1, npoisson=6):
 
     avgimghist, binedges = np.histogram(avgimgravel, bins = int(0.5*(max(avgimgravel)-min(avgimgravel))), density=False)
     binwidth = np.diff(binedges)[0]
@@ -98,7 +103,7 @@ def calibrationDC(avgimg,std,reverse,debug):
 
     avgimgravel=avgimg.ravel()
     nbins=int(0.5*(max(avgimgravel)-min(avgimgravel)))
-    avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
+    avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
     mu = bincenters[np.argmax(avgimghist)]
     if reverse: avgimg = mu - avgimg
