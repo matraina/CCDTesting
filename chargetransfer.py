@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to assessing the charge transfer efficiency of the CCD.
 It uses a single image: single- or multiple-skip to assess parallel/serial or skip charge transfer efficiency (CTE), respectively. For simplicity EPER is not carried out on multiskip images
 
@@ -35,6 +35,7 @@ reverse = config['reverse']
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
+kclthreshold = config['kcl_threshold']
 calibrationguess = config['calibration_constant_guess']
 printheader = False
 clocksCTE = config['transfer_analysis'][-1]['clocks_CTE_EPER']
@@ -56,7 +57,7 @@ if clocksCTE and skipsCTE:
 if test != 'chargetransfer':
     proceed = ''
     while proceed != 'yes' and proceed !='no':
-        proceed = input("You are running the code for charge transfer analysis. Test selected in configuration file is different from 'transfer': do you want to perform charge transfer analysis?\nPlease answer 'yes' or 'no': ")
+        proceed = input("You are running the code for charge transfer analysis. Test selected in configuration file is different from 'chargetransfer': do you want to perform charge transfer analysis?\nPlease answer 'yes' or 'no': ")
         if proceed == 'no': sys.exit()
         elif proceed == 'yes': print('Proceeding with charge transfer analysis')
 
@@ -86,7 +87,7 @@ from astropy.io import fits
 ##############################################################################
 # Get processing modules
 
-from functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss
+from functions import sigmaFinder,selectImageRegion, make_colorbar_with_padding, gauss, round_sig_2
 from reconstruction import getSingleSkipImage,findChargedPixelNoBorder,chargedCrown,reconstructSkipperImage
 import chargeloss
 import calibrationdc
@@ -226,6 +227,7 @@ doc.append(NewPage())
 #############################################
 ###############Image section#################
 #############################################
+if nskips!=1: reportImage=False
 if reportImage:
     stddev = sigmaFinder(image_data,False)[2]
     clustercandidates = findChargedPixelNoBorder(image_data,stddev)
@@ -425,6 +427,9 @@ if reportCTE:
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom).')
+                from scipy.stats import norm
+                doc.append('First-second skip lower tail entries: '+str(len([s for s in centeredskipperdiffexposed01 if s < -kclthreshold*stdPCDD01]))+'. First-second skip upper tail entries: '+str(len([s for s in centeredskipperdiffexposed01 if s > kclthreshold*stdPCDD01]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffexposed01)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.\n Second-last skip lower tail entries: '+str(len([s for s in centeredskipperdiffexposed if s < -kclthreshold*stdPCDD]))+'. Second-last skip upper tail entries: '+str(len([s for s in centeredskipperdiffexposed if s > kclthreshold*stdPCDD]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffexposed)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.')
+                
             plt.clf()
             doc.append(NewPage())
         

@@ -3,11 +3,16 @@
 '''
 -------------------
 
-*By: Michelangelo Traina to study skipper CCD data
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Charge loss check module. Will output kcl, skewness and respective uncertainties. Will also output plot for latek summary
 
 -------------------
 '''
+
+import json
+with open('config.json') as config_file:
+    config = json.load(config_file)
+kclthreshold = config['kcl_threshold']
 
 from reconstruction import reverse
 
@@ -90,10 +95,10 @@ def firstLastSkipPCDDCheck(firstlastskipdifferenceimage, debug):
     #count entries below and above symmetry threshold
     countsbelowsymmetrythreshold = countsabovesymmetrythreshold = 0
     component = 0
-    while centeredsortedravelleddifference[component] < -3.2*stdPCDD:
+    while centeredsortedravelleddifference[component] < -kclthreshold*stdPCDD:
         countsbelowsymmetrythreshold += 1; component += 1
     component = len(centeredsortedravelleddifference) - 1
-    while centeredsortedravelleddifference[component] > 3.2*stdPCDD:
+    while centeredsortedravelleddifference[component] > kclthreshold*stdPCDD:
         countsabovesymmetrythreshold += 1; component -= 1
     #compute charge loss coefficient
     if countsbelowsymmetrythreshold + countsabovesymmetrythreshold != 0:
