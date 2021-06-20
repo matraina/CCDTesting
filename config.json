@@ -14,7 +14,8 @@
     "overscan" : 60,
     
     "analysis_region" : "full",
-    "calibration_constant_guess" : 10,
+    "kcl_threshold" : 3.2,
+    "calibration_constant_guess" : 5.2,
     
     "print_header" : false,
     
@@ -25,9 +26,9 @@
         "report" :
         [{
             "header" : false,
-            "image" : false,
+            "image" : true,
             "pcds" : true,
-            "chargeloss" : false,
+            "chargeloss" : true,
             "calibration_darkcurrent" : false,
             "fft_skips" : false,
             "fft_row" : false
@@ -40,8 +41,10 @@
     [{
         "multiple_images" :
         [{
-            "use_multiple_images" : true,
+            "use_multiple_images" : false,
             "produce_mask" : false,
+            "image_fraction_hot_pixel":0.5,
+            "pixel_fraction_hot_column":0.3,
             "lower_index" : 74,
             "upper_index" : 75
         }],
@@ -62,7 +65,7 @@
         "max_electrons" : 2,
         "multiple_images" :
         [{
-            "use_multiple_images" : true,
+            "use_multiple_images" : false,
             "measured_vs_expected_e_with_multiple_images" : true,
             "stddevs_vs_means_0_e_peaks" : true,
             "lower_index" : 22,
@@ -71,8 +74,8 @@
         "report" :
         [{
             "header" : false,
-            "image" : false,
-            "calibration" : false,
+            "image" : true,
+            "calibration" : true,
             "linearity_curves" : true
         }]
     }],
@@ -86,8 +89,8 @@
         "report" :
         [{
             "header" : false,
-            "image" : false,
-            "CTE_plots": false
+            "image" : true,
+            "CTE_plots": true
         }]
     }],
 
@@ -95,11 +98,12 @@
     
     "clusters_depth_analysis" :
     [{
-        "calibrate" : true,
-        "global_threshold_in_sigma": 10,
-        "maximum_pixel_value_threshold_in_sigma": 20,
+        "calibrate" : false,
+        "global_threshold_in_sigma": 3,
+        "maximum_pixel_value_threshold_in_sigma": 6,
         "use_mask" : false,
         "mask_path" : "/Users/mtraina/repositories/CCDTesting/processed/MASK_74_75.fits",
+        "cluster_fit_std_threshold" : 0.01,
         "multiple_images" :
         [{
             "use_multiple_images" : false,
@@ -107,6 +111,11 @@
             "b" : true,
             "lower_index" : 8,
             "upper_index" : 9
+        }],
+        "subdivide_image_for_diffusion_analysis" :
+        [{
+            "rows" : 30,
+            "columns" : 140
         }],
         "report" :
         [{
@@ -116,10 +125,9 @@
             "clusters" :
             [{
                 "clusters_plots" : true,
-                "lower_energy_bound_keV" : 10,
-                "upper_energy_bound_keV" : 100
-            }],
-            "depth_calibration_plots": false
+                "lower_energy_bound_keV" : 0,
+                "upper_energy_bound_keV" : -1
+            }]
         }]
     }]
     

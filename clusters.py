@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Module devoted to image cluster search and analysis for physics study and depth calibration.
 
 -------------------
@@ -17,7 +17,18 @@ from scipy.ndimage import find_objects
 from scipy.ndimage import sum as ndi_sum
 from scipy.ndimage import maximum as ndi_max
 from scipy.ndimage import center_of_mass as ndi_cms
+import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from mpl_toolkits.mplot3d import Axes3D
 
+def gaussian2d(coor,offset,A,mur,sigmar,muc,sigmac):
+    import numpy as np
+    #print(p)
+    #print(*p)
+    (r,c) = coor
+    twodgauss = offset + A*(  np.exp(-(r-mur)**2/(2*sigmar**2))  +  np.exp(-(c-muc)**2/(2*sigmac**2))  )
+    return twodgauss.ravel()
 
 class Cluster:
     
@@ -42,12 +53,50 @@ class Cluster:
         stdx = np.sqrt(stdx)
         stdy = avgy2 - avgy**2
         stdy = np.sqrt(stdy)
-        return avgy, avgx, avgy2, avgx2, stdx, stdy
-    
+        return avgy, avgx, avgy2, avgx2, stdy, stdx
+        
     def totalElectrons(self):
         return sum(self.pixel_electrons)
 
-
+    def gaussianFit2D(self,offset,A,mur,sigmar,muc,sigmac):
+        from scipy.optimize import curve_fit
+        #print(p)
+        #print(*p)
+        #print(pguess)
+        r,c=[],[]
+        for coor in self.coordinates: r.append(coor[0]); c.append(coor[1]) #coords = coor[0],coor[1]
+        #print(gaussian2d(coords, *pguess))
+        #model = gaussian2d(*pguess)
+        #pguess = (offset,A,mur,sigmar,muc,sigmac)
+        p0=offset,A,mur,sigmar,muc,sigmac
+        pfit, varmatrix = curve_fit(gaussian2d, (r,c), self.pixel_electrons.ravel(), p0)
+        coords=r,c
+        histfit = gaussian2d(coords,*pfit)
+        
+        #fit = plt.figure()
+        #ax = fit.gca(projection='3d')
+        #surf = ax.plot_trisurf(r,c, histfit, cmap=cm.coolwarm,linewidth=0, antialiased=False)
+        #surfdata = ax.plot_trisurf(r,c, self.pixel_electrons.ravel(), cmap=cm.inferno,linewidth=0, antialiased=False)
+        
+        #Customize the axes.
+        #plt.xlabel('column')
+        #ax.xaxis.set_major_locator(LinearLocator(4))
+        #plt.ylabel('row')
+        #ax.yaxis.set_major_locator(LinearLocator(4))
+        #ax.set_zlim(0, 1900)
+        #ax.set_zticks(np.arange(0,2375,475,dtype=int))
+        #ax.set_title("Multivariate gaussian cluster fit", pad=20)
+        #ax.pbaspect = [1., .33, 0.5]
+        #ax.view_init(elev=35., azim=-70)
+        #ax.yaxis.set_rotate_label(False)
+        #ax.yaxis.label.set_rotation(0)
+        #ax.zaxis.set_rotate_label(False)
+        #ax.zaxis.label.set_rotation(0)
+        #ax.dist = 10.5
+        #fit.colorbar(surf, shrink=0.6, aspect=10)
+        #plt.show()
+        return pfit, varmatrix
+        
 
 def clusterImage(image,cut,**kwargs):
     #cut = global_threshold,maximum_threshold
@@ -59,8 +108,8 @@ def clusterImage(image,cut,**kwargs):
     import json
     with open('config.json') as config_file:
         config = json.load(config_file)
-    usemask = config['depth_calibration_analysis'][-1]['use_mask']
-    if usemask: maskpath = config['depth_calibration_analysis'][-1]['mask_path']
+    usemask = config['clusters_depth_analysis'][-1]['use_mask']
+    if usemask: maskpath = config['clusters_depth_analysis'][-1]['mask_path']
     else: maskpath = None
 
     s = generate_binary_structure(2,2)
@@ -83,7 +132,8 @@ def clusterImage(image,cut,**kwargs):
     
     cluster = find_objects(image_features)
     if mask is not None: mask = getSingleSkipImage(get_pkg_data_filename(maskpath))
-    clusternpixels,clustertouchmask,clusterspatialmetrics,clusterenergy = [],[],[],[]
+    clusternpixels,clustertouchmask,clusterspatialmetrics,passcut,clusterenergy = [],[],[],[],[]
+    sigmarfit,sigmacfit=[],[]
     for icluster in range(nclusters):
         clusterpixels = np.argwhere(image_features==icluster+1)
         npixels = len(clusterpixels)
@@ -115,25 +165,68 @@ def clusterImage(image,cut,**kwargs):
         clusterspatialmetrics.append(cluster_i.spatialMetrics())
         clusterenergy.append(cluster_i.totalElectrons())
         
+        avgy=clusterspatialmetrics[-1][0]
+        stdy=clusterspatialmetrics[-1][5]
+        avgx=clusterspatialmetrics[-1][1]
+        stdx=clusterspatialmetrics[-1][4]
+        amp=max(electronsinclusterpixels)
+        offset=cut[0]
+        #print(*p)
+        
+        parafittmp=[0,0,0,0,0,0]
+        if sum(sum(image_features[cluster[icluster]]/(icluster+1)))/np.size(image_features[cluster[icluster]]) > 0.75:
+            passcut.append(True)
+        #    #print( sum(sum( image_features[cluster[icluster]]/(icluster+1))) )
+        #    #print(image_features[cluster[icluster]])
+        #    #print(np.size(image_features[cluster[icluster]]))
+            if stdx > cut[2] and stdy > cut[2]:
+                try:
+                    parafittmp, covarmatrixtmp = cluster_i.gaussianFit2D(offset,amp,avgy,stdy,avgx,stdx)
+                    sigmarfit.append(parafittmp[3]); sigmacfit.append(parafittmp[5])
+                except: pass
+        else: passcut.append(False)
+            
+        
     if maskpath is not None: print('I have found '+str(sum(clustertouchmask))+ ' clusters touching the masked pixels and columns')
         
-    return clusternpixels, clustertouchmask, clusterspatialmetrics, clusterenergy
-        
+    return clusternpixels, clustertouchmask, clusterspatialmetrics, passcut, sigmarfit, sigmacfit, clusterenergy, parafittmp
 
 
 
-
-'''
-from astropy.utils.data import get_pkg_data_filename
-from astropy.io import fits
-
-image_file = get_pkg_data_filename('./raw/Image_Am241.fits')
-from reconstruction import getSingleSkipImage
-
-a = getSingleSkipImage(image_file)
-cuts=[700,10000]
-clusterenergies = clusterImage(a,cuts,mask=None)[2]
-#import matplotlib.pyplot as plt
-#plt.hist(clusterenergies,200,alpha=0.5)
-#plt.show()
-'''
+def sigmaMaxInRegions(clusterspatialmetrics,passcut,rows,columns,rows_subdivide,columns_subdivide):
+    #define number of subdivision row and colwise as nearest larger integer to rc_subdivide/rc to accomodate all subimages
+    addrs,addcs=0,0
+    if rows%rows_subdivide != 0: addrs = 1
+    if columns%columns_subdivide != 0: addcs = 1
+    rowwisesubdivisions = int(rows/rows_subdivide+addrs)
+    columnwisesubdivisions = int(columns/columns_subdivide+addcs)
+    #consider only clusters that passed shape cut
+    for k in range(len(passcut)):
+        if not passcut[k]:
+            clusterspatialmetrics[:].pop(k)
+    #list of list to np array for easier manageability
+    clusterspatialmetrics = np.array(clusterspatialmetrics)
+    #loop across subimages and find parallel and serial sigmamaxs
+    #s = [0,0]
+    sigmamaxsparallel,sigmamaxsserial = [],[]
+    for i in range(rowwisesubdivisions):
+        lowerrow = i*rows_subdivide
+        upperrow = lowerrow + rows_subdivide
+        for j in range(columnwisesubdivisions):
+            lowercol = j*columns_subdivide
+            uppercol = lowercol + columns_subdivide
+            tmpsigmamaxparallel = 0
+            tmpsigmamaxserial = 0
+            for icluster in range(len(clusterspatialmetrics[:])):
+                if (lowerrow < clusterspatialmetrics[icluster][0] < upperrow) and (lowercol < clusterspatialmetrics[icluster][1] < uppercol):
+                    tmpsigmamaxparallel = max(tmpsigmamaxparallel,clusterspatialmetrics[icluster][4])
+                    tmpsigmamaxserial = max(tmpsigmamaxparallel,clusterspatialmetrics[icluster][5])
+            sigmamaxsparallel.append(tmpsigmamaxparallel)
+            sigmamaxsserial.append(tmpsigmamaxserial)
+        #    s = [s[0],s[1]+1]
+        #s = [s[0]+1,0]
+    
+    
+    return sigmamaxsparallel,sigmamaxsserial
+            
+    

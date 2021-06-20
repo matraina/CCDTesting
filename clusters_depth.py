@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to image cluster search and analysis for physics study and depth calibration.
 
 -------------------
@@ -31,6 +31,8 @@ iskipstart = config['skip_start']
 iskipend = config['skip_end']
 fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
+reversign = 1
+if reverse: reversign = -1
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
@@ -42,12 +44,14 @@ maximumthreshold = config['clusters_depth_analysis'][-1]['maximum_pixel_value_th
 usemask = config['clusters_depth_analysis'][-1]['use_mask']
 if usemask: maskpath = config['clusters_depth_analysis'][-1]['mask_path']
 else: maskpath = None
+clustdthre = config['clusters_depth_analysis'][-1]['cluster_fit_std_threshold']
 multipleimages = config['clusters_depth_analysis'][-1]['multiple_images'][-1]['use_multiple_images']
+subdivide_image_rows = config['clusters_depth_analysis'][-1]['subdivide_image_for_diffusion_analysis'][-1]['rows']
+subdivide_image_columns = config['clusters_depth_analysis'][-1]['subdivide_image_for_diffusion_analysis'][-1]['columns']
 reportHeader = config['clusters_depth_analysis'][-1]['report'][-1]['header']
 reportImage = config['clusters_depth_analysis'][-1]['report'][-1]['image']
 reportCalibration = config['clusters_depth_analysis'][-1]['report'][-1]['calibration']
 reportCluster = config['clusters_depth_analysis'][-1]['report'][-1]['clusters'][-1]['clusters_plots']
-reportDepth = config['clusters_depth_analysis'][-1]['report'][-1]['depth_calibration_plots']
 
 if test != 'clusters_depth_calibration':
     proceed = ''
@@ -137,17 +141,22 @@ if not multipleimages:
         if reverse: image_data = reverseImage(image_data)
         ped_subtracted_image_data, row_pedestals, row_mads = subtractOvscPedestalRowByRow(image_data)
         ped_subtracted_image_data_exposed = selectImageRegion(ped_subtracted_image_data,'exposed_pixels')
+        image_data_exposed = ped_subtracted_image_data_exposed
         pedestal = np.mean(row_pedestals)
         mad = np.mean(row_mads)
         #cut = [200,500] #cut on value
-        cut = [globalthreshold*mad,maximumthreshold*mad] #cut on value
+        cut = [globalthreshold*mad,maximumthreshold*mad,clustdthre] #minimum pixel value, maximum pixel value, cluster sigma (for code eff. optimization)
         clusters = clusterImage(ped_subtracted_image_data_exposed,cut,mask=maskpath) #fix
-        clusterssigmax,clusterssigmay = [],[]
+        clusterssigmax,clusterssigmay,postcutclusterssigmax,postcutclusterssigmay = [],[],[],[]
+        passcut = [x for x in clusters[3]]
         for i in range(len(clusters[0])):
-            clusterssigmax.append(clusters[2][i][4])
-            clusterssigmay.append(clusters[2][i][5])
+            clusterssigmay.append(clusters[2][i][4])
+            clusterssigmax.append(clusters[2][i][5])
+            if passcut[i]:
+                postcutclusterssigmay.append(clusters[2][i][4])
+                postcutclusterssigmax.append(clusters[2][i][5])
         calibrationconstant = calibrationguess
-        clustersenergy = [x * 0.00377/calibrationconstant for x in clusters[3]]
+        clustersenergy = [x * 0.00377/calibrationconstant for x in clusters[6]]
         #plt.hist(clusterssigmax,500,log=True)
         #plt.hist(clusterssigmay,500,log=False)
         ##plt.xlabel('energy (keV)')
@@ -162,12 +171,21 @@ if not multipleimages:
         if calibrate:
             parametersDCfit, reducedchisquared, offset = calibrationdc.calibrationDC(skipper_avg0, sigma_avg0, reverse, debug=False)
             calibrationconstant = parametersDCfit[0][5]; calibratedsigma = sigma_avg0/calibrationconstant
-            skipper_avg = -int(reverse)*(skipper_avg0 - offset)
-        else: skipper_avg = -int(reverse)*(skipper_avg0 - mu_avg0); calibrationconstant = calibrationguess
+            skipper_avg = reversign*(skipper_avg0 - offset)
+        else: skipper_avg = reversign*(skipper_avg0 - mu_avg0); calibrationconstant = calibrationguess; offset = mu_avg0
         skipper_avg_exposed = selectImageRegion(skipper_avg,'exposed_pixels')
-        cut = [globalthreshold*sigma_avg0,maximumthreshold*sigma_avg0]
+        image_data_exposed = skipper_avg_exposed
+        cut = [globalthreshold*sigma_avg0,maximumthreshold*sigma_avg0,clustdthre]
         clusters = clusterImage(skipper_avg_exposed,cut,mask=maskpath)
-        clustersenergy = [x * 0.00377/calibrationconstant for x in clusters[3]]
+        clusterssigmax,clusterssigmay,postcutclusterssigmax,postcutclusterssigmay = [],[],[],[]
+        passcut = [x for x in clusters[3]]
+        for i in range(len(clusters[0])):
+            clusterssigmay.append(clusters[2][i][4])
+            clusterssigmax.append(clusters[2][i][5])
+            if passcut[i]:
+                postcutclusterssigmay.append(clusters[2][i][4])
+                postcutclusterssigmax.append(clusters[2][i][5])
+        clustersenergy = [x * 0.00377/calibrationconstant for x in clusters[6]]
         
 ##############################################################################
 #MULTIPLE IMAGES ANALYSIS: CLUSTERING FOR MULTIPLE IMGS#######################
@@ -217,7 +235,7 @@ if multipleimages:
             ped_subtracted_image_data_stack[:,:,i],tmppedestals,tmpmads = subtractOvscPedestalRowByRow(single_skip_image_stack[:,:,i])
             ped_subtracted_image_data_exposed_stack[:,:,i] = selectImageRegion(ped_subtracted_image_data_stack[:,:,i],'exposed_pixels')
             pedestals.append(np.mean(tmppedestals)); mads.append(np.mean(tmpmads))
-            cut = [globalthreshold*mads[-1],maximumthreshold*mads[-1]] #cut on value
+            cut = [globalthreshold*mads[-1],maximumthreshold*mads[-1],clustdthre] #cut on value
             clusters.append(clusterImage(ped_subtracted_image_data_exposed_stack[:,:,i],cut,mask=maskpath))
         #print(clusters)
     else:
@@ -235,12 +253,12 @@ if multipleimages:
         pedestals,sigmas,clusters,clustersenergy = [],[],[],[]
         for i in range(nimages): #clustering performed in ADU regardless of calibration
             mutmp, sigmatmp = sigmaFinder(single_skip_image_stack[:,:,i],debug=False)[1:3]
-            single_skip_image_stack[:,:,i] = -int(reverse)*(single_skip_image_stack[:,:,i] - mutmp) #reverse+img_ped_sub
+            single_skip_image_stack[:,:,i] = reversign*(single_skip_image_stack[:,:,i] - mutmp) #reverse+img_ped_sub
             skipper_avg_exposed_stack[:,:,i] = selectImageRegion(single_skip_image_stack[:,:,i],'exposed_pixels')
             pedestals.append(mutmp); sigmas.append(sigmatmp)
-            cut = [globalthreshold*sigmas[-1],maximumthreshold*sigmas[-1]] #cut on value
+            cut = [globalthreshold*sigmas[-1],maximumthreshold*sigmas[-1],clustdthre]
             clusters.append(clusterImage(skipper_avg_exposed_stack[:,:,i],cut,mask=maskpath))
-        for i in range(nimages): clustersenergy.extend([x * 0.00377/calibrationconstant for x in clusters[i][3]])
+        for i in range(nimages): clustersenergy.extend([x * 0.00377/calibrationconstant for x in clusters[i][6]])
         #plt.hist(clustersenergy,10000,log=True)
         #plt.xlabel('energy (keV)')
         #plt.ylabel('entries')
@@ -284,7 +302,7 @@ if multipleimages:
 ##############################################################################
 ##############################################################################
 
-if not (reportHeader or reportImage or reportCalibration or reportCluster or reportDepth): print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
+if not (reportHeader or reportImage or reportCalibration or reportCluster): print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
 
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
 import matplotlib
@@ -318,7 +336,7 @@ if reportHeader:
 #############################################
 #imagetoprint for image and calib reports#
 if nskips == 1: imagetoprint = image_data; sigmatoprint = sigmaFinder(selectImageRegion(image_data,'overscan'),debug=False)[2]
-else: imagetoprint = -int(reverse)*(skipper_avg0 - offset)/calibrationconstant; sigmatoprint = sigma_avg0/calibrationconstant
+else: imagetoprint = reversign*(skipper_avg0 - offset)/calibrationconstant; sigmatoprint = sigma_avg0/calibrationconstant
 #############################################
 ###############Image section#################
 #############################################
@@ -403,29 +421,217 @@ if reportCalibration:
 #########Clustering plots section#####
 #############################################
 if reportCluster:
-    lowerEbound = config['depth_calibration_analysis'][-1]['report'][-1]['clusters'][-1]['lower_energy_bound_keV']
-    upperEbound = config['depth_calibration_analysis'][-1]['report'][-1]['clusters'][-1]['upper_energy_bound_keV']
-    fig,axs = plt.subplots(1,1)
-    axs.hist(clustersenergy, 500, color='teal')#, label='Image cluster energy distribution')
-    axs.set_yscale('log')
-    #axs.yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))
-    axs.tick_params(axis='both', which='both', length=10, direction='in')
-    axs.grid(color='grey', linestyle=':', linewidth=1, which='both')
-    plt.setp(axs.get_yticklabels(), visible=True)
-    axs.set_xlim([lowerEbound,upperEbound])
-    axs.set_xlabel('energy (keV)')
-    axs.set_ylabel('entries per ' +str(round((max(clustersenergy)-min(clustersenergy))/500,4))+' keV')
-    axs.set_title('Image cluster energy distribution')
-    
-    #plt.xlabel('$\sigma$ (pixels)')
     with doc.create(Section('Clusters')):
-            fig.tight_layout(pad=.001)
+        lowerEbound = config['clusters_depth_analysis'][-1]['report'][-1]['clusters'][-1]['lower_energy_bound_keV']
+        upperEbound = config['clusters_depth_analysis'][-1]['report'][-1]['clusters'][-1]['upper_energy_bound_keV']
+        fig,axs = plt.subplots(1,1)
+        axs.hist(clustersenergy, 500, color='teal')#, label='Image cluster energy distribution')
+        axs.set_yscale('log')
+        #axs.yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))
+        axs.tick_params(axis='both', which='both', length=10, direction='in')
+        axs.grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.setp(axs.get_yticklabels(), visible=True)
+        if upperEbound != -1: axs.set_xlim([lowerEbound,upperEbound])
+        axs.set_xlabel('energy (keV)')
+        axs.set_ylabel('entries per ' +str(round((max(clustersenergy)-min(clustersenergy))/500,4))+' keV')
+        axs.set_title('Image cluster energy distribution')
+        
+        #plt.xlabel('$\sigma$ (pixels)')
+    
+        fig.tight_layout(pad=.001)
+        with doc.create(Figure(position='htb!')) as plot:
+            plot.add_plot(width=NoEscape(r'0.90\linewidth'))
+            plot.add_caption('Cluster energy distribution.')
+        plt.clf()
+        doc.append(NewPage())
+                
+        fig,axs = plt.subplots(2,1)
+        axs[0].hist(clusterssigmax, 500, color='teal', label = 'full cluster statistics')
+        axs[0].hist(postcutclusterssigmax, int(500*max(postcutclusterssigmax)/max(clusterssigmax)), color='red', label = '$f_{pix}>0.75$ cluster statistics')
+        axs[0].legend(loc='upper right',prop={'size': 14})
+        axs[0].set_yscale('log')
+        #axs[0].yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))
+        axs[0].tick_params(axis='both', which='both', length=10, direction='in')
+        axs[0].set_xticks(np.arange(min(clusterssigmax), max(clusterssigmax)+1, 2.0))
+        axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.setp(axs[0].get_yticklabels(), visible=True)
+        #axs[0].set_xlim([lowerEbound,upperEbound])
+        axs[0].set_xlabel('$\sigma_x$ (pixels)')
+        axs[0].set_ylabel('entries per ' +str(round((max(clusterssigmax)-min(clusterssigmax))/500,4))+' pixels')
+        axs[0].set_title('Image cluster serial-sigma distribution')
+        
+        axs[1].hist(clusterssigmay, 500, color='teal', label = 'full cluster statistics')
+        axs[1].hist(postcutclusterssigmay, int(500*max(postcutclusterssigmay)/max(clusterssigmay)), color='red', label = '$f_{pix}>0.75$ cluster statistics')
+        axs[1].legend(loc='upper right',prop={'size': 14})
+        axs[1].set_yscale('log')
+        #axs[1].yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))
+        axs[1].tick_params(axis='both', which='both', length=10, direction='in')
+        axs[1].set_xticks(np.arange(min(clusterssigmay), max(clusterssigmay)+1, 2.0))
+        axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.setp(axs[1].get_yticklabels(), visible=True)
+        #axs[1].set_xlim([lowerEbound,upperEbound])
+        axs[1].set_xlabel('$\sigma_y$ (pixels)')
+        axs[1].set_ylabel('entries per ' +str(round((max(clusterssigmay)-min(clusterssigmay))/500,4))+' pixels')
+        axs[1].set_title('Image cluster parallel-sigma distribution')
+        
+        fig.tight_layout(pad=.001)
+        plt.subplots_adjust(hspace=0.5)
+        with doc.create(Figure(position='htb!')) as plot:
+            plot.add_plot(width=NoEscape(r'0.90\linewidth'))
+            plot.add_caption('Cluster sigma distributions. Clusters with non-empty pixel fraction larger than 0.75 have maximum sigma values of '+str(round_sig_2(max(postcutclusterssigmax)))+ ' pixels and '+str(round_sig_2(max(postcutclusterssigmay)))+' pixels, for serial and parallel directions, respectively.')
+        plt.clf()
+        doc.append(NewPage())
+
+        
+        
+        
+        
+        
+        sigmamaxsparallel,sigmamaxsserial = sigmaMaxInRegions(clusters[2],clusters[3],np.size(image_data_exposed,0),np.size(image_data_exposed,1),subdivide_image_rows,subdivide_image_columns)
+        
+        import matplotlib.cbook as cbook
+        
+        # unit area ellipse
+        ry, rx = sigmamaxsparallel, sigmamaxsserial
+        theta = np.arange(0, 2 * np.pi + 0.01, 0.1)
+        areas,verts = [],[]
+        for i in range(len(sigmamaxsserial)):
+            areas.append(rx[i] * ry[i] * np.pi)
+            if areas[i] != 0: verts.append(np.column_stack([rx[i] / areas[i] * np.cos(theta), ry[i] / areas[i] * np.sin(theta)]))
+            else: zeros=1,1;verts.append(zeros)
+            
+        y = np.arange(0,np.size(image_data_exposed,0),subdivide_image_rows)
+        x = np.arange(0,np.size(image_data_exposed,1),subdivide_image_columns)
+        s = np.random.rand(len(sigmamaxsserial))
+        #c = np.random.rand(1, len(sigmamaxsserial))
+        s *= 5*(10**2.)
+        
+        subimagecoorx,subimagecoory=[],[]
+        for coory in range(len(y)):
+            for coorx in range(len(x)):
+                subimagecoory.append(y[coory]+subdivide_image_rows/2)
+                subimagecoorx.append(x[coorx]+subdivide_image_columns/2)
+        
+        if np.size(image_data_exposed,0)%subdivide_image_rows!=0:
+            for subdiv in range(-1,-(np.size(image_data_exposed,1)//subdivide_image_columns)-2,-1):
+                subimagecoory[subdiv] -= subdivide_image_rows/2 - (np.size(image_data_exposed,0)%subdivide_image_rows)/2
+        
+        if np.size(image_data_exposed,1)%subdivide_image_columns!=0:
+            for subdiv in range( (np.size(image_data_exposed,1)//subdivide_image_columns) , len(subimagecoorx)+1, (np.size(image_data_exposed,1)//subdivide_image_columns)+1 ):
+                subimagecoorx[subdiv] -= subdivide_image_columns/2 - (np.size(image_data_exposed,1)%subdivide_image_columns)/2
+                
+        #print(len(subimagecoory),len(subimagecoorx))
+        
+        for i in range(len(sigmamaxsserial)):
+            plt.scatter(subimagecoorx[i], subimagecoory[i], s[i], marker=verts[i],alpha=0.9)
+        
+        for subindexrow in range((np.size(image_data_exposed,0)//subdivide_image_rows)+1): plt.axhline(y=(subindexrow+1)*subdivide_image_rows,linestyle=':',color='red',alpha=0.5)
+        
+        for subindexcol in range((np.size(image_data_exposed,1)//subdivide_image_columns)+1): plt.axvline(x=(subindexcol+1)*subdivide_image_columns,linestyle=':',color='red',alpha=0.5)
+        
+        #
+        plt.xlabel(r'column', fontsize=15)
+        plt.ylabel(r'row', fontsize=15)
+        plt.xlim([0,np.size(image_data_exposed,1)])
+        plt.ylim([0,np.size(image_data_exposed,0)])
+        plt.title('Sigma max in image regions')
+        #
+        plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.tight_layout()
+        
+        with doc.create(Figure(position='htb!')) as plot:
+            plot.add_plot(width=NoEscape(r'0.7\linewidth'))
+            plot.add_caption('.')
+        plt.clf()
+        doc.append(NewPage())
+    
+        
+        
+        sigmaparallelfit = [x for x in clusters[4]]
+        sigmaserialfit = [x for x in clusters[5]]
+
+        fig = plt.figure(figsize=plt.figaspect(2.))
+        
+        # First subplot
+        
+        ax = fig.add_subplot(2, 1, 1, projection='3d')
+        r = np.linspace(clusters[-1][2] - 5*clusters[-1][3],clusters[-1][2] + 5*clusters[-1][3])
+        c = np.linspace(clusters[-1][4] - 5*clusters[-1][5],clusters[-1][4] + 5*clusters[-1][5])
+        r = np.append(clusters[-1][2] - 5*clusters[-1][3],r.flatten())
+        c = np.append(clusters[-1][4] - 5*clusters[-1][5],c.flatten())
+        r,c=np.meshgrid(r,c)
+        #print(r)
+        #print(c)
+        coor = r,c
+        histfit = gaussian2d(coor,clusters[-1][0],clusters[-1][1],clusters[-1][2],clusters[-1][3],clusters[-1][4],clusters[-1][5])
+        #print(histfit)
+        try:
+            surf = ax.plot_trisurf(r.flatten(),c.flatten(), histfit.flatten(), cmap=cm.coolwarm,linewidth=0, antialiased=False)
+            #surfdata = ax.plot_trisurf(r,c, self.pixel_electrons.ravel(), cmap=cm.inferno,linewidth=0, antialiased=False)
+            #Customize the axes.
+            plt.xlabel('column')
+            ax.xaxis.set_major_locator(LinearLocator(4))
+            plt.ylabel('row')
+            ax.yaxis.set_major_locator(LinearLocator(4))
+            #ax.set_zlim(0, 1900)
+            #ax.set_zticks(np.arange(0,2375,475,dtype=int))
+            #ax.set_title("Multivariate gaussian cluster fit", pad=20)
+            #ax.pbaspect = [1., .33, 0.5]
+            #ax.view_init(elev=35., azim=-70)
+            #ax.yaxis.set_rotate_label(False)
+            #ax.yaxis.label.set_rotation(0)
+            #ax.zaxis.set_rotate_label(False)
+            #ax.zaxis.label.set_rotation(0)
+            #ax.dist = 10.5
+            fig.colorbar(surf, shrink=0.6, aspect=10)
+            
+            # Second subplot
+            ax = fig.add_subplot(2, 1, 2)
+        
+            ax.plot(np.arange(len(sigmaserialfit)),sigmaserialfit, color='teal', label = 'sigma serial')
+            ax.plot(np.arange(len(sigmaparallelfit)),sigmaparallelfit, color='red', label = 'sigma parallel')
+            ax.legend(loc='upper right',prop={'size': 14})
+            #ax.set_yscale('log')
+            ax.tick_params(axis='both', which='both', length=10, direction='in')
+            ax.grid(color='grey', linestyle=':', linewidth=1, which='both')
+            plt.setp(ax.get_yticklabels(), visible=True)
+            #ax.set_xlim([lowerEbound,upperEbound])
+            ax.set_xlabel('cluster index')
+            ax.set_ylabel('fit $\sigma$ (pixels)')
+        
+            fig.tight_layout(pad=0.0001, w_pad=0.5, h_pad=0.5)
+            #plt.subplots_adjust(hspace=0.5)
             with doc.create(Figure(position='htb!')) as plot:
-                plot.add_plot(width=NoEscape(r'0.90\linewidth'))
-                plot.add_caption('Cluster energy distribution.')
+                plot.add_plot(width=NoEscape(r'0.7\linewidth'))
+                plot.add_caption('Example of gaussian fit of round (f>0.75) cluster and values of fit sigmas in serial and parallel direction for all round clusters.')
             plt.clf()
             doc.append(NewPage())
-
+            
+        except:
+            print('Impossible to plot 2d gaussian fit for chosen cluster')
+            
+            # Second subplot
+            fig, ax = plt.subplots(1, 1)
+        
+            ax.plot(np.arange(len(sigmaserialfit)),sigmaserialfit, color='teal', marker='P', markerfacecolor='teal', markeredgecolor='teal', linestyle = 'None', label = 'sigma serial')
+            ax.plot(np.arange(len(sigmaparallelfit)),sigmaparallelfit,color='red', marker='P', markerfacecolor='red', markeredgecolor='red', linestyle = 'None', label = 'sigma parallel')
+            ax.legend(loc='upper right',prop={'size': 14})
+            ax.set_yscale('log')
+            ax.tick_params(axis='both', which='both', length=10, direction='in')
+            ax.grid(color='grey', linestyle=':', linewidth=1, which='both')
+            plt.setp(ax.get_yticklabels(), visible=True)
+            #ax.set_xlim([lowerEbound,upperEbound])
+            ax.set_xlabel('cluster index')
+            ax.set_ylabel('fit $\sigma$ (pixels)')
+        
+            fig.tight_layout(pad=0.0001, w_pad=0.5, h_pad=0.5)
+            #plt.subplots_adjust(hspace=0.5)
+            with doc.create(Figure(position='htb!')) as plot:
+                plot.add_plot(width=NoEscape(r'0.7\linewidth'))
+                plot.add_caption('Example of gaussian fit of round (f>0.75) cluster and values of fit sigmas in serial and parallel direction for all round clusters.')
+            plt.clf()
+            doc.append(NewPage())
+        
 #############################################
 #############Produce Report PDF##############
 #############################################

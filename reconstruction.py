@@ -3,7 +3,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina to study skipper CCD data
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Module for image reconstruction starting from raw .fits file
 
 -------------------
