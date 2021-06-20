@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina
+*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to monitor the quality of data produced by the CCD.
 
 -------------------
@@ -38,6 +38,9 @@ calibrationguess = config['calibration_constant_guess']
 printheader = False
 multipleimages = config['quality_analysis'][-1]['multiple_images'][-1]['use_multiple_images']
 if multipleimages: makemask = config['quality_analysis'][-1]['multiple_images'][-1]['produce_mask']
+if makemask:
+    imfrhotp = config['quality_analysis'][-1]['multiple_images'][-1]['image_fraction_hot_pixel']
+    pfrhotcl = config['quality_analysis'][-1]['multiple_images'][-1]['pixel_fraction_hot_column']
 reportHeader = config['quality_analysis'][-1]['report'][-1]['header']
 reportImage = config['quality_analysis'][-1]['report'][-1]['image']
 reportQuality = config['quality_analysis'][-1]['report'][-1]['quality']
@@ -217,9 +220,9 @@ if multipleimages: #this analysis carried out on single skip image by default. I
         mask /= (upperindex-lowerindex+1)
         for col in range(ncolumns):
             for row in range(nrows):
-                if mask[row,col] >= 0.5: mask[row,col] = True
+                if mask[row,col] >= imfrhotp: mask[row,col] = True
                 else: mask[row,col] = False
-            if sum(mask[:,col]) >= 0.3*nrows: mask[:,col] = True #if x0% or more than a column's pixels are hot, mask entire column
+            if sum(mask[:,col]) >= pfrhotcl*nrows: mask[:,col] = True #if x0% or more than a column's pixels are hot, mask entire column
         hdr_copy = hdr.copy()
         hdu0 = fits.PrimaryHDU(data=mask,header=hdr_copy)
         new_hdul = fits.HDUList([hdu0])
