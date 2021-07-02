@@ -131,6 +131,11 @@ if not multipleimages:
     nrows = hdr['NAXIS2'] # n of pixels in the y axis, i.e. n of rows
     nskips = hdr['NDCMS']  # n of skips
     ncolumns = int(nallcolumns/nskips) # n of columns in the image
+    #lines for weird .fits do not uncomment
+    #nrows = 800
+    #nallcolumns = 1100
+    #nskips = 1
+    #ncolumns = 1100
     ampl = hdr['AMPL']
     exposuretime = hdr['MEXP']
     rdoutime = hdr['MREAD']
@@ -435,7 +440,8 @@ if reportCluster:
         axs.set_xlabel('energy (keV)')
         axs.set_ylabel('entries per ' +str(round((max(clustersenergy)-min(clustersenergy))/500,4))+' keV')
         axs.set_title('Image cluster energy distribution')
-        
+        #print(len(clustersenergy))
+        #print(len([x for x in clusterssigmay if x==0]))
         #plt.xlabel('$\sigma$ (pixels)')
     
         fig.tight_layout(pad=.001)
@@ -468,6 +474,7 @@ if reportCluster:
         axs[1].tick_params(axis='both', which='both', length=10, direction='in')
         axs[1].set_xticks(np.arange(min(clusterssigmay), max(clusterssigmay)+1, 2.0))
         axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.setp(axs[1].get_xticklabels(), visible=True)
         plt.setp(axs[1].get_yticklabels(), visible=True)
         #axs[1].set_xlim([lowerEbound,upperEbound])
         axs[1].set_xlabel('$\sigma_y$ (pixels)')

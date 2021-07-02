@@ -228,6 +228,11 @@ def getSingleSkipImage(image_file):
     nskips = hdr['NDCMS']  # n of skips
     ncolumns = int(nallcolumns/nskips) # n of columns in the image
     ampl = hdr['AMPL']
+    #lines for weird .fits do not uncomment
+    #nrows = 800
+    #nallcolumns = 1100
+    #nskips = 1
+    #ncolumns = 1100
     
     if nskips != 1: print('ERROR: getSingleSkipImage() is meant to extract data from single skip image. Nskip =/= 1. Exiting'); sys.exit()
     
