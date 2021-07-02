@@ -1,5 +1,5 @@
 {
-    "test" : "chargetransfer",
+    "test" : "clusters_depth_calibration",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -15,7 +15,7 @@
     
     "analysis_region" : "full",
     "kcl_threshold" : 3.2,
-    "calibration_constant_guess" : 5.2,
+    "calibration_constant_guess" : 10,
     
     "print_header" : false,
     
@@ -66,8 +66,8 @@
         "multiple_images" :
         [{
             "use_multiple_images" : false,
-            "measured_vs_expected_e_with_multiple_images" : true,
-            "stddevs_vs_means_0_e_peaks" : true,
+            "measured_vs_expected_e" : false,
+            "transfer_curve" : true,
             "lower_index" : 22,
             "upper_index" : 25
         }],
@@ -100,22 +100,20 @@
     [{
         "calibrate" : false,
         "global_threshold_in_sigma": 3,
-        "maximum_pixel_value_threshold_in_sigma": 6,
+        "maximum_pixel_value_threshold_in_sigma": 4,
         "use_mask" : false,
         "mask_path" : "/Users/mtraina/repositories/CCDTesting/processed/MASK_74_75.fits",
         "cluster_fit_std_threshold" : 0.01,
         "multiple_images" :
         [{
             "use_multiple_images" : false,
-            "a" : true,
-            "b" : true,
             "lower_index" : 8,
             "upper_index" : 9
         }],
         "subdivide_image_for_diffusion_analysis" :
         [{
-            "rows" : 30,
-            "columns" : 140
+            "rows" : 200,
+            "columns" : 200
         }],
         "report" :
         [{

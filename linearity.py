@@ -43,10 +43,10 @@ calibrationguess = config['calibration_constant_guess']
 printheader = False
 calibrate = config['linearity_analysis'][-1]['calibrate']
 multipleimages = config['linearity_analysis'][-1]['multiple_images'][-1]['use_multiple_images']
-measVSexp_e_multimg = config['linearity_analysis'][-1]['multiple_images'][-1]['measured_vs_expected_e_with_multiple_images']
-stddeVSmeans_multimg = config['linearity_analysis'][-1]['multiple_images'][-1]['stddevs_vs_means_0_e_peaks']
-if not multipleimages: measVSexp_e_multimg = False; stddeVSmeans_multimg = False
-elif (not measVSexp_e_multimg) and (not stddeVSmeans_multimg): print('ERROR: You have selected multiple images analysis but none of the corresponding tests is set to true. Please update config file. Exiting'); sys.exit()
+measVSexp_e = config['linearity_analysis'][-1]['multiple_images'][-1]['measured_vs_expected_e']
+transfercurve = config['linearity_analysis'][-1]['multiple_images'][-1]['transfer_curve']
+if not multipleimages: measVSexp_e = False; transfercurve = False
+elif (not measVSexp_e) and (not transfercurve): print('ERROR: You have selected multiple images analysis but none of the corresponding tests is set to true. Please update config file. Exiting'); sys.exit()
 maxelectrons = config['linearity_analysis'][-1]['max_electrons']
 reportHeader = config['linearity_analysis'][-1]['report'][-1]['header']
 reportImage = config['linearity_analysis'][-1]['report'][-1]['image']
@@ -178,8 +178,8 @@ if multipleimages:
     nskips = hdr['NDCMS']  # n of skips
     avgimagestack = reconstructAvgImageStack(nameprefix,lowerindex,upperindex)
     offset, avg0_std = sigmaFinder(avgimagestack[:,:,0], debug = False)[1:3]
-    if stddeVSmeans_multimg:
-        print('I am going to compute 0-electron peak means and std deviations')
+    if transfercurve:
+        print('I am going to compute the photon transfer curve for the selected images')
         means,stddevs,meansunc,stddevsunc = getADUMeansStds(avgimagestack,lowerindex,upperindex)
     if calibrate:
         parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(avgimagestack[:,:,0], avg0_std, reverse, debug=False)
@@ -188,7 +188,7 @@ if multipleimages:
     else:
         calibrationconstant = calibrationguess; calibratedsigma = avg0_std/calibrationconstant; print('WARNING: using calibration constant guess for linearity test')
         avgimagestack_cal = reversign*(avgimagestack - offset)/calibrationconstant; skipper_avg_cal = avgimagestack_cal[:,:,0]
-    if measVSexp_e_multimg:
+    if measVSexp_e:
         print('I am going to cumulate statistics from multiple images for linearity test'); skipper_avg_cal_ravelled = cumulatePCDistributions(avgimagestack_cal)
         peakmus,peakstds,peakmuncs,peakstduncs = [],[],[],[]
         for npeakelectron in range(maxelectrons+1):
@@ -301,10 +301,10 @@ if reportImage:
 #############################################
 #########Calibrated image section############
 #############################################
-if multipleimages and (not measVSexp_e_multimg): reportCalibrationDarkcurrent = False
+if multipleimages and (not measVSexp_e): reportCalibrationDarkcurrent = False
 if reportCalibrationDarkcurrent:
     if not multipleimages: skipperavgcalibrated = skipper_avg_cal.ravel()
-    if measVSexp_e_multimg: skipperavgcalibrated = avgimagestack_cal[:,:,0]
+    if measVSexp_e: skipperavgcalibrated = avgimagestack_cal[:,:,0]
     try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
         if calibrationconstant == calibrationguess: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
         else: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
@@ -344,7 +344,7 @@ if reportCalibrationDarkcurrent:
 #############################################
 if reportLinearityCurves:
     if maxelectrons>=0:
-        if (not multipleimages) or measVSexp_e_multimg:
+        if (not multipleimages) or measVSexp_e:
             nelectrons = np.arange(0,maxelectrons+1,1)
             warnings.filterwarnings("error")
             fit = True
@@ -390,7 +390,7 @@ if reportLinearityCurves:
                 doc.append(NewPage())
     if reportLinearityCurves and maxelectrons < 0: print('Linearity curves plots not produced: 0 points to plot. Check PCDs')
         
-    if stddeVSmeans_multimg:
+    if transfercurve:
         try:
         #sttdevsindices = np.argsort(means); means = np.sort(means); stddevs = stddevs[sttdevsindices]; sttdevsunc = stddevsunc[sttdevsindices]
             pfit, varmatrix = curve_fit(linefunction, means, stddevs, sigma=stddevsunc, absolute_sigma=True); punc = np.sqrt(np.diag(varmatrix))
@@ -398,15 +398,15 @@ if reportLinearityCurves:
         except: pass
         stdvsmean = plt.errorbar(means,stddevs,stddevsunc,xerr=meansunc,fmt='.',ecolor='red',marker='o', mfc='red', mec='red', ms=4, label='measurements')
         plt.legend(loc='upper left',prop={'size': 14})
-        plt.ylabel('standard deviation of 0-$e^-$ peak [ADU]')
-        plt.xlabel('mean (centroid) of 0-$e^-$ peak [ADU]')
+        plt.ylabel('standard deviation of flat exposure peak [ADU]')
+        plt.xlabel('mean (centroid) of flat exposure peak [ADU]')
         plt.tick_params(axis='both', which='both', length=10, direction='in')
         plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
-        plt.title('Linearity study - std deviation vs mean')
+        plt.title('Linearity study - photon transfer curve')
         with doc.create(Figure(position='htb!')) as plot:
             fig.tight_layout(pad=.001)
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('0-electron peaks std deviations vs means.')
+            plot.add_caption('Flat peaks std deviations vs means.')
         plt.clf()
         doc.append(NewPage())
     
