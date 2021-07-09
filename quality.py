@@ -269,7 +269,14 @@ geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
 doc.preamble.append(Command('title', 'Image Analysis Report on Data Quality'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
+doc.preamble.append(NoEscape(r'\usepackage{tocloft}'))
+doc.preamble.append(NoEscape(r'\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}'))
+doc.preamble.append(NoEscape(r'\usepackage{hyperref}'))
+doc.preamble.append(NoEscape(r'\usepackage{bookmark}'))
 doc.append(NoEscape(r'\maketitle'))
+doc.append(NoEscape(r'\tableofcontents'))
+doc.append(NoEscape(r'\thispagestyle{empty}'))
+doc.append(NewPage())
 
 #############################################
 #Print acqusition parameters value in report#
