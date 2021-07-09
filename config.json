@@ -1,5 +1,5 @@
 {
-    "test" : "tweaking",
+    "test" : "clusters_depth_calibration",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -15,7 +15,7 @@
     
     "analysis_region" : "full",
     "kcl_threshold" : 3.2,
-    "calibration_constant_guess" : 5,
+    "calibration_constant_guess" : 10,
     
     "print_header" : false,
     
@@ -23,21 +23,15 @@
     
     "tweaking_analysis":
     [{
-        "multiple_images" :
-        [{
-            "use_multiple_images" : false,
-            "lower_index" : 2,
-            "upper_index" : 3
-        }],
         "report" :
         [{
             "header" : false,
-            "image" : false,
+            "image" : true,
             "pcds" : true,
             "chargeloss" : true,
             "calibration_darkcurrent" : true,
-            "fft_skips" : false,
-            "fft_row" : false
+            "fft_skips" : true,
+            "fft_row" : true
         }]
     }],
     
