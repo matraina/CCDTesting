@@ -134,6 +134,7 @@ def clusterImage(image,cut,**kwargs):
     if mask is not None: mask = getSingleSkipImage(get_pkg_data_filename(maskpath))
     clusternpixels,clustertouchmask,clusterspatialmetrics,passcut,clusterenergy = [],[],[],[],[]
     sigmarfit,sigmacfit=[],[]
+    parafittmp=[0,0,0,0,0,0]
     for icluster in range(nclusters):
         clusterpixels = np.argwhere(image_features==icluster+1)
         npixels = len(clusterpixels)

@@ -446,7 +446,8 @@ if reportCluster:
         plt.setp(axs.get_yticklabels(), visible=True)
         if upperEbound != -1: axs.set_xlim([lowerEbound,upperEbound])
         axs.set_xlabel('energy (keV)')
-        axs.set_ylabel('entries per ' +str(round((max(clustersenergy)-min(clustersenergy))/500,4))+' keV')
+        try: axs.set_ylabel('entries per ' +str(round((max(clustersenergy)-min(clustersenergy))/500,4))+' keV')
+        except: pass
         axs.set_title('Image cluster energy distribution')
         #print(len(clustersenergy))
         #print(len([x for x in clusterssigmay if x==0]))
@@ -461,39 +462,46 @@ if reportCluster:
                 
         fig,axs = plt.subplots(2,1)
         axs[0].hist(clusterssigmax, 500, color='teal', label = 'full cluster statistics')
-        axs[0].hist(postcutclusterssigmax, int(500*max(postcutclusterssigmax)/max(clusterssigmax)), color='red', label = '$f_{pix}>0.75$ cluster statistics')
+        try: axs[0].hist(postcutclusterssigmax, int(500*max(postcutclusterssigmax)/max(clusterssigmax)), color='red', label = '$f_{pix}>0.75$ cluster statistics')
+        except: pass
         axs[0].legend(loc='upper right',prop={'size': 14})
         axs[0].set_yscale('log')
         #axs[0].yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
-        axs[0].set_xticks(np.arange(min(clusterssigmax), max(clusterssigmax)+1, 2.0))
+        try: axs[0].set_xticks(np.arange(min(clusterssigmax), max(clusterssigmax)+1, 2.0))
+        except: pass
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
         #axs[0].set_xlim([lowerEbound,upperEbound])
         axs[0].set_xlabel('$\sigma_x$ (pixels)')
-        axs[0].set_ylabel('entries per ' +str(round((max(clusterssigmax)-min(clusterssigmax))/500,4))+' pixels')
+        try: axs[0].set_ylabel('entries per ' +str(round((max(clusterssigmax)-min(clusterssigmax))/500,4))+' pixels')
+        except: pass
         axs[0].set_title('Image cluster serial-sigma distribution')
         
         axs[1].hist(clusterssigmay, 500, color='teal', label = 'full cluster statistics')
-        axs[1].hist(postcutclusterssigmay, int(500*max(postcutclusterssigmay)/max(clusterssigmay)), color='red', label = '$f_{pix}>0.75$ cluster statistics')
+        try: axs[1].hist(postcutclusterssigmay, int(500*max(postcutclusterssigmay)/max(clusterssigmay)), color='red', label = '$f_{pix}>0.75$ cluster statistics')
+        except: pass
         axs[1].legend(loc='upper right',prop={'size': 14})
         axs[1].set_yscale('log')
         #axs[1].yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))
         axs[1].tick_params(axis='both', which='both', length=10, direction='in')
-        axs[1].set_xticks(np.arange(min(clusterssigmay), max(clusterssigmay)+1, 2.0))
+        try: axs[1].set_xticks(np.arange(min(clusterssigmay), max(clusterssigmay)+1, 2.0))
+        except: pass
         axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[1].get_xticklabels(), visible=True)
         plt.setp(axs[1].get_yticklabels(), visible=True)
         #axs[1].set_xlim([lowerEbound,upperEbound])
         axs[1].set_xlabel('$\sigma_y$ (pixels)')
-        axs[1].set_ylabel('entries per ' +str(round((max(clusterssigmay)-min(clusterssigmay))/500,4))+' pixels')
+        try: axs[1].set_ylabel('entries per ' +str(round((max(clusterssigmay)-min(clusterssigmay))/500,4))+' pixels')
+        except: pass
         axs[1].set_title('Image cluster parallel-sigma distribution')
         
         fig.tight_layout(pad=.001)
         plt.subplots_adjust(hspace=0.5)
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.90\linewidth'))
-            plot.add_caption('Cluster sigma distributions. Clusters with non-empty pixel fraction larger than 0.75 have maximum sigma values of '+str(round_sig_2(max(postcutclusterssigmax)))+ ' pixels and '+str(round_sig_2(max(postcutclusterssigmay)))+' pixels, for serial and parallel directions, respectively.')
+            try: plot.add_caption('Cluster sigma distributions. Clusters with non-empty pixel fraction larger than 0.75 have maximum sigma values of '+str(round_sig_2(max(postcutclusterssigmax)))+ ' pixels and '+str(round_sig_2(max(postcutclusterssigmay)))+' pixels, for serial and parallel directions, respectively.')
+            except: pass
         plt.clf()
         doc.append(NewPage())
 

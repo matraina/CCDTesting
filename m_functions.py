@@ -159,7 +159,7 @@ def sigmaFinder(image, debug):
             while (bins - np.argmax(pcdhistogram) < 30):
                 bins += 10
                 pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-        else: # four lines below hugely slow things down. Unlikely to have issue with not reversed images anyways
+        #else: # 3 lines below hugely slow things down. Unlikely to have issue with not reversed images anyways
         #    while (np.argmax(pcdhistogram) < 30):
         #        bins += 10
         #        print(np.argmax(pcdhistogram))

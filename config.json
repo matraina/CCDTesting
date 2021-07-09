@@ -7,7 +7,7 @@
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
-    "reverse" : true,
+    "reverse" : false,
     
     "ccd_active_register_size": 1024,
     "prescan" : 8,
@@ -139,7 +139,7 @@
                 "clusters_plots" : true,
                 "lower_energy_bound_keV" : 0,
                 "upper_energy_bound_keV" : -1,
-								"fit_sym_clusters" : false
+                "fit_sym_clusters" : false
             }]
         }]
     }]
