@@ -270,9 +270,24 @@ if multipleimages:
 ##############################################################################
 ##############################################################################
 ##############################################################################
-
 ##############################################################################
-
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 ##############################################################################
 ##############################################################################
 ##############################################################################
@@ -294,6 +309,26 @@ if multipleimages:
 ##############################################################################
 ##############################################################################
 ##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 
 if not (reportHeader or reportImage or reportPCD or reportChargeLoss or reportCalibrationDarkcurrent or reportFFTrow or reportFFTskips):
     print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
@@ -305,9 +340,15 @@ from scipy.optimize import curve_fit
 #setup document parameters
 geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
-doc.preamble.append(Command('title', 'Image Analysis Report on Parameter Tuning'))
+doc.preamble.append(Command('title', 'Image Analysis Report on Parameter Tweaking'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
+doc.preamble.append(NoEscape(r'\usepackage{tocloft}'))
+doc.preamble.append(NoEscape(r'\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}'))
+doc.preamble.append(NoEscape(r'\usepackage{hyperref}'))
+doc.preamble.append(NoEscape(r'\usepackage{bookmark}'))
 doc.append(NoEscape(r'\maketitle'))
+doc.append(NoEscape(r'\tableofcontents'))
+doc.append(NoEscape(r'\thispagestyle{empty}'))
 doc.append(NewPage())
 
 ##############################################################################
@@ -320,7 +361,47 @@ doc.append(NewPage())
 ##############################################################################
 ##############################################################################
 ##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 # SINGLE IMAGE LATEK REPORT ##################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 ##############################################################################
 ##############################################################################
 ##############################################################################
@@ -475,8 +556,8 @@ if not multipleimages:
             axs[0].tick_params(axis='both', which='both', length=10, direction='in')
             axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[0].get_yticklabels(), visible=True)
-            try: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU; estimated noise: ' + str(round(stdss/calibrationconstant,4)) + ' $e^{-}$')
-            except: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU')
+            try: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU; estimated noise: ' + str(round(stdss/calibrationconstant,4)) + ' $e^{-}$')
+            except: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU')
 
             
             if nskips!=1:
@@ -505,14 +586,15 @@ if not multipleimages:
                 axs[1].tick_params(axis='both', which='both', length=10, direction='in')
                 axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
                 plt.setp(axs[1].get_yticklabels(), visible=True)
-                axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
-                if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU')
+                axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
+                if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU')
             
             plt.subplots_adjust(hspace=0.5)
             for ax in axs.flat:
                 ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+                plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region.')
             plt.clf()
             doc.append(NewPage())
             
@@ -540,7 +622,7 @@ if not multipleimages:
             
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Resolution trend computed on '+analysisregion+' image, as function of average image skip number.')
+                plot.add_caption('Resolution trend computed on '+analysisregion+' image region, as function of average image skip number.')
             plt.clf()
             doc.append(NewPage())
             
@@ -596,8 +678,7 @@ if not multipleimages:
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
-            fitjusticationlineline = "NOTE: A good gaussian fit of pcdd's is essential for Kcl to be an effective charge loss classifier"
-            doc.append(fitjusticationlineline)
+            doc.append(NoEscape(r'NOTE: A good gaussian fit of the PCDDs is essential for $S_{k_{cl}}$ to be an effective charge loss classifier'))
             plt.clf()
             doc.append(NewPage())
             
@@ -609,7 +690,7 @@ if not multipleimages:
             axs[0].tick_params(axis='both', which='both', length=10, direction='in')
             axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[0].get_yticklabels(), visible=True)
-            axs[0].set_title('$k_{cl}~=~$' + str(round(kclPCDD01,4)) + '$\pm$'+ str(round(kclPCDDuncertainty01,4)) + ', $S(k_{cl})~=~$' + str(round(kclPCDD01/kclPCDDuncertainty01,4)) + ', skewness = ' + str(round(skewnessPCDD01,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty01,4)))
+            axs[0].set_title('$k_{cl}~=~$' + str(round(kclPCDD01,4)) + '$\pm$'+ str(round(kclPCDDuncertainty01,4)) + ', $S_{k_{cl}}~=~$' + str(round(kclPCDD01/kclPCDDuncertainty01,4)) + ', skewness = ' + str(round(skewnessPCDD01,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty01,4)))
 
             centeredskipperdiffcore = [s for s in skipperdiffcoreravelled-muPCDD if s != -muPCDD]
             axs[1].hist(centeredskipperdiffcore, 600, range = (-20*stdPCDD,10*stdPCDD), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
@@ -617,7 +698,7 @@ if not multipleimages:
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[0].get_yticklabels(), visible=True)
-            axs[1].set_title('$k_{cl}~=~$' + str(round(kclPCDD,4)) + '$\pm$'+ str(round(kclPCDDuncertainty,4)) + ', $S(k_{cl})~=~$' + str(round(kclPCDD/kclPCDDuncertainty,4)) + ', skewness = ' + str(round(skewnessPCDD,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty,4)))
+            axs[1].set_title('$k_{cl}~=~$' + str(round(kclPCDD,4)) + '$\pm$'+ str(round(kclPCDDuncertainty,4)) + ', $S_{k_{cl}}~=~$' + str(round(kclPCDD/kclPCDDuncertainty,4)) + ', skewness = ' + str(round(skewnessPCDD,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty,4)))
 
             plt.subplots_adjust(hspace=0.5)
             for ax in axs.flat:
@@ -668,7 +749,7 @@ if not multipleimages:
         with doc.create(Section('Dark Current')):
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image) and anticlustering (on '+analysisregion+' image)')
+                plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image) and anticlustering (on '+analysisregion+' image region)')
             calibrationline = 'Calibration constant is: '+str(round(calibrationconstant,4))+'±'+str(round_sig_2(dcparunc[4]))+' ADU per electron.'
             doc.append(calibrationline)
             plt.clf()
@@ -713,7 +794,47 @@ if not multipleimages:
 ##############################################################################
 ##############################################################################
 ##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 # MULTIPLE IMAGES LATEK REPORT ###############################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 ##############################################################################
 ##############################################################################
 ##############################################################################
@@ -726,6 +847,21 @@ if not multipleimages:
 ##############################################################################
     
 if multipleimages:
+    
+    scanreport = config['tweaking_analysis'][-1]['multiple_images'][-1]['scan_report']
+    if scanreport:
+        scanparameters = config['tweaking_analysis'][-1]['multiple_images'][-1]['scan_parameters']
+        scanintervals = config['tweaking_analysis'][-1]['multiple_images'][-1]['scan_intervals']
+        with doc.create(Section('Information')):
+            doc.append(NoEscape(r'This a report on multiple images for a scan on parameters: '+scanparameters+'.'))
+            doc.append(NoEscape(r'The acquisition intervals for these parameters are: '+scanintervals+', respectively.'))
+            doc.append(NoEscape(r'Interval convention: [lower-value, upper-value, scan-step].'))
+            doc.append(NoEscape(r'Each section reports the same plot instance for all the scan images, as an efficient way to compare the Charge-Coupled device performance in different operating conditions.'))
+            doc.append(NoEscape(r'\newpage'))
+            
+            
+            
+            
     #############################################
     #Pixel charge distribution and noise section#
     #############################################
@@ -751,8 +887,8 @@ if multipleimages:
                 axs[0].tick_params(axis='both', which='both', length=10, direction='in')
                 axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
                 plt.setp(axs[0].get_yticklabels(), visible=True)
-                try: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(startskipfitpar_stack[2,iimage],4)) + ' ADU; estimated noise: ' + str(round(startskipfitpar_stack[2,iimage]/calibrationguess,4)) + ' $e^{-}$')
-                except: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(startskipfitpar_stack[2,iimage],4)) + ' ADU')
+                try: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(startskipfitpar_stack[2,iimage],4)) + ' ADU; estimated noise: ' + str(round(startskipfitpar_stack[2,iimage]/calibrationguess,4)) + ' $e^{-}$')
+                except: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(startskipfitpar_stack[2,iimage],4)) + ' ADU')
     
                 
                 if nskips!=1:
@@ -781,14 +917,15 @@ if multipleimages:
                     axs[1].tick_params(axis='both', which='both', length=10, direction='in')
                     axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
                     plt.setp(axs[1].get_yticklabels(), visible=True)
-                    axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_stack[-1,iimage],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip_stack[-1,iimage]/calibrationconstant,4)) + ' $e^{-}$')
-                    if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_stack[-1,iimage],4)) + ' ADU')
+                    axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_stack[-1,iimage],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip_stack[-1,iimage]/calibrationconstant,4)) + ' $e^{-}$')
+                    if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_stack[-1,iimage],4)) + ' ADU')
                 
                     plt.subplots_adjust(hspace=0.5)
                     for ax in axs.flat:
                         ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
                     with doc.create(Figure(position='htb!')) as plot:
                         plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+                        plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region.')
                     plt.clf()
                     doc.append(NewPage())
                 
@@ -821,7 +958,7 @@ if multipleimages:
             
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Resolution trend computed on '+analysisregion+' image, as function of average image skip number.')
+                plot.add_caption('Resolution trend computed on '+analysisregion+' image region, as function of average image skip number.')
             plt.clf()
         doc.append(NewPage())
     
@@ -864,7 +1001,7 @@ if multipleimages:
                 axs[iimage,0].grid(color='grey', linestyle=':', linewidth=1, which='both')
                 plt.setp(axs[iimage,0].get_yticklabels(), visible=True)
                 from scipy.stats import norm
-                axs[iimage,0].set_title('$S(k_{cl})~=~$' + str(round(kclsignificance01_stack[iimage],4)) + '. Tails obs/exp: ' + str(len([s for s in skipperdiffcoreravelled01 if s < muPCDD01-kclthreshold*stdPCDD01])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled01)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) +'; '+ str(len([s for s in skipperdiffcoreravelled01 if s > muPCDD01+kclthreshold*stdPCDD01])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled01)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) )
+                axs[iimage,0].set_title('$S_{k_{cl}}~=~$' + str(round(kclsignificance01_stack[iimage],4)) + '. Tails obs/exp: ' + str(len([s for s in skipperdiffcoreravelled01 if s < muPCDD01-kclthreshold*stdPCDD01])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled01)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) +'; '+ str(len([s for s in skipperdiffcoreravelled01 if s > muPCDD01+kclthreshold*stdPCDD01])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled01)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) )
                 
                 skipperdiffcoreravelledinrange = [s for s in skipperdiffcoreravelled if s > muPCDD - 3*stdPCDD and s <  muPCDD + 3*stdPCDD and s != 0]
                 numbins = int(max(skipperdiffcoreravelledinrange) - min(skipperdiffcoreravelledinrange))
@@ -891,7 +1028,7 @@ if multipleimages:
                 axs[iimage,1].tick_params(axis='both', which='both', length=10, direction='in')
                 axs[iimage,1].grid(color='grey', linestyle=':', linewidth=1, which='both')
                 plt.setp(axs[iimage,1].get_yticklabels(), visible=True)
-                axs[iimage,1].set_title('$S(k_{cl})~=~$' + str(round(kclsignificance_stack[iimage],4)) + '. Tails obs/exp: ' + str(len([s for s in skipperdiffcoreravelled if s < muPCDD-kclthreshold*stdPCDD])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) +'; '+ str(len([s for s in skipperdiffcoreravelled if s > muPCDD+kclthreshold*stdPCDD])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) )
+                axs[iimage,1].set_title('$S_{k_{cl}}~=~$' + str(round(kclsignificance_stack[iimage],4)) + '. Tails obs/exp: ' + str(len([s for s in skipperdiffcoreravelled if s < muPCDD-kclthreshold*stdPCDD])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) +'; '+ str(len([s for s in skipperdiffcoreravelled if s > muPCDD+kclthreshold*stdPCDD])) + '/' + str( int(round_sig_2( len(skipperdiffcoreravelled)*norm(loc = 0, scale = 1).cdf(-kclthreshold)))) )
             
             plt.subplots_adjust(hspace=0.5)
             for ax in axs.flat:
@@ -899,8 +1036,7 @@ if multipleimages:
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (left) and second and end skip (right). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
-            fitjusticationlineline = "NOTE: A good gaussian fit of pcdd's is essential for Kcl to be an effective charge loss classifier"
-            doc.append(fitjusticationlineline)
+                doc.append(NoEscape(r'NOTE: A good gaussian fit of the PCDDs is essential for $S_{k_{cl}}$ to be an effective charge loss classifier'))
             plt.clf()
             doc.append(NewPage())
             
@@ -944,7 +1080,7 @@ if multipleimages:
         
                 with doc.create(Figure(position='htb!')) as plot:
                     plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                    plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image) and anticlustering (on '+analysisregion+' image)')
+                    plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image) and anticlustering (on '+analysisregion+' image region)')
                 calibrationline = 'Calibration constant is: '+str(round(calibrationconstant,4))+'±'+str(round_sig_2(dcparunc[4]))+' ADU per electron.'
                 doc.append(calibrationline)
                 plt.clf()
@@ -961,8 +1097,8 @@ if default_directory_structure:
 else:
     if not multipleimages: reportname = 'tweaking_'+sys.argv[2]
     if multipleimages: reportname = 'tweaking_'+str(lowerindex)+'_'+str(upperindex)
-doc.generate_pdf(reportname, clean_tex=False)
-os.remove(reportname+'.tex')
+
+doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')
