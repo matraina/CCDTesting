@@ -1,5 +1,5 @@
 {
-    "test" : "tweaking",
+    "test" : "charge_transfer",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -7,7 +7,7 @@
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
-    "reverse" : false,
+    "reverse" : true,
     
     "ccd_active_register_size": 1024,
     "prescan" : 8,
@@ -130,7 +130,8 @@
             [{
                 "clusters_plots" : true,
                 "lower_energy_bound_keV" : 0,
-                "upper_energy_bound_keV" : -1
+                "upper_energy_bound_keV" : -1,
+								"fit_sym_clusters" : false
             }]
         }]
     }]

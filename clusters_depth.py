@@ -429,6 +429,7 @@ if reportCluster:
     with doc.create(Section('Clusters')):
         lowerEbound = config['clusters_depth_analysis'][-1]['report'][-1]['clusters'][-1]['lower_energy_bound_keV']
         upperEbound = config['clusters_depth_analysis'][-1]['report'][-1]['clusters'][-1]['upper_energy_bound_keV']
+        fitsymclusters = config['clusters_depth_analysis'][-1]['report'][-1]['clusters'][-1]['fit_sym_clusters']
         fig,axs = plt.subplots(1,1)
         axs.hist(clustersenergy, 500, color='teal')#, label='Image cluster energy distribution')
         axs.set_yscale('log')
@@ -560,62 +561,62 @@ if reportCluster:
         fig = plt.figure(figsize=plt.figaspect(2.))
         
         # First subplot
-        
-        ax = fig.add_subplot(2, 1, 1, projection='3d')
-        r = np.linspace(clusters[-1][2] - 5*clusters[-1][3],clusters[-1][2] + 5*clusters[-1][3])
-        c = np.linspace(clusters[-1][4] - 5*clusters[-1][5],clusters[-1][4] + 5*clusters[-1][5])
-        r = np.append(clusters[-1][2] - 5*clusters[-1][3],r.flatten())
-        c = np.append(clusters[-1][4] - 5*clusters[-1][5],c.flatten())
-        r,c=np.meshgrid(r,c)
-        #print(r)
-        #print(c)
-        coor = r,c
-        histfit = gaussian2d(coor,clusters[-1][0],clusters[-1][1],clusters[-1][2],clusters[-1][3],clusters[-1][4],clusters[-1][5])
-        #print(histfit)
-        try:
-            surf = ax.plot_trisurf(r.flatten(),c.flatten(), histfit.flatten(), cmap=cm.coolwarm,linewidth=0, antialiased=False)
-            #surfdata = ax.plot_trisurf(r,c, self.pixel_electrons.ravel(), cmap=cm.inferno,linewidth=0, antialiased=False)
-            #Customize the axes.
-            plt.xlabel('column')
-            ax.xaxis.set_major_locator(LinearLocator(4))
-            plt.ylabel('row')
-            ax.yaxis.set_major_locator(LinearLocator(4))
-            #ax.set_zlim(0, 1900)
-            #ax.set_zticks(np.arange(0,2375,475,dtype=int))
-            #ax.set_title("Multivariate gaussian cluster fit", pad=20)
-            #ax.pbaspect = [1., .33, 0.5]
-            #ax.view_init(elev=35., azim=-70)
-            #ax.yaxis.set_rotate_label(False)
-            #ax.yaxis.label.set_rotation(0)
-            #ax.zaxis.set_rotate_label(False)
-            #ax.zaxis.label.set_rotation(0)
-            #ax.dist = 10.5
-            fig.colorbar(surf, shrink=0.6, aspect=10)
+        if fitsymclusters:
+            ax = fig.add_subplot(2, 1, 1, projection='3d')
+            r = np.linspace(clusters[-1][2] - 5*clusters[-1][3],clusters[-1][2] + 5*clusters[-1][3])
+            c = np.linspace(clusters[-1][4] - 5*clusters[-1][5],clusters[-1][4] + 5*clusters[-1][5])
+            r = np.append(clusters[-1][2] - 5*clusters[-1][3],r.flatten())
+            c = np.append(clusters[-1][4] - 5*clusters[-1][5],c.flatten())
+            r,c=np.meshgrid(r,c)
+            #print(r)
+            #print(c)
+            coor = r,c
+            histfit = gaussian2d(coor,clusters[-1][0],clusters[-1][1],clusters[-1][2],clusters[-1][3],clusters[-1][4],clusters[-1][5])
+            #print(histfit)
+            try:
+                surf = ax.plot_trisurf(r.flatten(),c.flatten(), histfit.flatten(), cmap=cm.coolwarm,linewidth=0, antialiased=False)
+                #surfdata = ax.plot_trisurf(r,c, self.pixel_electrons.ravel(), cmap=cm.inferno,linewidth=0, antialiased=False)
+                #Customize the axes.
+                plt.xlabel('column')
+                ax.xaxis.set_major_locator(LinearLocator(4))
+                plt.ylabel('row')
+                ax.yaxis.set_major_locator(LinearLocator(4))
+                #ax.set_zlim(0, 1900)
+                #ax.set_zticks(np.arange(0,2375,475,dtype=int))
+                #ax.set_title("Multivariate gaussian cluster fit", pad=20)
+                #ax.pbaspect = [1., .33, 0.5]
+                #ax.view_init(elev=35., azim=-70)
+                #ax.yaxis.set_rotate_label(False)
+                #ax.yaxis.label.set_rotation(0)
+                #ax.zaxis.set_rotate_label(False)
+                #ax.zaxis.label.set_rotation(0)
+                #ax.dist = 10.5
+                fig.colorbar(surf, shrink=0.6, aspect=10)
+                
+                # Second subplot
+                ax = fig.add_subplot(2, 1, 2)
+                
+                ax.plot(np.arange(len(sigmaserialfit)),sigmaserialfit, color='teal', label = 'sigma serial')
+                ax.plot(np.arange(len(sigmaparallelfit)),sigmaparallelfit, color='red', label = 'sigma parallel')
+                ax.legend(loc='upper right',prop={'size': 14})
+                #ax.set_yscale('log')
+                ax.tick_params(axis='both', which='both', length=10, direction='in')
+                ax.grid(color='grey', linestyle=':', linewidth=1, which='both')
+                plt.setp(ax.get_yticklabels(), visible=True)
+                #ax.set_xlim([lowerEbound,upperEbound])
+                ax.set_xlabel('cluster index')
+                ax.set_ylabel('fit $\sigma$ (pixels)')
+                
+                fig.tight_layout(pad=0.0001, w_pad=0.5, h_pad=0.5)
+                #plt.subplots_adjust(hspace=0.5)
+                with doc.create(Figure(position='htb!')) as plot:
+                    plot.add_plot(width=NoEscape(r'0.7\linewidth'))
+                    plot.add_caption('Example of gaussian fit of round (f>0.75) cluster and values of fit sigmas in serial and parallel direction for all round clusters.')
+                    plt.clf()
+                    doc.append(NewPage())
             
-            # Second subplot
-            ax = fig.add_subplot(2, 1, 2)
-        
-            ax.plot(np.arange(len(sigmaserialfit)),sigmaserialfit, color='teal', label = 'sigma serial')
-            ax.plot(np.arange(len(sigmaparallelfit)),sigmaparallelfit, color='red', label = 'sigma parallel')
-            ax.legend(loc='upper right',prop={'size': 14})
-            #ax.set_yscale('log')
-            ax.tick_params(axis='both', which='both', length=10, direction='in')
-            ax.grid(color='grey', linestyle=':', linewidth=1, which='both')
-            plt.setp(ax.get_yticklabels(), visible=True)
-            #ax.set_xlim([lowerEbound,upperEbound])
-            ax.set_xlabel('cluster index')
-            ax.set_ylabel('fit $\sigma$ (pixels)')
-        
-            fig.tight_layout(pad=0.0001, w_pad=0.5, h_pad=0.5)
-            #plt.subplots_adjust(hspace=0.5)
-            with doc.create(Figure(position='htb!')) as plot:
-                plot.add_plot(width=NoEscape(r'0.7\linewidth'))
-                plot.add_caption('Example of gaussian fit of round (f>0.75) cluster and values of fit sigmas in serial and parallel direction for all round clusters.')
-            plt.clf()
-            doc.append(NewPage())
-            
-        except:
-            print('Impossible to plot 2d gaussian fit for chosen cluster')
+            except:
+                print('Impossible to plot 2d gaussian fit for chosen cluster')
             
             # Second subplot
             fig, ax = plt.subplots(1, 1)
