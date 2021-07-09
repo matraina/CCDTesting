@@ -447,8 +447,8 @@ if default_directory_structure:
     reportname = 'reports/transfer_'+sys.argv[2]
 else:
     reportname = 'transfer_'+sys.argv[2]
-doc.generate_pdf(reportname, clean_tex=False)
-os.remove(reportname+'.tex')
+
+doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')

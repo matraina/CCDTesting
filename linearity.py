@@ -427,8 +427,8 @@ if default_directory_structure:
 else:
     if not multipleimages: reportname = 'linearity_'+sys.argv[2]
     if multipleimages: reportname = 'linearity_'+str(lowerindex)+'_'+str(upperindex)
-doc.generate_pdf(reportname, clean_tex=False)
-os.remove(reportname+'.tex')
+
+doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')
