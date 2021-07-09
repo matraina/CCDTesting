@@ -22,7 +22,7 @@ with open('config.json') as config_file:
     config = json.load(config_file)
     calibrationguess = config['calibration_constant_guess']
     
-def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess=calibrationguess, darkcurrent=-1, npoisson=6):
+def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurrent, npoisson):
 
     avgimghist, binedges = np.histogram(avgimgravel, bins = int(0.5*(max(avgimgravel)-min(avgimgravel))), density=False)
     binwidth = np.diff(binedges)[0]
@@ -98,6 +98,15 @@ def paramsToList(params):
     parunc = [ params['dcrate'].stderr, params['Nelectrons'].stderr, params['Npixelspeak'].stderr, params['sigma'].stderr, params['offset'].stderr, params['gain'].stderr]
     return par, parunc
     
+def fitGuessesArray(centroid,calibguess,npeaks):
+    pguesses = np.zeros((3,18), dtype=np.float64) #3 = fit parameters to tweak, 18 = set of guess
+    i=0
+    for npeaksguess in range(npeaks-2,npeaks+3,2):
+        for calguess in range(calibrationguess-1,calibrationguess+2):
+            for zeroelectroncentroid in [0,centroid]:
+                pguesses[:,i] = zeroelectroncentroid, calguess, npeaksguess
+                i+=1
+    return pguesses
     
 def calibrationDC(avgimg,std,reverse,debug):
 
@@ -112,47 +121,67 @@ def calibrationDC(avgimg,std,reverse,debug):
     avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
     
-    fitminimized = computeGausPoissDist(avgimgravel, 0, std)
-    params = fitminimized.params
-    print(lmfit.fit_report(fitminimized))
-    reducedchisquared = fitminimized.redchi
-    par = paramsToList(params)[0]
-    parunc = paramsToList(params)[1]
-    parmatrix = [par,parunc]
-    
-    if debug:
-        adu = np.linspace(bincenters[0], bincenters[-1], nbins)
-        plt.plot(adu, convolutionGaussianPoisson(adu, *par), 'r')
-        plt.yscale('log')
-        plt.plot(adu, avgimghist, 'teal')
-        plt.ylim(0.01, params['Npixelspeak'])
-        plt.show()
-    
+    #fitminimized = computeGausPoissDist(avgimgravel, 0, std)
+    #params = fitminimized.params
+    #print(lmfit.fit_report(fitminimized))
+    #reducedchisquared = fitminimized.redchi
+    #par = paramsToList(params)[0]
+    #parunc = paramsToList(params)[1]
+    #parmatrix = [par,parunc]
+    #
+    #if debug:
+    #    adu = np.linspace(bincenters[0], bincenters[-1], nbins)
+    #    plt.plot(adu, convolutionGaussianPoisson(adu, *par), 'r')
+    #    plt.yscale('log')
+    #    plt.plot(adu, avgimghist, 'teal')
+    #    plt.ylim(0.01, params['Npixelspeak'])
+    #    plt.show()
+    #
     #refit excluding negative (in electrons) side of pcd (sometimes weird features appear)
-    if abs(reducedchisquared) > 100:
-        print('First fit gave reduced chi squared: ' + str(round(reducedchisquared,4)) + '; retrying discarding negative side of pcd (<0 electrons)')
-        # Perform poisson gaus fit to data again
-        avgimgravel = [s for s in avgimgravel if s >= bincenters[np.argmax(avgimghist)] - std ]
-        nbins=int(0.5*(max(avgimgravel)-min(avgimgravel)))
-        avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
-        bincenters = (binedges[:-1] + binedges[1:])/2
-        fitminimized = computeGausPoissDist(avgimgravel, mu, std)
+    #if abs(reducedchisquared) > 1000:
+    #    print('First fit gave reduced chi squared: ' + str(round(reducedchisquared,4)) + '; retrying discarding negative side of pcd (<0 electrons)')
+    #    # Perform poisson gaus fit to data again
+    #    avgimgravel = [s for s in avgimgravel if s >= bincenters[np.argmax(avgimghist)] - std ]
+    #    nbins=int(0.5*(max(avgimgravel)-min(avgimgravel)))
+    #    avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
+    #    bincenters = (binedges[:-1] + binedges[1:])/2
+    #    fitminimized = computeGausPoissDist(avgimgravel, 0, std)
+    #    params = fitminimized.params
+    #    print(lmfit.fit_report(fitminimized))
+    #    par = paramsToList(params)[0]
+    #    parunc = paramsToList(params)[1]
+    #    parmatrix = [par,parunc]
+    
+    pguesses = fitGuessesArray(mu,calibrationguess,npeaks=4)
+    reducedchisquared = np.zeros(np.size(pguesses,1), dtype=np.float64)
+    par = np.zeros((6,np.size(pguesses,1)), dtype=np.float64)
+    parunc = np.zeros((6,np.size(pguesses,1)), dtype=np.float64)
+    
+    for tweakfitindex in range(np.size(pguesses,1)):
+        fitminimized = computeGausPoissDist(avgimgravel, pguesses[0,tweakfitindex], std, pguesses[1,tweakfitindex], -1, pguesses[2,tweakfitindex])
         params = fitminimized.params
-        print(lmfit.fit_report(fitminimized))
-        par = paramsToList(params)[0]
-        parunc = paramsToList(params)[1]
-        parmatrix = [par,parunc]
+        #print(lmfit.fit_report(fitminimized))
+        reducedchisquared[tweakfitindex] = fitminimized.redchi
+        par[:,tweakfitindex] = np.array(paramsToList(params)[0])
+        parprint = par[:,tweakfitindex]
+        parunc[:,tweakfitindex] = np.array(paramsToList(params)[1])
         if debug:
+            print(lmfit.fit_report(fitminimized))
             adu = np.linspace(bincenters[0], bincenters[-1], int(0.5*(max(avgimgravel)-min(avgimgravel))))
-            plt.plot(adu, convolutionGaussianPoisson(adu, *par), 'r')
-            plt.yscale('log')
+            plt.plot(adu, convolutionGaussianPoisson(adu, *parprint), 'r')
+            #plt.yscale('log')
             plt.plot(adu, avgimghist, 'teal')
             plt.ylim(0.01, params['Npixelspeak'])
             plt.show()
             
+    #find best fit
+    optimalfitindex = np.argmin(reducedchisquared)
+    parmatrix = [par[:,optimalfitindex],parunc[:,optimalfitindex]]
+            
     # save fit results
-    print(parseFitMinimum(fitminimized))
-    darkcurrentestimate,offsetresidual,calibrationconstant = par[0],par[4],par[5]
+    bestfit = computeGausPoissDist(avgimgravel, pguesses[0,optimalfitindex], std, pguesses[1,optimalfitindex], -1, pguesses[2,optimalfitindex])
+    print(parseFitMinimum(bestfit))
+    darkcurrentestimate,offsetresidual,calibrationconstant = par[0,optimalfitindex],par[4,optimalfitindex],par[5,optimalfitindex]
     skipper_avg_cal = (avgimg - offsetresidual)/calibrationconstant
     if reverse: offset = mu - offsetresidual
     else: offset = mu + offsetresidual
@@ -167,7 +196,7 @@ def calibrationDC(avgimg,std,reverse,debug):
         print(skipper_avg_cal.ravel())
     
     
-    return parmatrix, reducedchisquared, offset
+    return parmatrix, reducedchisquared[optimalfitindex], offset
 
 
 
