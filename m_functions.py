@@ -63,6 +63,25 @@ def selectImageRegion(image,analysisregion):
             return image_eper
         else:
             warnings.warn('WARNING: Image has no overscan. EPER CTE estimation cannot be carried out.')
+    elif analysisregion == 'arbitrary':
+        lowerrow = config['lower_row']
+        upperrow = config['upper_row']
+        lowercolumn = config['lower_column']
+        uppercolumn = config['upper_column']
+        if lowerrow < 0 or upperrow < 0 or lowercolumn < 0 or uppercolumn < 0:
+            print('Invalid choice for arbitrary region. Falling back to full image')
+            return image
+        elif lowerrow > np.size(image,0) or upperrow > np.size(image,0) or lowercolumn > np.size(image,1) or uppercolumn > np.size(image,1):
+            print('Invalid choice for arbitrary region. Falling back to full image')
+            return image
+        elif lowerrow > upperrow or lowercolumn > uppercolumn:
+            print('Invalid choice for arbitrary region. Falling back to full image')
+            return image
+        else:
+            rowidx = np.arange(lowerrow, upperrow)
+            colidx = np.arange(lowercolumn, uppercolumn)
+            image_arbitrary = image[np.ix_(rowidx, colidx)]
+        return image_arbitrary
     else:
         print('WARNING: Analysis region defined incorrectly. Falling back to full image')
         return image
@@ -137,10 +156,10 @@ def sigmaFinder(image, debug):
     if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std(); fwhm,fwhmcounts = float('nan'),float('nan')
     else:
         if reverse: #works well
-            while (bins - np.argmax(pcdhistogram) < 30): #and reverse) or (np.argmax(pcdhistogram) < 30 and (not reverse)):
+            while (bins - np.argmax(pcdhistogram) < 30):
                 bins += 10
                 pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-        #else: # did not understand wth is going on with four lines below
+        else: # four lines below hugely slow things down. Unlikely to have issue with not reversed images anyways
         #    while (np.argmax(pcdhistogram) < 30):
         #        bins += 10
         #        print(np.argmax(pcdhistogram))

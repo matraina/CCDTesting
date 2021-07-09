@@ -204,7 +204,14 @@ geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
 doc.preamble.append(Command('title', 'Image Analysis Report on Charge Transfer'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
+doc.preamble.append(NoEscape(r'\usepackage{tocloft}'))
+doc.preamble.append(NoEscape(r'\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}'))
+doc.preamble.append(NoEscape(r'\usepackage{hyperref}'))
+doc.preamble.append(NoEscape(r'\usepackage{bookmark}'))
 doc.append(NoEscape(r'\maketitle'))
+doc.append(NoEscape(r'\tableofcontents'))
+doc.append(NoEscape(r'\thispagestyle{empty}'))
+doc.append(NewPage())
 
 #############################################
 #Print acqusition parameters value in report#
@@ -398,8 +405,7 @@ if reportCTE:
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
-            fitjusticationlineline = "NOTE: A good gaussian fit of pcdd's is essential for Kcl to be an effective charge loss classifier"
-            doc.append(fitjusticationlineline)
+            doc.append(NoEscape(r'NOTE: A good gaussian fit of the PCDDs is essential for $S_{k_{cl}}$ to be an effective charge loss classifier'))
             plt.clf()
             doc.append(NewPage())
             
@@ -411,7 +417,7 @@ if reportCTE:
             axs[0].tick_params(axis='both', which='both', length=10, direction='in')
             axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[0].get_yticklabels(), visible=True)
-            axs[0].set_title('$k_{cl}~=~$' + str(round(kclPCDD01,4)) + '$\pm$'+ str(round(kclPCDDuncertainty01,4)) + ', $S(k_{cl})~=~$' + str(round(kclPCDD01/kclPCDDuncertainty01,4)) + ', skewness = ' + str(round(skewnessPCDD01,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty01,4)))
+            axs[0].set_title('$k_{cl}~=~$' + str(round(kclPCDD01,4)) + '$\pm$'+ str(round(kclPCDDuncertainty01,4)) + ', $S_{k_{cl}}~=~$' + str(round(kclPCDD01/kclPCDDuncertainty01,4)) + ', skewness = ' + str(round(skewnessPCDD01,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty01,4)))
         
             centeredskipperdiffexposed = [s for s in skipperdiffexposedravelled-muPCDD if s != -muPCDD]
             axs[1].hist(centeredskipperdiffexposed, 600, range = (-20*stdPCDD,10*stdPCDD), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
@@ -419,7 +425,7 @@ if reportCTE:
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[0].get_yticklabels(), visible=True)
-            axs[1].set_title('$k_{cl}~=~$' + str(round(kclPCDD,4)) + '$\pm$'+ str(round(kclPCDDuncertainty,4)) + ', $S(k_{cl})~=~$' + str(round(kclPCDD/kclPCDDuncertainty,4)) + ', skewness = ' + str(round(skewnessPCDD,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty,4)))
+            axs[1].set_title('$k_{cl}~=~$' + str(round(kclPCDD,4)) + '$\pm$'+ str(round(kclPCDDuncertainty,4)) + ', $S_{k_{cl}}~=~$' + str(round(kclPCDD/kclPCDDuncertainty,4)) + ', skewness = ' + str(round(skewnessPCDD,4)) + '$\pm$'+ str(round(skewnessPCDDuncertainty,4)))
             
             plt.subplots_adjust(hspace=0.5)
             for ax in axs.flat:
@@ -441,8 +447,8 @@ if default_directory_structure:
     reportname = 'reports/transfer_'+sys.argv[2]
 else:
     reportname = 'transfer_'+sys.argv[2]
-doc.generate_pdf(reportname, clean_tex=False)
-os.remove(reportname+'.tex')
+
+doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')

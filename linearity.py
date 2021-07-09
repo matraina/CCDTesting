@@ -237,7 +237,14 @@ geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
 doc.preamble.append(Command('title', 'Image Analysis Report on Linearity'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
+doc.preamble.append(NoEscape(r'\usepackage{tocloft}'))
+doc.preamble.append(NoEscape(r'\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}'))
+doc.preamble.append(NoEscape(r'\usepackage{hyperref}'))
+doc.preamble.append(NoEscape(r'\usepackage{bookmark}'))
 doc.append(NoEscape(r'\maketitle'))
+doc.append(NoEscape(r'\tableofcontents'))
+doc.append(NoEscape(r'\thispagestyle{empty}'))
+doc.append(NewPage())
 
 #############################################
 #Print acqusition parameters value in report#
@@ -420,8 +427,8 @@ if default_directory_structure:
 else:
     if not multipleimages: reportname = 'linearity_'+sys.argv[2]
     if multipleimages: reportname = 'linearity_'+str(lowerindex)+'_'+str(upperindex)
-doc.generate_pdf(reportname, clean_tex=False)
-os.remove(reportname+'.tex')
+
+doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')
