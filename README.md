@@ -5,33 +5,43 @@ HOW TO:
 #####Directory structure#####
 Analysis directory (tipically CCDName/date/) must contain raw/, processed/ , header/ and reports/ directories if raw_processed_header_reports_dir_structure set to true in config.json
 Alternatively, it is possible to have input and output files all in the same directory; this should be set in 'working_directory' in config.json 
-Using multi_Image_Analysis.sh, the latter 3 (processed/ header/ and reports/) will be created if not there, but having raw/ with .fits files is a requirement (if raw_processed_header_reports_dir_structure set to true in config.json).
-
-
-#####Shell analysis automation script#####
-source multi_Image_analysis.sh      path/to/CCDTesting/directory    raw_Image_Name      processed_Image_Name      start_Index_In_Image_Name     end_Index_In_Image_Name        
-e.g.: source multi_Image_Analysis.sh     /home/damic/data/Parameter_Scans/UW1603S/20210118   Image_LPNHE_VDD_    Img_VDD_   16     24
-In the case of line above images: Image_LPNHE_VDD_16.fits, Image_LPNHE_VDD_17.fits, ..., Image_LPNHE_VDD_24.fits will be analyzed and processed into Img_VDD_16.fits, etc.
-Headers and reports of all images will be in the respective directories inside path/to/CCDTesting/directory (if selected in config.json)
 
 #####Configuration file#####
-- test should be stated in config file before running the corresponding analysis script. Current options: 'tweaking', 'linearity'
+- test should be stated in config file before running the corresponding analysis script. Current options: 'tweaking', 'linearity','quality','chargetransfer','clusters_depth_calibration'
+- if run executable =/= from stated test code will ask to confirm
+
+
 Structure of the configuration file:
 
 {
-    "test" : "linearity",
+    "test" : "tweaking",
     "working_directory" : "./", #mother directory where images or directory structure (raw/, processed/, etc.) are located
     "raw_processed_header_reports_dir_structure" : true, #using raw/, processed/, header, reports/ directory structure?
     "skip_start" : 5, #start skip used for single skip noise, difference and average image
     "skip_end" : -1, #end skip for difference and average image
     "fix_leach_reconstruction" : true, #correct reconstruction bug due to leach
     "reverse" : true, #number of electrons increasing (true) or decreasing (false) as ADU value decreases
-    "ccd_register_size": 1036,  #size of register for overscan location
-    "analysis_region" : "full", #where to compute noise and dark current (anticlustering only). Accepted values: 'full', 'exposed_pixels', 'overscan'
-    "calibration_constant_guess" : 10, #guess for calibration constant used if calibration fails (or not performed)
+    "ccd_register_size": 1036,  #size of register for overscan location (prescan+registersize+prescan+overscan)
+    "analysis_region" : "full", #where to compute noise and dark current (anticlustering only). Accepted values: 'full', 'exposed_pixels', 'overscan', 'arbitrary'
+    if analysis_region set to 'arbitrary', also change arguments below to meaningful/possible values to locate chosen region:
+    "lower_row":-1, #if set to -1 fall back to full image
+    "upper_row":-1,
+    "lower_column":-1,
+    "upper_column":-1,
+    "kcl_threshold":3.2, #threshold in sigma units for charge loss coefficient PCDD tail counts (eg count below -3.2sigma and above 3.2sigma)
+    "calibration_constant_guess" : 10, #guess for calibration constant used in fit and if calibration fails/not performed
     "print_header" : false, #print header.txt? (in /header or mother dir) 
     "tweaking_analysis":  #configure tweaking analysis
     [{
+        "multiple_images" :
+        [{
+            "use_multiple_images" : false,
+            "lower_index" : 2, #image_index at the end of image name. Eg Image_LPNHE_2
+            "upper_index" : 3,
+            "scan_report" : true, # report for a paramter scan 
+            "scan_parameters": "VDD", #for which paramter
+            "scan_intervals": "-17,-24,-2" #specify scan values (not used ftm)
+        }],
         "report" : #compute and report on below objects (tweaking)
         [{
             "header" : true, #extract and print header in report
@@ -67,8 +77,8 @@ Structure of the configuration file:
 
 
 #####Run tweaking.py (linearity.py, etc.) analysis script (can be automated to analyze and report on several images from e.g. parameter scan)#####
-python3      tweaking.py       raw_Image_Name        processed_Img_Name   #.fits must be omitted for both arguments    
-e.g.: python3 main.py Image_LPNHE_VDD_16 Img_VDD_16
+./tweaking.py       raw_Image_Name        processed_Img_Name   #.fits must be omitted for both arguments    
+e.g.: ./tweaking.py Image_LPNHE_16 Img_16
 
 
 General Notes:
@@ -79,5 +89,5 @@ General Notes:
 - There is no .fits extension at the end of image name (for raw and for processed image) both in shell and python scripts
 
 Acknowledgements:
+- The fit framework was adapted based on Alex Piers example (check calibration module for further info)
 - The code used few basic lines of plot_fits-image.py (By: Lia R. Corrales, Adrian Price-Whelan, Kelle Cruz. License: BSD) to display info and open .fits files with python
--
