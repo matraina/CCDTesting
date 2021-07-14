@@ -435,8 +435,87 @@ if not multipleimages:
     #############################################
 
     ampss, muss, stdss, muncss, stduncss = startskipfitpar #ss: start skip
+    if reportImage == True: reportImage='cluster'
+    if reportImage=='full':
+        
+        with doc.create(Section('Images')):
+        
+            if nskips!=1:
+                plotrange = [0,np.size(skipper_image_start,0),0,np.size(skipper_image_start,1)]
+                width = 8
+                fig=plt.figure(figsize=(1.2*width,width))
+                from matplotlib import gridspec
+                
+                gs = gridspec.GridSpec(6,1)
+                #gs.update(wspace=0.025, hspace=0.05)
+                
+                ax1=fig.add_subplot(gs[0,0])
+                plt.imshow(skipper_image_start[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+                plt.title("Start skip")
+                plt.ylabel("row")
+                cax1=make_colorbar_with_padding(ax1) # add a colorbar within its own axis the same size as the image plot
+                cb1 = plt.colorbar(cax=cax1)
+                
+                ax2=fig.add_subplot(gs[1,0])
+                plt.imshow(skipper_image_end[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+                plt.title("End skip")
+                plt.ylabel("row")
+                cax2=make_colorbar_with_padding(ax2) # add a colorbar within its own axis the same size as the image plot
+                cb2 = plt.colorbar(cax=cax2)
+                
+                ax3=fig.add_subplot(gs[2,0])
+                plt.imshow(skipper_avg0[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+                plt.title("Average")
+                plt.ylabel("row")
+                cax3=make_colorbar_with_padding(ax3) # add a colorbar within its own axis the same size as the image plot
+                cb3 = plt.colorbar(cax=cax3)
+                
+                ax4=fig.add_subplot(gs[3,0])
+                plt.imshow(skipper_std[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+                plt.title("Standard deviation")
+                plt.ylabel("row")
+                cax4=make_colorbar_with_padding(ax4) # add a colorbar within its own axis the same size as the image plot
+                cb4 = plt.colorbar(cax=cax4)
+                
+                ax5=fig.add_subplot(gs[4,0])
+                plt.imshow(skipper_diff_01[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+                plt.title("First-second skip difference")
+                plt.ylabel("row")
+                cax5=make_colorbar_with_padding(ax5) # add a colorbar within its own axis the same size as the image plot
+                cb5 = plt.colorbar(cax=cax5)
+                
+                ax6=fig.add_subplot(gs[5,0])
+                plt.imshow(skipper_diff[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))#,extent=(,570,10,0))
+                plt.title("Second-end skip difference")
+                plt.ylabel("row")
+                plt.xlabel("column")
+                cax6=make_colorbar_with_padding(ax6) # add a colorbar within its own axis the same size as the image plot
+                cb6 = plt.colorbar(cax=cax6)
+                
+                fig.tight_layout()
+                #fig.subplots_adjust(bottom=None,top=None,right=None,hspace = None)
 
-    if reportImage:
+            else:
+                #halfrangey = np.size(skipper_image_start,0)/2; halfrangex = np.size(skipper_image_start,1)/2
+                plotrange = [0,np.size(skipper_image_start,0),0,np.size(skipper_image_start,1)]
+                fig=plt.figure(figsize=(8,8))
+                    
+                ax1=fig.add_subplot(111)
+                plt.imshow(skipper_image_start[plotrange[0]:plotrange[1],plotrange[2]:plotrange[3]],cmap=plt.cm.jet,extent=(plotrange[2],plotrange[3],plotrange[1],plotrange[0]))
+                plt.title("Start skip")
+                plt.ylabel("row")
+                cax1=make_colorbar_with_padding(ax1) # add a colorbar within its own axis the same size as the image plot
+                cb1 = plt.colorbar(cax=cax1)
+
+            fig.tight_layout(pad=.001)
+            
+        with doc.create(Figure(position='htb!')) as plot:
+            plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+            plot.add_caption('Exposed pixels region for various images.')
+        plt.clf()
+        doc.append(NewPage())
+
+    if reportImage=='cluster':
 
         centeredsstoplot = reversign*(skipper_image_start - muss)
         clustercandidates = m_reconstruction.findChargedPixelNoBorder(centeredsstoplot,stdss)
@@ -1062,8 +1141,14 @@ if multipleimages:
                 skipperavgcalibrated = skipper_avg_cal_stack[:,:,iimage].ravel()
                 try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
                     if calibrationconstant == calibrationguess: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
-                    else: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
-                    nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
+                    elif calibrationconstant <= 1:
+                        skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -200 and  s < 200]
+                        if 0.01 < calibrationconstant <=0.1: skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -2000 and  s < 2000]
+                        elif calibrationconstant <= 0.01: skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -20000 and  s < 20000]
+                        nbins=int((max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))/10)
+                    else:
+                        skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
+                        nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
                 except: #if so we keep skipperavgcalibratedravel without range
                     skipperavgcalibratedravel = skipperavgcalibrated
                     nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))

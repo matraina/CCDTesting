@@ -40,7 +40,7 @@
         "report" :
         [{
             "header" : false,
-            "image" : false,
+            "image" : "cluster",
             "pcds" : true,
             "chargeloss" : true,
             "calibration_darkcurrent" : true,
