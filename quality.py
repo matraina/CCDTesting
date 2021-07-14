@@ -300,7 +300,7 @@ doc.append(NewPage())
 ################Image section#################
 ##############################################
 if reportImage:
-    stddev = sigmaFinder(image_data0,False)[2]
+    stddev = sigmaFinder(image_data0,fwhm_est=True,False)[2]
     clustercandidates = findChargedPixelNoBorder(image_data0,stddev)
     isChargedCrown = True; coor = np.size(image_data0,0)//2, np.size(image_data0,1)//2
     for coor in clustercandidates:
@@ -341,7 +341,7 @@ if reportImage:
 if reportQuality:
     with doc.create(Section('Data Quality')):
         if nskips == 1:
-            #overscanmean,overscansigma=sigmaFinder(image_overscan,False)[1:3]
+            #overscanmean,overscansigma=sigmaFinder(image_overscan,fwhm_est=True,False)[1:3]
             fig, axs = plt.subplots(4, 1, figsize=(11,10), sharey=False, tight_layout=True)
             if multipleimages:
                 for i in range(upperindex-lowerindex+1):

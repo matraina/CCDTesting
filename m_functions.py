@@ -139,7 +139,7 @@ def round_sig_2(x, sig=2):
     if x == 0: x = 0.00001
     return round(x, sig-int(floor(log10(abs(x))))-1)
 
-def sigmaFinder(image, debug):
+def sigmaFinder(image, fwhm_est, debug):
     import numpy as np
     from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
@@ -155,37 +155,44 @@ def sigmaFinder(image, debug):
     except: pcdhistogram, binedges = np.histogram(pcd, 100, density=False)
     if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std(); fwhm,fwhmcounts = float('nan'),float('nan')
     else:
-        if reverse: #works well
-            while (bins - np.argmax(pcdhistogram) < 30):
-                bins += 10
-                pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-        #else: # 3 lines below hugely slow things down. Unlikely to have issue with not reversed images anyways
-        #    while (np.argmax(pcdhistogram) < 30):
-        #        bins += 10
-        #        print(np.argmax(pcdhistogram))
-        #        pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-        mostlikelyentry = 0.5*(binedges[np.argmax(pcdhistogram)]+binedges[np.argmax(pcdhistogram)+1]) #pedestal estimation
-        #find sigma using FWHM
-        mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
-        try:
-            #loop towards right tail of gaussian to find bin of FWHM. Loop condition 10-fold checks that we're not <= HM for a fluctuation
-            bincounter = 1
-            condition = np.ones(10)
-            while(any(condition)):
-                bincounter=bincounter+1
-                for i in range (0,len(condition)): condition[i] = pcdhistogram[np.argmax(pcdhistogram)+bincounter+(i+1)] >  0.5*mostlikelyentrycounts
-            #FWHM ADUs value
-            fwhm = 0.5*( binedges[np.argmax(pcdhistogram)+bincounter] + binedges[np.argmax(pcdhistogram)+bincounter+1] )
+        if fwhm_est:
+            if reverse: #works well
+                while (bins - np.argmax(pcdhistogram) < 30):
+                    bins += 10
+                    pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
+            #else: # 3 lines below hugely slow things down. Unlikely to have issue with not reversed images anyways
+            #    while (np.argmax(pcdhistogram) < 30):
+            #        bins += 10
+            #        print(np.argmax(pcdhistogram))
+            #        pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
+            mostlikelyentry = 0.5*(binedges[np.argmax(pcdhistogram)]+binedges[np.argmax(pcdhistogram)+1]) #pedestal estimation
             #find sigma using FWHM
-            fwhmcounts = pcdhistogram[np.argmax(pcdhistogram) + bincounter]
-            #sigma is: sigma  = 0.5*FWHM/sqrt(2ln2)
-            sigma = abs(mostlikelyentry - fwhm)
-            sigma = sigma/np.sqrt(2*np.log(2))
-        except:
+            mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
+            try:
+                #loop towards right tail of gaussian to find bin of FWHM. Loop condition 10-fold checks that we're not <= HM for a fluctuation
+                bincounter = 1
+                condition = np.ones(10)
+                while(any(condition)):
+                    bincounter=bincounter+1
+                    for i in range (0,len(condition)): condition[i] = pcdhistogram[np.argmax(pcdhistogram)+bincounter+(i+1)] >  0.5*mostlikelyentrycounts
+                #FWHM ADUs value
+                fwhm = 0.5*( binedges[np.argmax(pcdhistogram)+bincounter] + binedges[np.argmax(pcdhistogram)+bincounter+1] )
+                #find sigma using FWHM
+                fwhmcounts = pcdhistogram[np.argmax(pcdhistogram) + bincounter]
+                #sigma is: sigma  = 0.5*FWHM/sqrt(2ln2)
+                sigma = abs(mostlikelyentry - fwhm)
+                sigma = sigma/np.sqrt(2*np.log(2))
+            except:
+                debug = False
+                fwhm, fwhmcounts = float('nan'),float('nan')
+                mostlikelyentry=np.array(pcd).mean()
+                sigma=np.array(pcd).std()
+                print('Accurate noise estimation failed. Using pcd array statistics as fit guess: mean ='+str(round(mostlikelyentry,2))+' ADU and std= '+str(round(sigma,4))+' ADU')
+        else:
             fwhm, fwhmcounts = float('nan'),float('nan')
             mostlikelyentry=np.array(pcd).mean()
+            mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
             sigma=np.array(pcd).std()
-            print('Accurate noise estimation failed. Using pcd array statistics as fit guess: mean ='+str(round(mostlikelyentry,2))+' ADU and std= '+str(round(sigma,4))+' ADU')
     #now find accurate mean and stdev by fitting in proper range
     fitrange = 2.
     pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
@@ -202,7 +209,6 @@ def sigmaFinder(image, debug):
         munc = np.sqrt(np.diag(varmatrix))[1]
         stdunc = np.sqrt(np.diag(varmatrix))[-1]
     except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); munc,stdunc=0,0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
-    
     if debug:
         #bincenters=0.5*(binedges[1:] + binedges[:-1])
         #plt.plot(bincenters, pcdhistogram)

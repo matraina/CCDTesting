@@ -1,5 +1,5 @@
 {
-    "test" : "charge_transfer",
+    "test" : "tweaking",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -7,7 +7,7 @@
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
-    "reverse" : false,
+    "reverse" : true,
     
     "ccd_active_register_size": 1024,
     "prescan" : 8,
@@ -20,7 +20,7 @@
     "upper_column":-1,
 
     "kcl_threshold" : 3.2,
-    "calibration_constant_guess" : 5,
+    "calibration_constant_guess" : 10,
     
     "print_header" : false,
     

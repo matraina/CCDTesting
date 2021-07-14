@@ -149,7 +149,7 @@ if not multipleimages:
     #SINGLE IMAGE LINEARITY STUDY: MEASURED VS EXPECTED N ELECTRONS###############
     ##############################################################################
     skipper_avg0 = getAverageSkipperImage(image_file)
-    offset, avg0_std = sigmaFinder(skipper_avg0, debug = False)[1:3]
+    offset, avg0_std = sigmaFinder(skipper_avg0, fwhm_est=True, debug = False)[1:3]
     if calibrate:
         parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(skipper_avg0, avg0_std, reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
@@ -162,7 +162,7 @@ if not multipleimages:
     for npeakelectron in range(maxelectrons+1):
         npeakarray = [s for s in skipper_avg_cal_ravelled if s > npeakelectron - 3*calibratedsigma and s < npeakelectron + 3*calibratedsigma]
         if len(npeakarray) == 0: maxelectrons = npeakelectron - 1; break
-        tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, debug = False)[1:5]
+        tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, fwhm_est=True, debug = False)[1:5]
         #print(tmpmu, tmpstd)
         peakmus.append(tmpmu); peakstds.append(tmpstd); peakmuncs.append(tmpmunc); peakstduncs.append(tmpstdunc)
 
@@ -177,7 +177,7 @@ if multipleimages:
     hdr = fits.getheader(nameprefix+str(lowerindex)+'.fits',0)
     nskips = hdr['NDCMS']  # n of skips
     avgimagestack = reconstructAvgImageStack(nameprefix,lowerindex,upperindex)
-    offset, avg0_std = sigmaFinder(avgimagestack[:,:,0], debug = False)[1:3]
+    offset, avg0_std = sigmaFinder(avgimagestack[:,:,0], fwhm_est=True, debug = False)[1:3]
     if transfercurve:
         print('I am going to compute the photon transfer curve for the selected images')
         means,stddevs,meansunc,stddevsunc = getADUMeansStds(avgimagestack,lowerindex,upperindex)
@@ -194,7 +194,7 @@ if multipleimages:
         for npeakelectron in range(maxelectrons+1):
             npeakarray = [s for s in skipper_avg_cal_ravelled if s > npeakelectron - 3*calibratedsigma and s < npeakelectron + 3*calibratedsigma]
             if len(npeakarray) == 0: maxelectrons = npeakelectron - 1; break
-            tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, debug = False)[1:5]
+            tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, fwhm_est=True, debug = False)[1:5]
             #print(tmpmu, tmpstd)
             peakmus.append(tmpmu); peakstds.append(tmpstd); peakmuncs.append(tmpmunc); peakstduncs.append(tmpstdunc)
 

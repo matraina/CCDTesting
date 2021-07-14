@@ -139,7 +139,7 @@ if not multipleimages:
     #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
     ##############################################################################
 
-    startskipfitpar = m_functions.sigmaFinder(skipper_image_start, debug=False) #ampss, muss, stdss, stduncss
+    startskipfitpar = m_functions.sigmaFinder(skipper_image_start, fwhm_est=False, debug=False) #ampss, muss, stdss, stduncss
     if reportPCD or reportCalibrationDarkcurrent:
         if nskips < 10: naverages = 0
         elif nskips < 100: naverages = 1; numberskips=[10]
@@ -149,7 +149,7 @@ if not multipleimages:
                 numberskips.append(index*100)
                 naverages = index+1; index+=1
         ampmanyskip, mumanyskip, stdmanyskip, stduncmanyskip = [],[],[],[]
-        for k in range(naverages): amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages[:,:,k], debug=False); ampmanyskip.append(amp);mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
+        for k in range(naverages): amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages[:,:,k], fwhm_est=True, debug=False); ampmanyskip.append(amp);mumanyskip.append(mu); stdmanyskip.append(std); stduncmanyskip.append(stdunc)
 
     ##############################################################################
     #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
@@ -160,7 +160,7 @@ if not multipleimages:
         PCDDstudyparameters01 = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD,
         PCDDstudyparameters = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
         kclsignificance01,kclsignificance = PCDDstudyparameters01[2]/PCDDstudyparameters01[3],PCDDstudyparameters[2]/PCDDstudyparameters[3]
-        if abs(kclsignificance01) or abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
+        if abs(kclsignificance01) >3 or abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
 
     ##############################################################################
     #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
@@ -228,10 +228,10 @@ if multipleimages:
     muncmanyskip_stack = np.zeros((naverages, nimages), dtype=np.float64)
     stduncmanyskip_stack = np.zeros((naverages, nimages), dtype=np.float64)
     for iimage in range(upperindex-lowerindex+1):
-        startskipfitpar_stack[:,iimage] = m_functions.sigmaFinder(skipper_image_start_stack[:,:,iimage], debug=False)
+        startskipfitpar_stack[:,iimage] = m_functions.sigmaFinder(skipper_image_start_stack[:,:,iimage], fwhm_est=False, debug=False)
         #ampss, muss, stdss, stduncss
         for k in range(naverages):
-                ampmanyskip_stack[k,iimage], mumanyskip_stack[k,iimage], stdmanyskip_stack[k,iimage], muncmanyskip_stack[k,iimage], stduncmanyskip_stack[k,iimage] = m_functions.sigmaFinder(skipper_averages_stack[:,:,k,iimage], debug=False)
+                ampmanyskip_stack[k,iimage], mumanyskip_stack[k,iimage], stdmanyskip_stack[k,iimage], muncmanyskip_stack[k,iimage], stduncmanyskip_stack[k,iimage] = m_functions.sigmaFinder(skipper_averages_stack[:,:,k,iimage], fwhm_est=True, debug=False)
         
 
     ##############################################################################
@@ -563,7 +563,7 @@ if not multipleimages:
             if nskips!=1:
                 try: calibrationconstant; guessCC = False
                 except: calibrationconstant = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
-                averageimageoffset = m_functions.sigmaFinder(skipper_avg0, debug=False)[1]
+                averageimageoffset = m_functions.sigmaFinder(skipper_avg0, fwhm_est=True, debug=False)[1]
                 skipper_avg0_region = m_functions.selectImageRegion(skipper_avg0,analysisregion)
                 avg_image_0ravel = skipper_avg0_region.ravel()
                 avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
@@ -574,11 +574,15 @@ if not multipleimages:
                     avg_image_unsaturated = [s for s in avg_image_unsaturated if averageimageoffset - calibrationconstant < s < 5*averageimageoffset + calibrationconstant]
                     rangeadhoc =  (averageimageoffset - calibrationconstant, averageimageoffset + 5*calibrationconstant)
                 if len(avg_image_unsaturated) < 50:
-                    avg_image_unsaturated = [s for s in np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False) if averageimageoffset - 20*calibrationconstant < s < averageimageoffset + 20*calibrationconstant]
+                    avg_image_unsaturated = [s for s in np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False) if - 20*calibrationconstant < s - averageimageoffset < 20*calibrationconstant]
                     rangeadhoc =  (averageimageoffset - 20*calibrationconstant, averageimageoffset + 20*calibrationconstant)
                 avg_image_hist, binedges = np.histogram([s for s in avg_image_0ravel if s != 0], range=rangeadhoc, bins = 200, density=False)
                 ampls = avg_image_hist[np.argmax(avg_image_hist)]
                 bincenters = np.arange(averageimageoffset - 3*stdmanyskip[-1], averageimageoffset + 3*stdmanyskip[-1] + 6*stdmanyskip[-1]/200, 6*stdmanyskip[-1]/200)
+                if abs(rangeadhoc[1]-rangeadhoc[0]) < max(bincenters) - min(bincenters):
+                    rangeadhoc = (min(bincenters),max(bincenters))
+                    avg_image_hist, binedges = np.histogram([s for s in avg_image_0ravel if s != 0], range=rangeadhoc, bins = 200, density=False)
+                    ampls = avg_image_hist[np.argmax(avg_image_hist)]
                 axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,stdmanyskip[-1]), label='gaussian fit curve', linewidth=1, color='red')
                 axs[1].hist(avg_image_0ravel, 200, rangeadhoc, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
                 if reverse: axs[1].legend(loc='upper left',prop={'size': 14})
@@ -894,7 +898,7 @@ if multipleimages:
                 if nskips!=1:
                     try: calibrationconstant = calibrationconstant_stack[iimage]; guessCC = False
                     except: calibrationconstant = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
-                    averageimageoffset = m_functions.sigmaFinder(skipper_avg0_stack[:,:,iimage], debug=False)[1]
+                    averageimageoffset = m_functions.sigmaFinder(skipper_avg0_stack[:,:,iimage], fwhm_est=True, debug=False)[1]
                     skipper_avg0_region = m_functions.selectImageRegion(skipper_avg0_stack[:,:,iimage],analysisregion)
                     avg_image_0ravel = skipper_avg0_region.ravel()
                     avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)

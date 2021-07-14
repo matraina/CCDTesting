@@ -450,7 +450,7 @@ def getAverageSkipperImage(image_file):
     
 def reverseImage(image_data):
     from m_functions import sigmaFinder
-    offset = sigmaFinder(image_data,debug=False)[1]
+    offset = sigmaFinder(image_data,fwhm_est=True,debug=False)[1]
     reversed_image_data = offset - image_data
     return reversed_image_data
     
@@ -524,7 +524,7 @@ def getADUMeansStds(imagestack, lowerindex, upperindex):
     from m_functions import sigmaFinder
     means,stddevs,meansunc,stddevsunc = [],[],[],[]
     for i in range(lowerindex,upperindex+1):
-        tmpmu,tmpstd,tmpmunc,tmpstunc = sigmaFinder(imagestack[:,:,i-lowerindex],debug=False)[1:5]
+        tmpmu,tmpstd,tmpmunc,tmpstunc = sigmaFinder(imagestack[:,:,i-lowerindex],fwhm_est=True,debug=False)[1:5]
         means.append(tmpmu);stddevs.append(tmpstd);meansunc.append(tmpmunc);stddevsunc.append(tmpstunc)
     return means,stddevs,meansunc,stddevsunc
 

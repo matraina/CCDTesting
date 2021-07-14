@@ -172,7 +172,7 @@ if not multipleimages:
         skipper_avg0 = getAverageSkipperImage(image_file)
         #plt.hist(skipper_avg0.ravel(),10000)
         #plt.show()
-        mu_avg0, sigma_avg0 = sigmaFinder(skipper_avg0,debug=False)[1:3]
+        mu_avg0, sigma_avg0 = sigmaFinder(skipper_avg0,fwhm_est=True,debug=False)[1:3]
         if calibrate:
             parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(skipper_avg0, sigma_avg0, reverse, debug=False)
             calibrationconstant = parametersDCfit[0][5]; calibratedsigma = sigma_avg0/calibrationconstant
@@ -248,7 +248,7 @@ if multipleimages:
         print('Following image structure expected: N. rows columns skips ',nrows,ncolumns,nskips)
         single_skip_image_stack = reconstructAvgImageStack(nameprefix,lowerindex,upperindex)
         skipper_avg0 = single_skip_image_stack[:,:,0]
-        mu_avg0, sigma_avg0 = sigmaFinder(skipper_avg0,debug=False)[1:3]
+        mu_avg0, sigma_avg0 = sigmaFinder(skipper_avg0,fwhm_est=True,debug=False)[1:3]
         if calibrate:
             parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(single_skip_image_stack[:,:,0], sigma_avg0, reverse, debug=False)
             calibrationconstant = parametersDCfit[0][5]; calibratedsigma = sigma_avg0/calibrationconstant
@@ -257,7 +257,7 @@ if multipleimages:
         skipper_avg_exposed_stack = np.zeros((nrows, ncolumnsexp, nimages), dtype=np.float64)
         pedestals,sigmas,clusters,clustersenergy = [],[],[],[]
         for i in range(nimages): #clustering performed in ADU regardless of calibration
-            mutmp, sigmatmp = sigmaFinder(single_skip_image_stack[:,:,i],debug=False)[1:3]
+            mutmp, sigmatmp = sigmaFinder(single_skip_image_stack[:,:,i],fwhm_est=True,debug=False)[1:3]
             single_skip_image_stack[:,:,i] = reversign*(single_skip_image_stack[:,:,i] - mutmp) #reverse+img_ped_sub
             skipper_avg_exposed_stack[:,:,i] = selectImageRegion(single_skip_image_stack[:,:,i],'exposed_pixels')
             pedestals.append(mutmp); sigmas.append(sigmatmp)
@@ -347,7 +347,7 @@ if reportHeader:
 
 #############################################
 #imagetoprint for image and calib reports#
-if nskips == 1: imagetoprint = image_data; sigmatoprint = sigmaFinder(selectImageRegion(image_data,'overscan'),debug=False)[2]
+if nskips == 1: imagetoprint = image_data; sigmatoprint = sigmaFinder(selectImageRegion(image_data,'overscan'),fwhm_est=True,debug=False)[2]
 else: imagetoprint = reversign*(skipper_avg0 - offset)/calibrationconstant; sigmatoprint = sigma_avg0/calibrationconstant
 #############################################
 ###############Image section#################

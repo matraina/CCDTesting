@@ -236,7 +236,7 @@ doc.append(NewPage())
 #############################################
 if nskips!=1: reportImage=False
 if reportImage:
-    stddev = sigmaFinder(image_data,False)[2]
+    stddev = sigmaFinder(image_data,fwhm_est=True,False)[2]
     clustercandidates = findChargedPixelNoBorder(image_data,stddev)
     isChargedCrown = True; coor = np.size(image_data,0)//2, np.size(image_data,1)//2
     for coor in clustercandidates:
