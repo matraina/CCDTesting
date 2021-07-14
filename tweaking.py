@@ -723,8 +723,14 @@ if not multipleimages:
         skipperavgcalibrated = skipper_avg_cal.ravel()
         try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
             if calibrationconstant == calibrationguess: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
-            else: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
-            nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
+            elif calibrationconstant <= 1:
+                skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -200 and  s < 200]
+                if 0.01 < calibrationconstant <=0.1: skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -2000 and  s < 2000]
+                elif calibrationconstant <=0.01: skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -20000 and  s < 20000]
+                nbins=int((max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))/10)
+            else:
+                skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
+                nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
         except: #if so we keep skipperavgcalibratedravel without range
             skipperavgcalibratedravel = skipperavgcalibrated
             nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
@@ -733,6 +739,7 @@ if not multipleimages:
         bincenters=(binedges[:-1] + binedges[1:])/2
         npeaksp = 3
         dcpar = parametersDCfit[0][0], npeaksp, parametersDCfit[0][2]/(50/0.5), parametersDCfit[0][3]/calibrationconstant
+        if calibrationconstant <= 1: dcpar = parametersDCfit[0][0], npeaksp, parametersDCfit[0][2]/(0.1/0.5), parametersDCfit[0][3]/calibrationconstant
         #dcparunc has one more component (the gain) than dcpar (dcpar is an argument for the calibrated gaussian)
         try: dcparunc = parametersDCfit[1][0], parametersDCfit[1][1], parametersDCfit[1][2]/(50/0.5), parametersDCfit[1][3]/calibrationconstant, parametersDCfit[1][5]
         except: dcparunc = 0,0,0,0,0

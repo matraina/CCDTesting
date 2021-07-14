@@ -137,7 +137,8 @@ def convolutionGaussianPoisson(q, *p):
 from math import log10, floor
 def round_sig_2(x, sig=2):
     if x == 0: x = 0.00001
-    return round(x, sig-int(floor(log10(abs(x))))-1)
+    try: return round(x, sig-int(floor(log10(abs(x))))-1)
+    except: return x
 
 def sigmaFinder(image, fwhm_est, debug):
     import numpy as np
