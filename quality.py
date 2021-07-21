@@ -300,7 +300,7 @@ doc.append(NewPage())
 ################Image section#################
 ##############################################
 if reportImage:
-    stddev = sigmaFinder(image_data0,fwhm_est=True,False)[2]
+    stddev = sigmaFinder(image_data0,fwhm_est=True,debug=False)[2]
     clustercandidates = findChargedPixelNoBorder(image_data0,stddev)
     isChargedCrown = True; coor = np.size(image_data0,0)//2, np.size(image_data0,1)//2
     for coor in clustercandidates:
@@ -417,8 +417,8 @@ if reportQuality:
                     ax.set_yscale('log')
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.99\linewidth'))
-                if multipleimages: plot.add_caption('Overscan median and median absolute deviation (MAD) of images set')
-                else: plot.add_caption('Overscan median and median absolute deviation (MAD) as functions of skip number')
+                if multipleimages: plot.add_caption('Overscan median and median absolute deviation (MAD) of images set. If image has no overscan, exposed pixels are used.')
+                else: plot.add_caption('Overscan median and median absolute deviation (MAD) as functions of skip number. If image has no overscan, exposed pixels are used.')
             plt.clf()
             doc.append(NewPage())
             
