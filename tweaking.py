@@ -160,7 +160,7 @@ if not multipleimages:
         PCDDstudyparameters01 = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD,
         PCDDstudyparameters = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
         kclsignificance01,kclsignificance = PCDDstudyparameters01[2]/PCDDstudyparameters01[3],PCDDstudyparameters[2]/PCDDstudyparameters[3]
-        if abs(kclsignificance01) >3 or abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
+        if abs(kclsignificance01) > 3 or abs(kclsignificance) > 3: print('Kcl value flags probable charge loss')
 
     ##############################################################################
     #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
@@ -799,6 +799,7 @@ if not multipleimages:
     ##Calibrated image and Dark Current section##
     #############################################
     if reportCalibrationDarkcurrent and nskips!=1:
+        if analysisregion == 'arbitrary': skipper_avg_cal = m_functions.selectImageRegion(skipper_avg_cal,analysisregion)
         skipperavgcalibrated = skipper_avg_cal.ravel()
         try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
             if calibrationconstant == calibrationguess: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
@@ -839,7 +840,8 @@ if not multipleimages:
         with doc.create(Section('Dark Current')):
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image) and anticlustering (on '+analysisregion+' image region)')
+                if analysisregion == 'arbitrary': plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on arbitrary image region) and anticlustering (on '+analysisregion+' image region)')
+                else: plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on full image region) and anticlustering (on '+analysisregion+' image region)')
             calibrationline = 'Calibration constant is: '+str(round(calibrationconstant,4))+'±'+str(round_sig_2(dcparunc[4]))+' ADU per electron.'
             doc.append(calibrationline)
             plt.clf()

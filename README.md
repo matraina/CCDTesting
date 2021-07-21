@@ -22,7 +22,7 @@ Structure of the configuration file:
     "fix_leach_reconstruction" : true, #correct reconstruction bug due to leach
     "reverse" : true, #number of electrons increasing (true) or decreasing (false) as ADU value decreases
     "ccd_register_size": 1036,  #size of register for overscan location (prescan+registersize+prescan+overscan)
-    "analysis_region" : "full", #where to compute noise and dark current (anticlustering only). Accepted values: 'full', 'exposed_pixels', 'overscan', 'arbitrary'
+    "analysis_region" : "full", #where to compute noise and dark current (anticlustering only). Accepted values: 'full', 'exposed_pixels', 'overscan', 'arbitrary'. If image region is set to 'arbitrary', calibration convolution fit also performed using arbitrary region PCD.
     if analysis_region set to 'arbitrary', also change arguments below to meaningful/possible values to locate chosen region:
     "lower_row":-1, #if set to -1 fall back to full image
     "upper_row":-1,

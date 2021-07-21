@@ -14,12 +14,14 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from scipy.special import factorial
 import lmfit
+from m_functions import selectImageRegion
 
 #functions performing gaussPoisson convolution fit. Using lmfit library. Adapted from A. Piers https://github.com/alexanderpiers/damicm-image-preproc/
 
 import json
 with open('config.json') as config_file:
     config = json.load(config_file)
+    analysisregion = config['analysis_region']
     calibrationguess = config['calibration_constant_guess']
     
 def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurrent, npoisson):
@@ -117,6 +119,7 @@ def calibrationDC(avgimg,std,reverse,debug):
     mu = bincenters[np.argmax(avgimghist)]
     if reverse: avgimg = mu - avgimg
     else: avgimg = avgimg - mu
+    if analysisregion == 'arbitrary': avgimg = selectImageRegion(avgimg,analysisregion)
     avgimgravel=avgimg.ravel()
     avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
