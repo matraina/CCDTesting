@@ -11,16 +11,16 @@
     
     "ccd_active_register_size": 6144,
     "prescan" : 8,
-    "overscan" : 40,
+    "overscan" : 60,
     
-    "analysis_region" : "arbitrary",
+    "analysis_region" : "full",
     "lower_row" : 2,
     "upper_row" : 10,
-    "lower_column" : 0,
-    "upper_column" : 620,
+    "lower_column" : 500,
+    "upper_column" : 1000,
 
     "kcl_threshold" : 3.2,
-    "calibration_constant_guess" : 10,
+    "calibration_constant_guess" : 9,
     
     "print_header" : false,
     
@@ -44,8 +44,8 @@
             "pcds" : true,
             "chargeloss" : true,
             "calibration_darkcurrent" : true,
-            "fft_skips" : false,
-            "fft_row" : false
+            "fft_skips" : true,
+            "fft_row" : true
         }]
     }],
     
