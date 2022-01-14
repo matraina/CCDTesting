@@ -13,11 +13,11 @@
     "prescan" : 8,
     "overscan" : 120,
     
-    "analysis_region" : "arbitrary",
-    "lower_row" : 2,
+    "analysis_region" : "full",
+    "lower_row" : 4,
     "upper_row" : 20,
-    "lower_column" : 0,
-    "upper_column" : 3200,
+    "lower_column" : 6,
+    "upper_column" : 3071,
 
     "kcl_threshold" : 3.2,
     "calibration_constant_guess" : 9,
@@ -40,12 +40,12 @@
         "report" :
         [{
             "header" : false,
-            "image" : "cluster",
-            "pcds" : true,
-            "chargeloss" : true,
+            "image" : false,
+            "pcds" : false,
+            "chargeloss" : false,
             "calibration_darkcurrent" : true,
-            "fft_skips" : true,
-            "fft_row" : true
+            "fft_skips" : false,
+            "fft_row" : false
         }]
     }],
     

@@ -37,17 +37,17 @@ def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurre
     if darkcurrent > 0:
         params.add('dcrate', value=darkcurrent, vary=False)
     else:
-        params.add('dcrate', value=-1*darkcurrent, min = 0)
+        params.add('dcrate', value=-1*darkcurrent, min = 0, vary=True)
     params.add('Nelectrons', value=npoisson, vary=False)
-    params.add('Npixelspeak', value=len(avgimgravel)*binwidth, min = len(avgimgravel)*binwidth - 5000, max = len(avgimgravel)*binwidth + 5000)
-    params.add('sigma', value=avgimgstd, min = 0)
-    params.add('offset', value=avgimgmu)
+    params.add('Npixelspeak', value=len(avgimgravel)*binwidth, vary=True)
+    params.add('sigma', value=avgimgstd, min = 0, vary=True)
+    params.add('offset', value=avgimgmu, vary = True)
     if calibguess > 0:
         params.add('gain', value=calibguess, vary=True, min = 0)
     else:
         params.add('gain', value=-1*calibguess, min = 0)
     minimized = lmfit.minimize(lmfitGausPoisson, params, method='least_squares', args=(bincenters, avgimghist))
-
+    
     # Operations on the returned values to parse into a useful format
     return minimized
 
@@ -123,38 +123,7 @@ def calibrationDC(avgimg,std,reverse,debug):
     avgimgravel=avgimg.ravel()
     avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
-    
-    #fitminimized = computeGausPoissDist(avgimgravel, 0, std)
-    #params = fitminimized.params
-    #print(lmfit.fit_report(fitminimized))
-    #reducedchisquared = fitminimized.redchi
-    #par = paramsToList(params)[0]
-    #parunc = paramsToList(params)[1]
-    #parmatrix = [par,parunc]
-    #
-    #if debug:
-    #    adu = np.linspace(bincenters[0], bincenters[-1], nbins)
-    #    plt.plot(adu, convolutionGaussianPoisson(adu, *par), 'r')
-    #    plt.yscale('log')
-    #    plt.plot(adu, avgimghist, 'teal')
-    #    plt.ylim(0.01, params['Npixelspeak'])
-    #    plt.show()
-    #
-    #refit excluding negative (in electrons) side of pcd (sometimes weird features appear)
-    #if abs(reducedchisquared) > 1000:
-    #    print('First fit gave reduced chi squared: ' + str(round(reducedchisquared,4)) + '; retrying discarding negative side of pcd (<0 electrons)')
-    #    # Perform poisson gaus fit to data again
-    #    avgimgravel = [s for s in avgimgravel if s >= bincenters[np.argmax(avgimghist)] - std ]
-    #    nbins=int(0.5*(max(avgimgravel)-min(avgimgravel)))
-    #    avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
-    #    bincenters = (binedges[:-1] + binedges[1:])/2
-    #    fitminimized = computeGausPoissDist(avgimgravel, 0, std)
-    #    params = fitminimized.params
-    #    print(lmfit.fit_report(fitminimized))
-    #    par = paramsToList(params)[0]
-    #    parunc = paramsToList(params)[1]
-    #    parmatrix = [par,parunc]
-    
+        
     pguesses = fitGuessesArray(mu,calibrationguess,npeaks=4)
     reducedchisquared = np.zeros(np.size(pguesses,1), dtype=np.float64)
     par = np.zeros((6,np.size(pguesses,1)), dtype=np.float64)
