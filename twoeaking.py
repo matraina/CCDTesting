@@ -744,8 +744,8 @@ if reportPCD:
                 rangeadhoc_L = (min(bincenters),max(bincenters))
                 avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 200, density=False)
                 ampls_L = avg_image_hist_L[np.argmax(avg_image_hist_L)]
-            axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,stdmanyskip_L[-1]), label='gaussian fit curve', linewidth=1, color='red')
             axs[1].hist(avg_image_0ravel_L, 200, rangeadhoc_L, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+            axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,stdmanyskip_L[-1]), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend(loc='upper left',prop={'size': 14})
             else: axs[1].legend(loc='upper right',prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
@@ -769,9 +769,9 @@ if reportPCD:
         #numberSkips = [10,100,200,300,400,500,600,700,800,900,1000]
         ns = np.arange(1,nskips,1)
         #resolution = plt.plot(1,stdss,'ro',numberSkips[0:len(stdmanyskip)],stdmanyskip,'ro',ns,r(ns),'k-')
-        if nskips!=1: resolution_L = plt.errorbar(numberskips[0:len(stdmanyskip_L)],stdmanyskip_L,stduncmanyskip_L,xerr=None,fmt='.',ecolor='red',marker='o', mfc='red', mec='red', ms=4, label='measured resolution in ADU')
+        if nskips!=1: resolution_L = plt.errorbar(numberskips[0:len(stdmanyskip_L)],stdmanyskip_L,stduncmanyskip_L,xerr=None,ecolor='red',marker='o',fmt='.', mfc='red', mec='red', ms=4, label='measured resolution in ADU')
         else: resolution_L = plt.errorbar([],[])
-        resolution_L += plt.errorbar(1,stdss_L,stduncss_L,xerr=None,fmt='.',ecolor='red',marker='o', mfc='red', mec='red', ms=4)
+        resolution_L += plt.errorbar(1,stdss_L,stduncss_L,xerr=None,ecolor='red',marker='o',fmt='.',mfc='red', mec='red', ms=4)
         resolution_L = plt.plot(ns,r(ns),'k--',label='expected $1/\sqrt(N_{skip})$ trend based on first skip sigma')
         plt.legend(loc='upper right',prop={'size': 14})
         plt.ylabel('resolution [ADU]')
@@ -836,8 +836,8 @@ if reportPCD:
                 rangeadhoc_U = (min(bincenters),max(bincenters))
                 avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 200, density=False)
                 ampls_U = avg_image_hist_U[np.argmax(avg_image_hist_U)]
-            axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,stdmanyskip_U[-1]), label='gaussian fit curve', linewidth=1, color='red')
             axs[1].hist(avg_image_0ravel_U, 200, rangeadhoc_U, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+            axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,stdmanyskip_U[-1]), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend(loc='upper left',prop={'size': 14})
             else: axs[1].legend(loc='upper right',prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
@@ -861,9 +861,9 @@ if reportPCD:
         #numberSkips = [10,100,200,300,400,500,600,700,800,900,1000]
         ns = np.arange(1,nskips,1)
         #resolution = plt.plot(1,stdss,'ro',numberSkips[0:len(stdmanyskip)],stdmanyskip,'ro',ns,r(ns),'k-')
-        if nskips!=1: resolution_U = plt.errorbar(numberskips[0:len(stdmanyskip_U)],stdmanyskip_U,stduncmanyskip_U,xerr=None,fmt='.',ecolor='red',marker='o', mfc='red', mec='red', ms=4, label='measured resolution in ADU')
+        if nskips!=1: resolution_U = plt.errorbar(numberskips[0:len(stdmanyskip_U)],stdmanyskip_U,stduncmanyskip_U,xerr=None,ecolor='red',marker='o',fmt='.', mfc='red', mec='red', ms=4, label='measured resolution in ADU')
         else: resolution_U = plt.errorbar([],[])
-        resolution_U += plt.errorbar(1,stdss_U,stduncss_U,xerr=None,fmt='.',ecolor='red',marker='o', mfc='red', mec='red', ms=4)
+        resolution_U += plt.errorbar(1,stdss_U,stduncss_U,xerr=None,ecolor='red',marker='o',fmt='.', mfc='red', mec='red', ms=4)
         resolution_U = plt.plot(ns,r(ns),'k--',label='expected $1/\sqrt(N_{skip})$ trend based on first skip sigma')
         plt.legend(loc='upper right',prop={'size': 14})
         plt.ylabel('resolution [ADU]')
@@ -904,8 +904,8 @@ if reportChargeLoss and nskips!=1:
         pguess = [ampPCDD01_L,muPCDD01_L,stdPCDD01_L]
         try: pfit, varmatrix = curve_fit(gauss, bincenters, skipperdiffcoreravelledinrangehist01_L, p0=pguess); PCDDhistfit01_L = gauss(bincenters,*pfit)
         except: pfit = pguess; PCDDhistfit01_L = gauss(bincenters,*pfit)
-        axs[0].plot(bincenters, PCDDhistfit01_L, label='gaussian fit curve', linewidth=1, color='red')
         axs[0].hist(skipperdiffcoreravelledinrange01_L, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
+        axs[0].plot(bincenters, PCDDhistfit01_L, label='gaussian fit curve', linewidth=1, color='red')
         #axs[0].plot(bincenters,skipperdiffcoreravelledinrangehist01, label='pixel charge difference distribution', color='teal')
         axs[0].legend(loc='upper right',prop={'size': 14})
         axs[0].set_yscale('linear')
@@ -921,8 +921,8 @@ if reportChargeLoss and nskips!=1:
         pguess = [ampPCDD_L,muPCDD_L,stdPCDD_L]
         try: pfit, varmatrix = curve_fit(gauss, bincenters, skipperdiffcoreravelledinrangehist_L, p0=pguess); PCDDhistfit_L = gauss(bincenters,*pfit)
         except: pfit = pguess; PCDDhistfit_L = gauss(bincenters,*pfit)
-        axs[1].plot(bincenters, PCDDhistfit_L, label='gaussian fit curve', linewidth=1, color='red')
         axs[1].hist(skipperdiffcoreravelledinrange_L, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
+        axs[1].plot(bincenters, PCDDhistfit_L, label='gaussian fit curve', linewidth=1, color='red')
         #axs[1].plot(bincenters,skipperdiffcoreravelledinrangehist, label='pixel charge difference distribution', color='teal')
         axs[1].legend(loc='upper right',prop={'size': 14})
         axs[1].set_yscale('linear')
@@ -985,8 +985,8 @@ if reportChargeLoss and nskips!=1:
         pguess = [ampPCDD01_U,muPCDD01_U,stdPCDD01_U]
         try: pfit, varmatrix = curve_fit(gauss, bincenters, skipperdiffcoreravelledinrangehist01_U, p0=pguess); PCDDhistfit01_U = gauss(bincenters,*pfit)
         except: pfit = pguess; PCDDhistfit01_U = gauss(bincenters,*pfit)
-        axs[0].plot(bincenters, PCDDhistfit01_U, label='gaussian fit curve', linewidth=1, color='red')
         axs[0].hist(skipperdiffcoreravelledinrange01_U, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
+        axs[0].plot(bincenters, PCDDhistfit01_U, label='gaussian fit curve', linewidth=1, color='red')
         #axs[0].plot(bincenters,skipperdiffcoreravelledinrangehist01, label='pixel charge difference distribution', color='teal')
         axs[0].legend(loc='upper right',prop={'size': 14})
         axs[0].set_yscale('linear')
@@ -1002,8 +1002,8 @@ if reportChargeLoss and nskips!=1:
         pguess = [ampPCDD_U,muPCDD_U,stdPCDD_U]
         try: pfit, varmatrix = curve_fit(gauss, bincenters, skipperdiffcoreravelledinrangehist_U, p0=pguess); PCDDhistfit_U = gauss(bincenters,*pfit)
         except: pfit = pguess; PCDDhistfit_U = gauss(bincenters,*pfit)
-        axs[1].plot(bincenters, PCDDhistfit_U, label='gaussian fit curve', linewidth=1, color='red')
         axs[1].hist(skipperdiffcoreravelledinrange_U, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
+        axs[1].plot(bincenters, PCDDhistfit_U, label='gaussian fit curve', linewidth=1, color='red')
         #axs[1].plot(bincenters,skipperdiffcoreravelledinrangehist, label='pixel charge difference distribution', color='teal')
         axs[1].legend(loc='upper right',prop={'size': 14})
         axs[1].set_yscale('linear')
@@ -1059,7 +1059,9 @@ if reportCalibrationDarkcurrent and nskips!=1:
     if analysisregion == 'arbitrary': skipper_avg_cal_L = m_functions.selectImageRegion(skipper_avg_cal_L,analysisregion)
     skipperavgcalibrated_L = skipper_avg_cal_L.ravel()
     try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
-        if calibrationconstant_L == calibrationguess: skipperavgcalibratedravel_L = [s for s in skipperavgcalibrated_L.ravel() if s > -10 and  s < 10]
+        if calibrationconstant_L == calibrationguess:
+            skipperavgcalibratedravel_L = [s for s in skipperavgcalibrated_L.ravel() if s > -10 and  s < 10]
+            nbins=int((max(skipperavgcalibratedravel_L) - min(skipperavgcalibratedravel_L))/10)
         elif calibrationconstant_L <= 1:
             skipperavgcalibratedravel_L =  [s for s in skipperavgcalibrated_L.ravel() if s > -200 and  s < 200]
             if 0.01 < calibrationconstant_L <=0.1: skipperavgcalibratedravel_L =  [s for s in skipperavgcalibrated_L.ravel() if s > -2000 and  s < 2000]

@@ -9,15 +9,15 @@
     "fix_leach_reconstruction" : true,
     "reverse" : true,
     
-    "ccd_active_register_size": 6144,
+    "ccd_active_register_size": 3072,
     "prescan" : 8,
-    "overscan" : 60,
+    "overscan" : 120,
     
-    "analysis_region" : "full",
+    "analysis_region" : "arbitrary",
     "lower_row" : 2,
-    "upper_row" : 10,
-    "lower_column" : 500,
-    "upper_column" : 1000,
+    "upper_row" : 20,
+    "lower_column" : 0,
+    "upper_column" : 3200,
 
     "kcl_threshold" : 3.2,
     "calibration_constant_guess" : 9,
