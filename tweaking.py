@@ -810,18 +810,18 @@ if not multipleimages:
                 nbins=int((max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))/10)
             else:
                 skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
-                nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
+                nbins=20*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
         except: #if so we keep skipperavgcalibratedravel without range
             skipperavgcalibratedravel = skipperavgcalibrated
-            nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
+            nbins=20*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
         if nbins == 0: nbins=100
         skipperavgcalibratedravelhist, binedges = np.histogram(skipperavgcalibratedravel, nbins, density=False)
         bincenters=(binedges[:-1] + binedges[1:])/2
         npeaksp = 3
-        dcpar = parametersDCfit[0][0], npeaksp, parametersDCfit[0][2]/(50/0.5), parametersDCfit[0][3]/calibrationconstant
+        dcpar = parametersDCfit[0][0], npeaksp, parametersDCfit[0][2]/(20/0.5), parametersDCfit[0][3]/calibrationconstant
         if calibrationconstant <= 1: dcpar = parametersDCfit[0][0], npeaksp, parametersDCfit[0][2]/(0.1/0.5), parametersDCfit[0][3]/calibrationconstant
         #dcparunc has one more component (the gain) than dcpar (dcpar is an argument for the calibrated gaussian)
-        try: dcparunc = parametersDCfit[1][0], parametersDCfit[1][1], parametersDCfit[1][2]/(50/0.5), parametersDCfit[1][3]/calibrationconstant, parametersDCfit[1][5]
+        try: dcparunc = parametersDCfit[1][0], parametersDCfit[1][1], parametersDCfit[1][2]/(20/0.5), parametersDCfit[1][3]/calibrationconstant, parametersDCfit[1][5]
         except: dcparunc = 0,0,0,0,0
         skipperavgcalibratedravelhistfit = convolutionGaussianPoisson(bincenters,*dcpar)
         #plt.plot(bincenters,skipperavgcalibratedravelhist,label='avg img calibrated pixel charge distribution', color='teal')
@@ -831,6 +831,8 @@ if not multipleimages:
         plt.legend(loc='upper right',prop={'size': 20})
         plt.xlabel('pixel value [e$^-$]')
         plt.ylabel('counts')
+        plt.yscale('log')
+        plt.ylim(0.8)
         plt.tick_params(axis='both', which='both', length=10, direction='in')
         plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
         #plt.setp(ax.get_yticklabels(), visible=True)
@@ -1150,17 +1152,17 @@ if multipleimages:
                         nbins=int((max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))/10)
                     else:
                         skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
-                        nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
+                        nbins=20*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
                 except: #if so we keep skipperavgcalibratedravel without range
                     skipperavgcalibratedravel = skipperavgcalibrated
-                    nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
+                    nbins=20*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
                 if nbins == 0: nbins=100
                 skipperavgcalibratedravelhist, binedges = np.histogram(skipperavgcalibratedravel, nbins, density=False)
                 bincenters=(binedges[:-1] + binedges[1:])/2
                 npeaksp = 3
-                dcpar = parametersDCfit_stack[0][0][iimage], npeaksp, parametersDCfit_stack[0][2][iimage]/(50/0.5), parametersDCfit_stack[0][3][iimage]/calibrationconstant
+                dcpar = parametersDCfit_stack[0][0][iimage], npeaksp, parametersDCfit_stack[0][2][iimage]/(20/0.5), parametersDCfit_stack[0][3][iimage]/calibrationconstant
                 #dcparunc has one more component (the gain) than dcpar (dcpar is an argument for the calibrated gaussian)
-                try: dcparunc = parametersDCfit_stack[1][0][iimage], parametersDCfit_stack[1][1][iimage], parametersDCfit_stack[1][2][iimage]/(50/0.5), parametersDCfit_stack[1][3][iimage]/calibrationconstant, parametersDCfit_stack[1][5][iimage]
+                try: dcparunc = parametersDCfit_stack[1][0][iimage], parametersDCfit_stack[1][1][iimage], parametersDCfit_stack[1][2][iimage]/(20/0.5), parametersDCfit_stack[1][3][iimage]/calibrationconstant, parametersDCfit_stack[1][5][iimage]
                 except: dcparunc = 0,0,0,0,0
                 skipperavgcalibratedravelhistfit = convolutionGaussianPoisson(bincenters,*dcpar)
                 #plt.plot(bincenters,skipperavgcalibratedravelhist,label='avg img calibrated pixel charge distribution', color='teal')

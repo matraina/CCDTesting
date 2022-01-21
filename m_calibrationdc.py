@@ -39,7 +39,7 @@ def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurre
     else:
         params.add('dcrate', value=-1*darkcurrent, min = 0, vary=True)
     params.add('Nelectrons', value=npoisson, vary=False)
-    params.add('Npixelspeak', value=len(avgimgravel)*binwidth, vary=True)
+    params.add('Npixelspeak', value=len(avgimgravel), vary=True)
     params.add('sigma', value=avgimgstd, min = 0, vary=True)
     params.add('offset', value=avgimgmu, vary = True)
     if calibguess > 0:
@@ -75,7 +75,14 @@ def lmfitGausPoisson(param, x, data):
     par = [dcratep, nelectronsp.value, amplip, sigmap, offsetp, calibp]
 
     model = convolutionGaussianPoisson(x, *par)
-    return (data-model)
+
+    # include uncertainties as weights
+    sig=np.sqrt(data)
+    # bins w uncertainty == 0 assigned uncertainty == 1, like bins w uncertainty == 1
+    sig[sig==0]=1
+    resids = model - data
+    weighted = np.sqrt(resids ** 2 / sig ** 2)
+    return weighted
 
     
 def parseFitMinimum(fitmin):
@@ -101,10 +108,10 @@ def paramsToList(params):
     return par, parunc
     
 def fitGuessesArray(centroid,calibguess,npeaks):
-    pguesses = np.zeros((3,18), dtype=np.float64) #3 = fit parameters to tweak, 18 = set of guess
+    pguesses = np.zeros((3,36), dtype=np.float64) #3 = fit parameters to tweak, 18 = set of guess
     i=0
     for npeaksguess in range(npeaks-2,npeaks+3,2):
-        for calguess in range(calibrationguess-1,calibrationguess+2):
+        for calguess in np.arange(calibguess-0.5,calibguess+2.5,0.5):
             for zeroelectroncentroid in [0,centroid]:
                 pguesses[:,i] = zeroelectroncentroid, calguess, npeaksguess
                 i+=1
@@ -114,7 +121,7 @@ def calibrationDC(avgimg,std,reverse,debug):
 
     avgimgravel=avgimg.ravel()
     nbins=int(0.5*(max(avgimgravel)-min(avgimgravel)))
-    avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False)
+    avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False) #s!=0 only removes saturation coutns
     bincenters = (binedges[:-1] + binedges[1:])/2
     mu = bincenters[np.argmax(avgimghist)]
     if reverse: avgimg = mu - avgimg
@@ -137,17 +144,21 @@ def calibrationDC(avgimg,std,reverse,debug):
         par[:,tweakfitindex] = np.array(paramsToList(params)[0])
         parprint = par[:,tweakfitindex]
         parunc[:,tweakfitindex] = np.array(paramsToList(params)[1])
+        #debug
+        '''
         if debug:
-            print(lmfit.fit_report(fitminimized))
-            adu = np.linspace(bincenters[0], bincenters[-1], int(0.5*(max(avgimgravel)-min(avgimgravel))))
+            #print(lmfit.fit_report(fitminimized))
+            avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
+            bincenters = (binedges[:-1] + binedges[1:])/2
+            adu = np.linspace(bincenters[0], bincenters[-1], nbins)
             plt.plot(adu, convolutionGaussianPoisson(adu, *parprint), 'r')
-            #plt.yscale('log')
+            plt.yscale('log')
             plt.plot(adu, avgimghist, 'teal')
             plt.ylim(0.01, params['Npixelspeak'])
             plt.show()
-            
+         '''
     #find best fit
-    optimalfitindex = np.argmin(reducedchisquared)
+    optimalfitindex = np.argmin(abs(reducedchisquared))
     parmatrix = [par[:,optimalfitindex],parunc[:,optimalfitindex]]
             
     # save fit results
@@ -159,13 +170,17 @@ def calibrationDC(avgimg,std,reverse,debug):
     else: offset = mu + offsetresidual
     
     if debug:
-        skipper_avghist, binedges = np.histogram(skipper_avg_cal, bins = 50000, density=False)
-        bincenters=(binedges[:-1] + binedges[1:])/2
-        plt.plot(bincenters,skipper_avghist, 'teal')
+        avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
+        bincenters = (binedges[:-1] + binedges[1:])/2
+        skipperavgfit = convolutionGaussianPoisson(bincenters,*par[:,optimalfitindex])
+        plt.plot(bincenters,avgimghist, 'teal')
+        plt.plot(bincenters,skipperavgfit, label='gauss-poisson convolution fit curve: '+'$\chi^2_{red}=$'+str(round(reducedchisquared[optimalfitindex],4)), color='red')
+        plt.legend(loc = 'upper right')
         plt.yscale('log')
+        plt.ylim(0.1)
         plt.show()
         print('Estimated offset is '+str(offset)+' ADU')
-        print(skipper_avg_cal.ravel())
+        #print(skipper_avg_cal.ravel())
     
     
     return parmatrix, reducedchisquared[optimalfitindex], offset
