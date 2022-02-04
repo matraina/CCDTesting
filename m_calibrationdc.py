@@ -43,7 +43,7 @@ def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurre
     params.add('sigma', value=avgimgstd, min = 0, vary=True)
     params.add('offset', value=avgimgmu, vary = True)
     if calibguess > 0:
-        params.add('gain', value=calibguess, vary=True, min = 0)
+        params.add('gain', value=calibguess, vary=True, min = 9.3)
     else:
         params.add('gain', value=-1*calibguess, min = 0)
     minimized = lmfit.minimize(lmfitGausPoisson, params, method='least_squares', args=(bincenters, avgimghist))

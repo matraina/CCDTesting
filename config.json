@@ -13,14 +13,14 @@
     "prescan" : 8,
     "overscan" : 120,
     
-    "analysis_region" : "full",
-    "lower_row" : 4,
-    "upper_row" : 20,
-    "lower_column" : 6,
-    "upper_column" : 3071,
+    "analysis_region" : "arbitrary",
+    "lower_row" : 1,
+    "upper_row" : 40,
+    "lower_column" : 1,
+    "upper_column" : 3072,
 
     "kcl_threshold" : 3.2,
-    "calibration_constant_guess" : 9,
+    "calibration_constant_guess" : 10,
     
     "print_header" : false,
     
@@ -41,9 +41,9 @@
         [{
             "header" : false,
             "image" : false,
-            "pcds" : false,
-            "chargeloss" : false,
-            "calibration_darkcurrent" : true,
+            "pcds" : true,
+            "chargeloss" : true,
+            "calibration_darkcurrent" : false,
             "fft_skips" : false,
             "fft_row" : false
         }]
