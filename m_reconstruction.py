@@ -186,8 +186,8 @@ def reconstructSkipperImage(image_file,processedname):
                 skipper_image_start[y,xp] = image_data[y,xeffstart]
                 skipper_image_end[y,xp] = image_data[y,xeffend]
                 #check charge difference between first & second skips, and start+1 & end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
-                skipper_diff_01[y,xp] = image_data[y,xeff] - image_data[y,xeff+1]
-                skipper_diff[y,xp] = skipper_image1[y,xp] - skipper_image_end[y,xp]
+                skipper_diff_01[y,xp] = float(image_data[y,xeff]) - float(image_data[y,xeff+1])
+                skipper_diff[y,xp] = float(image_data[y,xeff+1]) - float(image_data[y,xeffend])
             #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
             elif nskips == 1:
                 skipper_image_start[y,xp] = image_data[y,xp]
@@ -254,44 +254,54 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     image_data_L = np.zeros((nrows, nallcolumns//2), dtype=np.float64)
     image_data_U = np.zeros((nrows, nallcolumns//2), dtype=np.float64)
     #image for skip 0
-    skipper_image0 = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_image0 = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_image0_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_image0_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     #image for skip 1
-    skipper_image1 = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_image1 = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_image1_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_image1_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     #image for skip 2
-    skipper_image2 = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_image2 = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_image2_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_image2_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     #image for start skip
-    skipper_image_start = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_image_start = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_image_start_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_image_start_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     #image for last skip
-    skipper_image_end = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_image_end = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_image_end_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_image_end_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     #image for average of skip images
-    skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_avg0 = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_avg0_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_avg0_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     #image for standard deviation of skips
-    skipper_std = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_std = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_std_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_std_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     #image differences (first-second and second-last)
-    skipper_diff_01 = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_diff_01 = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_diff_01_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_diff_01_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
-    skipper_diff = np.zeros((nrows, ncolumns), dtype=np.float64)
+    #skipper_diff = np.zeros((nrows, ncolumns), dtype=np.float64)
     skipper_diff_L = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     skipper_diff_U = np.zeros((nrows, ncolumns//2), dtype=np.float64)
     
     #fix leach image if necessary
     if fixLeachReco: image_data = fixLeachReconstruction(image_file)
     else: image_data = fits.getdata(image_file, ext=0)
+    
+    #split into L and U images
+    rowidx = np.arange(nrows)
+    colidx_L = np.arange(ncolumns//2)
+    colidx_U = np.arange(ncolumns//2,ncolumns)
+    image_data_L = image_data[np.ix_(rowidx, np.arange(nallcolumns//2))]
+    image_data_U = image_data[np.ix_(rowidx, np.arange(nallcolumns//2,nallcolumns))]
+    
+    #flip U images to have overscan on right hand side of image: but do we have to flip, or flipped already in leach reco?
+    if flip_U_img: image_data_U = np.flip(image_data_U,1)
     
     # Set naverages for resolution trend
     if nskips < 10: naverages = 0
@@ -303,7 +313,7 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
 
     #create moving averages 3d image
     movingavg = np.zeros(naverages)
-    skipper_averages = np.zeros((nrows, ncolumns, naverages), dtype=np.float64)
+    #skipper_averages = np.zeros((nrows, ncolumns, naverages), dtype=np.float64)
     skipper_averages_L = np.zeros((nrows, ncolumns//2, naverages), dtype=np.float64)
     skipper_averages_U = np.zeros((nrows, ncolumns//2, naverages), dtype=np.float64)
 
@@ -312,9 +322,8 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     for y in range(0,nrows):
         xp = -1
         if nskips == 1:
-            pedestaloneskiprow_L = np.median(image_data[y,0:nallcolumns//2:nskips]) #for pedestal subtraction in single-skip images
-            pedestaloneskiprow_U = np.median(image_data[y,nallcolumns//2:nallcolumns:nskips]) #for pedestal subtraction in single-skip images
-        for x in range(0, nallcolumns, nskips):
+            pedestaloneskiprow_L = np.median(image_data_L[y,0:nallcolumns//2:nskips]) #for pedestal subtraction in single-skip images
+        for x in range(0, nallcolumns//2, nskips):
             xp = xp+1
             xeff = x
             xeffstart = xeff + iskipstart
@@ -325,79 +334,64 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
             index = 0
             if nskips > 1:
                 if nskips >= 10:
-                    movingavg[index] = (image_data[y,xeff:xeff+10].mean()); index+=1 #comment this line and while below to speed up
+                    movingavg[index] = (image_data_L[y,xeff:xeff+10].mean()); index+=1 #comment this line and while below to speed up
                     if nskips >= 100:
-                        while index <= nskips/100: movingavg[index] = (image_data[y,xeff:xeff+(100*index)].mean()); index+=1
-                avgpixval = image_data[y,xeffstart:xeffend].mean()
-                stdpixval = image_data[y,xeffstart:xeffend].std()
-                for k in range(naverages): skipper_averages[y, xp, k] = movingavg[k]  #comment along with if's above to speed up
-                skipper_avg0[y,xp] = avgpixval
-                skipper_std[y,xp] = stdpixval
-                skipper_image0[y,xp] = image_data[y,xeff]
-                skipper_image1[y,xp] = image_data[y,xeffp1]
-                skipper_image2[y,xp] = image_data[y,xeffp2]
-                skipper_image_start[y,xp] = image_data[y,xeffstart]
-                skipper_image_end[y,xp] = image_data[y,xeffend]
+                        while index <= nskips/100: movingavg[index] = (image_data_L[y,xeff:xeff+(100*index)].mean()); index+=1
+                avgpixval = image_data_L[y,xeffstart:xeffend].mean()
+                stdpixval = image_data_L[y,xeffstart:xeffend].std()
+                for k in range(naverages): skipper_averages_L[y, xp, k] = movingavg[k]  #comment along with if's above to speed up
+                skipper_avg0_L[y,xp] = avgpixval
+                skipper_std_L[y,xp] = stdpixval
+                skipper_image0_L[y,xp] = image_data_L[y,xeff]
+                skipper_image1_L[y,xp] = image_data_L[y,xeffp1]
+                skipper_image2_L[y,xp] = image_data_L[y,xeffp2]
+                skipper_image_start_L[y,xp] = image_data_L[y,xeffstart]
+                skipper_image_end_L[y,xp] = image_data_L[y,xeffend]
                 #check charge difference between first & second skips, and start+1 & end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
-                skipper_diff_01[y,xp] = image_data[y,xeff] - image_data[y,xeff+1]
-                skipper_diff[y,xp] = skipper_image1[y,xp] - skipper_image_end[y,xp]
+                skipper_diff_01_L[y,xp] = float(image_data_L[y,xeff]) - float(image_data_L[y,xeff+1])
+                skipper_diff_L[y,xp] = float(image_data_L[y,xeff+1]) - float(image_data_L[y,xeffend])
             #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
             elif nskips == 1:
-                skipper_image_start[y,xp] = image_data[y,xp]
-                image_data[y,xp] = image_data[y,xp] - pedestaloneskiprow
+                skipper_image_start_L[y,xp] = image_data_L[y,xp]
+                image_data_L[y,xp] = image_data_L[y,xp] - pedestaloneskiprow_L
             
-            
-    #split into L and U images
-    rowidx = np.arange(nrows)
-    colidx_L = np.arange(ncolumns//2)
-    colidx_U = np.arange(ncolumns//2,ncolumns)
-
-    image_data_L = image_data[np.ix_(rowidx, np.arange(nallcolumns//2))]
-    image_data_U = image_data[np.ix_(rowidx, np.arange(nallcolumns//2,nallcolumns))]
-
-    skipper_image0_L = skipper_image0[np.ix_(rowidx, colidx_L)]
-    skipper_image0_U = skipper_image0[np.ix_(rowidx, colidx_U)]
-            
-    skipper_image1_L = skipper_image1[np.ix_(rowidx, colidx_L)]
-    skipper_image1_U = skipper_image1[np.ix_(rowidx, colidx_U)]
-            
-    skipper_image2_L = skipper_image2[np.ix_(rowidx, colidx_L)]
-    skipper_image2_U = skipper_image2[np.ix_(rowidx, colidx_U)]
-    
-    skipper_image_start_L = skipper_image_start[np.ix_(rowidx, colidx_L)]
-    skipper_image_start_U = skipper_image_start[np.ix_(rowidx, colidx_U)]
-    
-    skipper_image_end_L = skipper_image_end[np.ix_(rowidx, colidx_L)]
-    skipper_image_end_U = skipper_image_end[np.ix_(rowidx, colidx_U)]
-
-    skipper_avg0_L = skipper_avg0[np.ix_(rowidx, colidx_L)]
-    skipper_avg0_U = skipper_avg0[np.ix_(rowidx, colidx_U)]
-    
-    skipper_std_L = skipper_std[np.ix_(rowidx, colidx_L)]
-    skipper_std_U = skipper_std[np.ix_(rowidx, colidx_U)]
-    
-    skipper_diff_01_L = skipper_diff_01[np.ix_(rowidx, colidx_L)]
-    skipper_diff_01_U = skipper_diff_01[np.ix_(rowidx, colidx_U)]
-    
-    skipper_diff_L = skipper_diff[np.ix_(rowidx, colidx_L)]
-    skipper_diff_U = skipper_diff[np.ix_(rowidx, colidx_U)]
-    
-    skipper_averages_L = skipper_averages[np.ix_(rowidx, np.arange(ncolumns//2), np.arange(naverages))]
-    skipper_averages_U = skipper_averages[np.ix_(rowidx, np.arange(ncolumns//2,ncolumns), np.arange(naverages))]
-
-    if flip_U_img:
-        #flip U images to have overscan on right hand side of image: but do we have to flip, or flipped already in leach reco?
-        image_data_U = np.flip(image_data_U,1)
-        skipper_image0_U = np.flip(skipper_image0_U,1)
-        skipper_image1_U = np.flip(skipper_image1_U,1)
-        skipper_image2_U = np.flip(skipper_image2_U,1)
-        skipper_image_start_U = np.flip(skipper_image_start_U,1)
-        skipper_image_end_U = np.flip(skipper_image_end_U,1)
-        skipper_avg0_U = np.flip(skipper_avg0_U,1)
-        skipper_std_U = np.flip(skipper_std_U,1)
-        skipper_diff_01_U = np.flip(skipper_diff_01_U,1)
-        skipper_diff_U = np.flip(skipper_diff_U,1)
-        skipper_averages_U = np.flip(skipper_averages_U,1)
+    for y in range(0,nrows):
+        xp = -1
+        if nskips == 1:
+            pedestaloneskiprow_U = np.median(image_data_U[y,nallcolumns//2:nallcolumns:nskips]) #for pedestal subtraction in single-skip images
+        for x in range(0, nallcolumns//2, nskips):
+            xp = xp+1
+            xeff = x
+            xeffstart = xeff + iskipstart
+            xeffend = xeff + iskipend #this is used as a range so will be OK when == nskips
+            xeffp1 = xeffstart+1
+            xeffp2 = xeffstart+2
+            #averages and std of the skips of (y, xp) pixel
+            index = 0
+            if nskips > 1:
+                if nskips >= 10:
+                    movingavg[index] = (image_data_U[y,xeff:xeff+10].mean()); index+=1 #comment this line and while below to speed up
+                    if nskips >= 100:
+                        while index <= nskips/100: movingavg[index] = (image_data_U[y,xeff:xeff+(100*index)].mean()); index+=1
+                avgpixval = image_data_U[y,xeffstart:xeffend].mean()
+                stdpixval = image_data_U[y,xeffstart:xeffend].std()
+                for k in range(naverages): skipper_averages_U[y, xp, k] = movingavg[k]  #comment along with if's above to speed up
+                skipper_avg0_U[y,xp] = avgpixval
+                skipper_std_U[y,xp] = stdpixval
+                skipper_image0_U[y,xp] = image_data_U[y,xeff]
+                skipper_image1_U[y,xp] = image_data_U[y,xeffp1]
+                skipper_image2_U[y,xp] = image_data_U[y,xeffp2]
+                skipper_image_start_U[y,xp] = image_data_U[y,xeffstart]
+                skipper_image_end_U[y,xp] = image_data_U[y,xeffend]
+                #check charge difference between first & second skips, and start+1 & end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
+                print(image_data_U[y,xeff] - image_data_U[y,xeff+1])
+                print(image_data_U[y,xeff+1] - image_data_U[y,xeffend])
+                skipper_diff_01_U[y,xp] = float(image_data_U[y,xeff]) - float(image_data_U[y,xeff+1])
+                skipper_diff_U[y,xp] = float(image_data_U[y,xeff+1]) - float(image_data_U[y,xeffend])
+            #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
+            elif nskips == 1:
+                skipper_image_start_U[y,xp] = image_data_U[y,xp]
+                image_data_U[y,xp] = image_data_U[y,xp] - pedestaloneskiprow_U
     
     #save processed images
     processedfits = workingdirectory + processedname

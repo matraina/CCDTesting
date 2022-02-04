@@ -50,6 +50,12 @@ def selectImageRegion(image,analysisregion):
         colidx = np.arange(prescan,lastexposedcolumn)
         image_exposed = image[np.ix_(rowidx, colidx)]
         return image_exposed
+    elif analysisregion == 'exposed_pixels_exclude_first_row':
+        rowidx = np.arange(1,np.size(image,0))
+        lastexposedcolumn = min(np.size(image,1),prescan+registersize)
+        colidx = np.arange(prescan,lastexposedcolumn)
+        image_exposed = image[np.ix_(rowidx, colidx)]
+        return image_exposed
     elif analysisregion == 'no_borders':
         rowidx = np.arange(1,np.size(image,0)-1)
         colidx = np.arange(1,np.size(image,1)-1)

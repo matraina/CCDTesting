@@ -156,7 +156,7 @@ if not multipleimages:
     ##############################################################################
         
     if reportChargeLoss and nskips!=1:
-        diff_image_core_01,diff_image_core = m_functions.selectImageRegion(skipper_diff_01,'no_borders'),m_functions.selectImageRegion(skipper_diff,'no_borders')
+        diff_image_core_01,diff_image_core = m_functions.selectImageRegion(skipper_diff_01,'exposed_pixels_exclude_first_row'),m_functions.selectImageRegion(skipper_diff,'exposed_pixels_exclude_first_row')
         PCDDstudyparameters01 = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD,
         PCDDstudyparameters = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
         kclsignificance01,kclsignificance = PCDDstudyparameters01[2]/PCDDstudyparameters01[3],PCDDstudyparameters[2]/PCDDstudyparameters[3]
@@ -243,7 +243,7 @@ if multipleimages:
         kclsignificance01_stack = np.zeros((nimages), dtype=np.float64)
         kclsignificance_stack = np.zeros((nimages), dtype=np.float64)
         for iimage in range(upperindex-lowerindex+1):
-            diff_image_core_01,diff_image_core = m_functions.selectImageRegion(skipper_diff_01_stack[:,:,iimage],'no_borders'),m_functions.selectImageRegion(skipper_diff_stack[:,:,iimage],'no_borders')
+            diff_image_core_01,diff_image_core = m_functions.selectImageRegion(skipper_diff_01_stack[:,:,iimage],'exposed_pixels_exclude_first_row'),m_functions.selectImageRegion(skipper_diff_stack[:,:,iimage],'exposed_pixels_exclude_first_row')
             PCDDstudyparameters01_stack[:,iimage] = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD,
             PCDDstudyparameters_stack[:,iimage] = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
             kclsignificance01_stack[iimage],kclsignificance_stack[iimage] = PCDDstudyparameters01_stack[2,iimage]/PCDDstudyparameters01_stack[3,iimage],PCDDstudyparameters_stack[2,iimage]/PCDDstudyparameters_stack[3,iimage]

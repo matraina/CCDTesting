@@ -155,8 +155,8 @@ if reportPCD or reportCalibrationDarkcurrent:
 ##############################################################################
     
 if reportChargeLoss and nskips!=1:
-    diff_image_core_01_L,diff_image_core_L = m_functions.selectImageRegion(skipper_diff_01_L,'no_borders'),m_functions.selectImageRegion(skipper_diff_L,'no_borders')
-    diff_image_core_01_U,diff_image_core_U = m_functions.selectImageRegion(skipper_diff_01_U,'no_borders'),m_functions.selectImageRegion(skipper_diff_U,'no_borders')
+    diff_image_core_01_L,diff_image_core_L = m_functions.selectImageRegion(skipper_diff_01_L,'exposed_pixels_exclude_first_row'),m_functions.selectImageRegion(skipper_diff_L,'exposed_pixels_exclude_first_row')
+    diff_image_core_01_U,diff_image_core_U = m_functions.selectImageRegion(skipper_diff_01_U,'exposed_pixels_exclude_first_row'),m_functions.selectImageRegion(skipper_diff_U,'exposed_pixels_exclude_first_row')
     PCDDstudyparameters01_L = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01_L, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
     PCDDstudyparameters01_U = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01_U, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
     PCDDstudyparameters_L = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_L, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
@@ -1215,4 +1215,3 @@ doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')
-
