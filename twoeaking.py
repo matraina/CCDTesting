@@ -1170,16 +1170,16 @@ if (reportFFTskips or reportFFTrow):
     with doc.create(Section('Fourier Analysis')):
 
         if reportFFTskips and nskips!=1:
-            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
             ncolumns = int(nallcolumns/nskips)//2 # n of columns in the image
+            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
             m_functions.pixelFFT(image_data_L, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Full image Fast Fourier Transform (first to last skip) (Amplifier L).')
             plt.clf()
             
-            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
             ncolumns = int(nallcolumns/nskips)//2 # n of columns in the image
+            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
             m_functions.pixelFFT(image_data_U, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
@@ -1187,6 +1187,7 @@ if (reportFFTskips or reportFFTrow):
             plt.clf()
         
         if reportFFTrow:
+            ncolumns = int(nallcolumns/nskips)//2 # n of columns in the image
             samplet = hdr['MREAD']*0.001/(nrows*ncolumns)
             if nskips!=1: m_functions.rowFFT(skipper_avg0_L, nrows-1, ncolumns//2-1, samplet)
             else: m_functions.rowFFT(image_data_L, nrows-1, ncolumns//2-1, samplet)
@@ -1196,6 +1197,7 @@ if (reportFFTskips or reportFFTrow):
             plt.clf()
             doc.append(NewPage())
             
+            ncolumns = int(nallcolumns/nskips)//2 # n of columns in the image
             samplet = hdr['MREAD']*0.001/(nrows*ncolumns)
             if nskips!=1: m_functions.rowFFT(skipper_avg0_U, nrows-1, ncolumns-1, samplet)
             else: m_functions.rowFFT(image_data_U, nrows-1, ncolumns//2-1, samplet)
