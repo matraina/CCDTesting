@@ -384,8 +384,6 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
                 skipper_image_start_U[y,xp] = image_data_U[y,xeffstart]
                 skipper_image_end_U[y,xp] = image_data_U[y,xeffend]
                 #check charge difference between first & second skips, and start+1 & end skip: charge loss feeds distribution at negative values, centroid value ~ pedestal: later subtracted
-                print(image_data_U[y,xeff] - image_data_U[y,xeff+1])
-                print(image_data_U[y,xeff+1] - image_data_U[y,xeffend])
                 skipper_diff_01_U[y,xp] = float(image_data_U[y,xeff]) - float(image_data_U[y,xeff+1])
                 skipper_diff_U[y,xp] = float(image_data_U[y,xeff+1]) - float(image_data_U[y,xeffend])
             #pedestal subtraction for 1-skip images: subtract from every pixel relative row median
