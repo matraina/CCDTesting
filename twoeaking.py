@@ -1171,7 +1171,7 @@ if (reportFFTskips or reportFFTrow):
 
         if reportFFTskips and nskips!=1:
             ncolumns = int(nallcolumns/nskips)//2 # n of columns in the image
-            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
+            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns//2)
             m_functions.pixelFFT(image_data_L, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
@@ -1179,7 +1179,7 @@ if (reportFFTskips or reportFFTrow):
             plt.clf()
             
             ncolumns = int(nallcolumns/nskips)//2 # n of columns in the image
-            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns)
+            samplet = hdr['MREAD']*0.001/(nrows*nallcolumns//2)
             m_functions.pixelFFT(image_data_U, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
