@@ -1,13 +1,13 @@
 {
     "test" : "tweaking",
     
-    "working_directory" : "./",
+    "working_directory" : "/home/damicm/ccd-data/commissioning/UW6414/03/27/",
     "raw_processed_header_reports_dir_structure" : true,
     
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
-    "reverse" : true,
+    "reverse" : false,
     
     "ccd_active_register_size": 3072,
     "prescan" : 8,
@@ -15,9 +15,9 @@
     
     "analysis_region" : "arbitrary",
     "lower_row" : 1,
-    "upper_row" : 40,
+    "upper_row" : 840,
     "lower_column" : 1,
-    "upper_column" : 3072,
+    "upper_column" : 307,
 
     "kcl_threshold" : 3.2,
     "calibration_constant_guess" : 10,
@@ -39,13 +39,13 @@
         }],
         "report" :
         [{
-            "header" : false,
+            "header" : true,
             "image" : false,
             "pcds" : true,
             "chargeloss" : true,
-            "calibration_darkcurrent" : false,
-            "fft_skips" : false,
-            "fft_row" : false
+            "calibration_darkcurrent" : true,
+            "fft_skips" : true,
+            "fft_row" : true
         }]
     }],
     
