@@ -127,7 +127,10 @@ print('N. rows columns skips ',nrows,ncolumns,nskips)
 # image reconstruction
 
 image_data_L,image_data_U,skipper_image_start_L,skipper_image_start_U,skipper_image_end_L,skipper_image_end_U,skipper_averages_L,skipper_averages_U,skipper_diff_L,skipper_diff_U,skipper_diff_01_L,skipper_diff_01_U,skipper_avg0_L,skipper_avg0_U,skipper_std_L,skipper_std_U = m_reconstruction.reconstructTwoAmpSkipperImages(image_file,arg2,flip_U_img=True)
-
+skipper_image_start_L = m_reconstruction.subtractPedestalRowByRow(skipper_image_start_L)[0]
+skipper_image_start_U = m_reconstruction.subtractPedestalRowByRow(skipper_image_start_U)[0]
+skipper_avg0_L = m_reconstruction.subtractPedestalRowByRow(skipper_avg0_L)[0]
+skipper_avg0_U = m_reconstruction.subtractPedestalRowByRow(skipper_avg0_U)[0]
 
 ##############################################################################
 #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
@@ -756,7 +759,7 @@ if reportPCD:
         
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
-            ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+            ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region (Amplifier L).')
@@ -848,7 +851,7 @@ if reportPCD:
         
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
-            ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+            ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region (Amplifier U).')
@@ -933,7 +936,7 @@ if reportChargeLoss and nskips!=1:
             
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
-            ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+            ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom) (Amplifier L). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
@@ -961,7 +964,7 @@ if reportChargeLoss and nskips!=1:
 
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
-            ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+            ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom) (Amplifier L).')
@@ -1014,7 +1017,7 @@ if reportChargeLoss and nskips!=1:
             
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
-            ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+            ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom) (Amplifier U). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
@@ -1042,7 +1045,7 @@ if reportChargeLoss and nskips!=1:
 
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
-            ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+            ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
             plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom) (Amplifier U).')
@@ -1217,3 +1220,26 @@ doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')
+
+'''
+# create data
+
+L = skipper_image_start_L.flatten()
+U = skipper_image_start_U.flatten()
+
+L -= muss_L
+U -= muss_U
+
+# Big bins
+hist=plt.hist2d(L, U, bins=(100, 100), cmap=plt.cm.jet)
+#xcenters = 0.5*(hist[1][:-1]+hist[1][1:])
+#ycenters = 0.5*(hist[2][:-1]+hist[2][1:])
+#plt.contour(xcenters,ycenters,hist[0], levels=[100,220], colors='teal')
+plt.hist2d(L, U, bins=(100, 100), cmap=plt.cm.jet)
+#plt.hist2d(L, U, bins=(100, 100), cmap=plt.cm.BuPu)
+plt.xlabel('L amplifier pixel value [ADU]')
+plt.ylabel('U amplifier pixel value [ADU]')
+plt.colorbar()
+plt.title('Amplifiers Correlation Map')
+plt.show()
+'''

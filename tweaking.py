@@ -625,9 +625,9 @@ if not multipleimages:
             #instead of removing 0-entries from histogram use numpy mask to avoid discrepancies between gaussian and plotted PCD skipper_image0ravel
             #skipper_image = [s for s in skipper_image_start_ravel if s != 0]
             skipper_image_unsaturated = np.ma.masked_equal(skipper_image_start_ravel, 0.0, copy=False)
-            skipper_imagehist, binedges = np.histogram(skipper_image_unsaturated, bins = 800, density=False)
+            skipper_imagehist, binedges = np.histogram(skipper_image_unsaturated, bins = 1200, density=False)
             ampss = skipper_imagehist[np.argmax(skipper_imagehist)]
-            axs[0].hist(skipper_image_start_ravel, 800, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='start skip pixel charge distribution')
+            axs[0].hist(skipper_image_start_ravel, 1200, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='start skip pixel value distribution')
             bincenters = np.arange(muss - 3*stdss, muss + 3*stdss + 6*stdss/100, 6*stdss/100) #last term in upper bound to get ~sym drawing
             axs[0].plot(bincenters, gauss(bincenters,ampss,muss,stdss), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[0].legend(loc='upper left',prop={'size': 14})
@@ -635,8 +635,8 @@ if not multipleimages:
             axs[0].tick_params(axis='both', which='both', length=10, direction='in')
             axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[0].get_yticklabels(), visible=True)
-            try: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU; estimated noise: ' + str(round(stdss/calibrationconstant,4)) + ' $e^{-}$')
-            except: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU')
+            try: axs[0].set_title('Start skip pixel value distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU; estimated noise: ' + str(round(stdss/calibrationconstant,4)) + ' $e^{-}$')
+            except: axs[0].set_title('Start skip pixel value distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss,4)) + ' ADU')
 
             
             if nskips!=1:
@@ -662,22 +662,24 @@ if not multipleimages:
                     rangeadhoc = (min(bincenters),max(bincenters))
                     avg_image_hist, binedges = np.histogram([s for s in avg_image_0ravel if s != 0], range=rangeadhoc, bins = 200, density=False)
                     ampls = avg_image_hist[np.argmax(avg_image_hist)]
+                #axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,stdmanyskip[-1]), label='gaussian fit curve', linewidth=1, color='red')
+                axs[1].hist(avg_image_0ravel, 200, rangeadhoc, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel value distribution')
                 axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,stdmanyskip[-1]), label='gaussian fit curve', linewidth=1, color='red')
-                axs[1].hist(avg_image_0ravel, 200, rangeadhoc, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
                 if reverse: axs[1].legend(loc='upper left',prop={'size': 14})
                 else: axs[1].legend(loc='upper right',prop={'size': 14})
                 axs[1].tick_params(axis='both', which='both', length=10, direction='in')
                 axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
                 plt.setp(axs[1].get_yticklabels(), visible=True)
-                axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
-                if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU')
+                axs[1].set_title('Average image pixel value distribution: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU; estimated noise: ' + str(round(stdmanyskip[-1]/calibrationconstant,4)) + ' $e^{-}$')
+                if guessCC: axs[1].set_title('Average image pixel value distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip[-1],4)) + ' ADU')
             
             plt.subplots_adjust(hspace=0.5)
             for ax in axs.flat:
-                ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+                ax.set(xlabel='pixel value [ADU]', ylabel='counts')
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region.')
+            #plt.show()
             plt.clf()
             doc.append(NewPage())
             
@@ -706,6 +708,7 @@ if not multipleimages:
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Resolution trend computed on '+analysisregion+' image region, as function of average image skip number.')
+            plt.show()
             plt.clf()
             doc.append(NewPage())
             
@@ -785,7 +788,7 @@ if not multipleimages:
 
             plt.subplots_adjust(hspace=0.5)
             for ax in axs.flat:
-                ax.set(xlabel='pixel value [ADU]', ylabel='counts per ADU')
+                ax.set(xlabel='pixel value [ADU]', ylabel='counts') #removed per adu, corect elsewher
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
                 plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom).')

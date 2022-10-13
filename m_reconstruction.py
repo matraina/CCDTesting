@@ -661,6 +661,18 @@ def reverseImage(image_data):
     reversed_image_data = offset - image_data
     return reversed_image_data
     
+def subtractPedestalRowByRow(image_data):
+    nrows = np.size(image_data,0)
+    row_pedestals = np.zeros(nrows,dtype=np.float64)
+    row_mads = np.zeros(nrows,dtype=np.float64)
+    ncolumns  = np.size(image_data,1) #ncolumns taken from image_data
+    pedestal_subtracted_image = np.zeros((nrows,ncolumns),dtype=np.float64)
+    for row in range(nrows):
+        row_pedestals[row] = np.median(image_data[row,:])
+        row_mads[row] = np.median(abs( image_data[row,:] - row_pedestals[row]))
+        pedestal_subtracted_image[row,:] = image_data[row,:] - row_pedestals[row]
+    return pedestal_subtracted_image, row_pedestals, row_mads
+
 def subtractOvscPedestalRowByRow(image_data):
     from m_functions import selectImageRegion
     image_overscan = selectImageRegion(image_data,'overscan') #if there is no overscan pedestal is computed on exposed pixels row
