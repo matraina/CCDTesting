@@ -13,6 +13,7 @@ import numpy as np
 import sys
 from astropy.utils.data import get_pkg_data_filename
 from astropy.io import fits
+from numba import jit
 
 import json
 with open('config.json') as config_file:
@@ -220,6 +221,7 @@ def reconstructSkipperImage(image_file,processedname):
 ###########################################################################################
 # primary reconstruction function: produces two amp imgs for analysis and processed .fits #
 ###########################################################################################
+@jit()
 def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     
     hdr = fits.getheader(image_file,0)
@@ -713,6 +715,35 @@ def findOutliers(image_data,row_pedestals,row_mads):
         for col in range(ncolumns):
             if abs(image_data[row,col] - row_pedestals[row]) > 3*row_mads[row]: mask[row,col] = 1.
     return mask
+    
+def getMask(mask,amplifier):
+    rows = np.size(mask,0)
+    columns = np.size(mask,1)
+    if amplifier == 'L':
+        mask_for_amp = mask[:,0:columns//2]
+    elif amplifier == 'U':
+        mask_for_amp = mask[:,columns//2:columns]
+        mask_for_amp = np.flip(mask_for_amp,1)
+    else: print('ERROR: set amplifier must be "L" or "U"')
+    #print(np.size(mask_for_amp,0))
+    #print(np.size(mask_for_amp,1))
+    return mask_for_amp
+    
+    
+def applyMask(image_to_mask,mask):
+    #only apply mask if mask size <= image size
+    imagerows = np.size(image_to_mask,0)
+    imagecols = np.size(image_to_mask,1)
+    maskrows = np.size(mask,0)
+    maskcols = np.size(mask,1)
+    if maskrows <= imagerows and maskcols <= imagecols:
+        masked_image = np.ma.array(image_to_mask, mask=mask)
+    else:
+        print('ERROR: Mask size larger than image size. No mask applied.')
+        masked_image = image_to_mask
+    #print(np.size(masked_image,0))
+    #print(np.size(masked_image,1))
+    return masked_image
 
 ###################################################################################
 ################ fast cluster-finding for images plots in report ##################

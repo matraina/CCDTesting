@@ -34,6 +34,9 @@ fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
 reversign = 1
 if reverse: reversign = -1
+row_pedestal_subtract = config['subtract_pedestal_row_by_row']
+applymask = config['apply_mask']
+if applymask: mask_fits_file = config['mask_file']
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
@@ -53,7 +56,7 @@ reportFFTrow = config['tweaking_analysis'][-1]['report'][-1]['fft_row']
 if test != 'tweaking':
     proceed = ''
     while proceed != 'yes' and proceed !='no':
-        proceed = input("You are running the code for tweaking analysis. Test selected in configuration file is different from 'tweaking': do you want to perform tweaking analysis?\nPlease answer 'yes' or 'no': ")
+        proceed = input("You are running the code for one-amp tweaking analysis. Test selected in configuration file is different from 'tweaking': do you want to perform tweaking analysis?\nPlease answer 'yes' or 'no': ")
         if proceed == 'no': sys.exit()
         elif proceed == 'yes': print('Proceeding with tweaking analysis')
 
@@ -134,6 +137,17 @@ if not multipleimages:
     # image reconstruction
 
     image_data,skipper_image_start,skipper_image_end,skipper_averages,skipper_diff,skipper_diff_01,skipper_avg0,skipper_std = m_reconstruction.reconstructSkipperImage(image_file,arg2)
+    
+    #pedestal subtraction
+    if row_pedestal_subtract:
+        skipper_image_start = m_reconstruction.subtractPedestalRowByRow(skipper_image_start)[0]
+        skipper_avg0 = m_reconstruction.subtractPedestalRowByRow(skipper_avg0)[0]
+        
+    #apply mask
+    if applymask:
+        mask = fits.getdata(mask_fits_file, ext=0)
+        skipper_image_start = m_reconstruction.applyMask(skipper_image_start, mask)
+        skipper_avg0 = m_reconstruction.applyMask(skipper_avg0, mask)
 
     ##############################################################################
     #ESTIMATE NOISE AT SKIPS: 1, 10, 100 . . . 1000 ##############################
@@ -331,7 +345,7 @@ if multipleimages:
 ##############################################################################
 
 if not (reportHeader or reportImage or reportPCD or reportChargeLoss or reportCalibrationDarkcurrent or reportFFTrow or reportFFTskips):
-    print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
+    print('No information to be reported. Exiting'); sys.exit()
 
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
 import matplotlib
@@ -340,7 +354,7 @@ from scipy.optimize import curve_fit
 #setup document parameters
 geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
-doc.preamble.append(Command('title', 'Image Analysis Report on Parameter Tweaking'))
+doc.preamble.append(Command('title', 'Image Analysis Report on 1-Amp Parameter Tweaking'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
 doc.preamble.append(NoEscape(r'\usepackage{tocloft}'))
 doc.preamble.append(NoEscape(r'\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}'))
@@ -621,17 +635,19 @@ if not multipleimages:
             fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
             
             skipper_image_start_region = m_functions.selectImageRegion(skipper_image_start,analysisregion)
-            skipper_image_start_ravel = skipper_image_start_region.ravel()
+            if applymask: skipper_image_start_ravel = skipper_image_start_region.compressed()
+            else: skipper_image_start_ravel = skipper_image_start_region.ravel()
             #instead of removing 0-entries from histogram use numpy mask to avoid discrepancies between gaussian and plotted PCD skipper_image0ravel
             #skipper_image = [s for s in skipper_image_start_ravel if s != 0]
-            skipper_image_unsaturated = np.ma.masked_equal(skipper_image_start_ravel, 0.0, copy=False)
+            if reverse: skipper_image_unsaturated = np.ma.masked_equal(skipper_image_start_ravel, 0.0, copy=False)
+            else: skipper_image_unsaturated = skipper_image_start_ravel
             skipper_imagehist, binedges = np.histogram(skipper_image_unsaturated, bins = 1200, density=False)
             ampss = skipper_imagehist[np.argmax(skipper_imagehist)]
             axs[0].hist(skipper_image_start_ravel, 1200, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='start skip pixel value distribution')
             bincenters = np.arange(muss - 3*stdss, muss + 3*stdss + 6*stdss/100, 6*stdss/100) #last term in upper bound to get ~sym drawing
             axs[0].plot(bincenters, gauss(bincenters,ampss,muss,stdss), label='gaussian fit curve', linewidth=1, color='red')
-            if reverse: axs[0].legend(loc='upper left',prop={'size': 14})
-            else: axs[0].legend(loc='upper right',prop={'size': 14})
+            if reverse: axs[0].legend(prop={'size': 14})
+            else: axs[0].legend(prop={'size': 14})
             axs[0].tick_params(axis='both', which='both', length=10, direction='in')
             axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[0].get_yticklabels(), visible=True)
@@ -644,13 +660,13 @@ if not multipleimages:
                 except: calibrationconstant = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
                 averageimageoffset = m_functions.sigmaFinder(skipper_avg0, fwhm_est=True, debug=False)[1]
                 skipper_avg0_region = m_functions.selectImageRegion(skipper_avg0,analysisregion)
-                avg_image_0ravel = skipper_avg0_region.ravel()
-                avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
-                if reverse:
+                if applymask: avg_image_0ravel = skipper_avg0_region.compressed()
+                else: avg_image_0ravel = skipper_avg0_region.ravel()
+                if reverse: avg_image_unsaturated = np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False)
                     avg_image_unsaturated = [s for s in avg_image_unsaturated if averageimageoffset - 5*calibrationconstant < s < averageimageoffset + calibrationconstant]
                     rangeadhoc =  (averageimageoffset - 5*calibrationconstant, averageimageoffset + calibrationconstant)
                 else:
-                    avg_image_unsaturated = [s for s in avg_image_unsaturated if averageimageoffset - calibrationconstant < s < 5*averageimageoffset + calibrationconstant]
+                    avg_image_unsaturated = [s for s in avg_image_0ravel if averageimageoffset - calibrationconstant < s < 5*averageimageoffset + calibrationconstant]
                     rangeadhoc =  (averageimageoffset - calibrationconstant, averageimageoffset + 5*calibrationconstant)
                 if len(avg_image_unsaturated) < 50:
                     avg_image_unsaturated = [s for s in np.ma.masked_equal(avg_image_0ravel, 0.0, copy=False) if - 20*calibrationconstant < s - averageimageoffset < 20*calibrationconstant]

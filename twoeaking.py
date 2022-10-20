@@ -34,11 +34,11 @@ iskipstart = config['skip_start']
 iskipend = config['skip_end']
 fixLeachReco = config['fix_leach_reconstruction']
 reverse = config['reverse']
+reversign = 1
+if reverse: reversign = -1
 row_pedestal_subtract = config['subtract_pedestal_row_by_row']
 applymask = config['apply_mask']
 if applymask: mask_fits_file = config['mask_file']
-reversign = 1
-if reverse: reversign = -1
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
@@ -265,7 +265,7 @@ if reportCalibrationDarkcurrent and nskips!=1:
 ##############################################################################
 
 if not (reportHeader or reportImage or reportPCD or reportChargeLoss or reportCalibrationDarkcurrent or reportFFTrow or reportFFTskips):
-    print('No information to be reported. Report will not be produced. Exiting'); sys.exit()
+    print('No information to be reported. Exiting'); sys.exit()
 
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
 import matplotlib
