@@ -21,6 +21,7 @@ from m_functions import selectImageRegion
 import json
 with open('config.json') as config_file:
     config = json.load(config_file)
+    applymask = config['apply_mask']
     analysisregion = config['analysis_region']
     calibrationguess = config['calibration_constant_guess']
     
@@ -43,7 +44,7 @@ def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurre
     params.add('sigma', value=avgimgstd, min = 0, vary=True)
     params.add('offset', value=avgimgmu, vary = True)
     if calibguess > 0:
-        params.add('gain', value=calibguess, vary=True, min = 9.3)
+        params.add('gain', value=calibguess, vary=True)
     else:
         params.add('gain', value=-1*calibguess, min = 0)
     minimized = lmfit.minimize(lmfitGausPoisson, params, method='least_squares', args=(bincenters, avgimghist))
@@ -119,15 +120,16 @@ def fitGuessesArray(centroid,calibguess,npeaks):
     
 def calibrationDC(avgimg,std,reverse,debug):
 
-    avgimgravel=avgimg.ravel()
-    nbins=int(0.5*(max(avgimgravel)-min(avgimgravel)))
-    avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False) #s!=0 only removes saturation coutns
+    avgimgravel = avgimg.ravel()
+    nbins=int(0.5*(np.ma.max(avgimgravel)-np.ma.min(avgimgravel)))
+    if reverse: avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False) #s!=0 removes saturation counts
+    else: avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
     mu = bincenters[np.argmax(avgimghist)]
     if reverse: avgimg = mu - avgimg
     else: avgimg = avgimg - mu
     if analysisregion == 'arbitrary': avgimg = selectImageRegion(avgimg,analysisregion)
-    avgimgravel=avgimg.ravel()
+    if applymask: avgimgravel = avgimg.compressed()
     avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
         

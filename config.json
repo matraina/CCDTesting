@@ -1,26 +1,29 @@
 {
     "test" : "tweaking",
     
-    "working_directory" : "/home/damicm/ccd-data/commissioning/UW6414/03/27/",
+    "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
     
     "skip_start" : 5,
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
     "reverse" : false,
+    "subtract_pedestal_row_by_row" : true,
+    "apply_mask" : true,
+    "mask_file" : "./masks/20221016_mask6415.fits",
     
     "ccd_active_register_size": 3072,
     "prescan" : 8,
-    "overscan" : 120,
+    "overscan" : 60,
     
     "analysis_region" : "arbitrary",
-    "lower_row" : 1,
-    "upper_row" : 840,
-    "lower_column" : 1,
+    "lower_row" : 6,
+    "upper_row" : 400,
+    "lower_column" : 6,
     "upper_column" : 307,
 
     "kcl_threshold" : 3.2,
-    "calibration_constant_guess" : 10,
+    "calibration_constant_guess" : 9,
     
     "print_header" : false,
     
@@ -39,13 +42,13 @@
         }],
         "report" :
         [{
-            "header" : true,
+            "header" : false,
             "image" : false,
             "pcds" : true,
-            "chargeloss" : true,
+            "chargeloss" : false,
             "calibration_darkcurrent" : true,
-            "fft_skips" : true,
-            "fft_row" : true
+            "fft_skips" : false,
+            "fft_row" : false
         }]
     }],
     

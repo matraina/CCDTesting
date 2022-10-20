@@ -150,11 +150,15 @@ def sigmaFinder(image, fwhm_est, debug):
     import numpy as np
     from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
-    if type(image) is np.ndarray:
+    if (type(image) is np.ndarray) or (type(image) is np.ma.core.MaskedArray):
         image = selectImageRegion(image,analysisregion)
-        pcd = image.ravel()
-        pcd = [s for s in pcd if s != 0]
-        bins = int(max(pcd) - min(pcd))
+        if type(image) is np.ma.core.MaskedArray:
+            pcd = image.compressed()
+            bins=int((np.ma.max(pcd)-np.ma.min(pcd)))
+        else:
+            pcd = image.ravel()
+            bins = int(max(pcd) - min(pcd))
+        if reverse: pcd = [s for s in pcd if s != 0]
     else:
         pcd = image; bins = 100
         if test != 'linearity': print("WARNING: Image provided in form of list (1D array). You're good if this is linearity test, else, check your code")
@@ -201,8 +205,10 @@ def sigmaFinder(image, fwhm_est, debug):
             mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
             sigma=np.array(pcd).std()
     #now find accurate mean and stdev by fitting in proper range
-    fitrange = 2.
+    fitrange = 2
+    #print(pcd)
     pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
+    if reverse: pcdinrange = np.ma.masked_equal(pcdinrange, 0.0, copy=False)
     pguess = [mostlikelyentrycounts,mostlikelyentry,sigma]
     try: binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange)); pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
     except: binsinrange = 100+int(bins/100)*int(max(pcdinrange) - min(pcdinrange)); pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
