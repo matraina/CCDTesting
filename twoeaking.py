@@ -10,6 +10,9 @@ Executable devoted to guide the clocks/bias parameters tweaking process in skipp
 -------------------
 '''
 
+import warnings
+warnings.filterwarnings("ignore")#to ignore numba warnings. Periodic check required
+
 ##############################################################################                             
 # Input values from command line
 
@@ -747,7 +750,7 @@ if reportPCD:
         if nskips!=1:
             try: calibrationconstant_L; guessCC = False
             except: calibrationconstant_L = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
-            averageimageoffset_L = m_functions.sigmaFinder(skipper_avg0_L, fwhm_est=True, debug=False)[1]
+            averageimageoffset_L,averageimagestd_L = m_functions.sigmaFinder(skipper_avg0_L, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_L = m_functions.selectImageRegion(skipper_avg0_L,analysisregion)
             if applymask: avg_image_0ravel_L = skipper_avg0_region_L.compressed()
             else: avg_image_0ravel_L = skipper_avg0_region_L.ravel()
@@ -770,7 +773,7 @@ if reportPCD:
                 avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 200, density=False)
                 ampls_L = avg_image_hist_L[np.argmax(avg_image_hist_L)]
             axs[1].hist(avg_image_0ravel_L, 200, rangeadhoc_L, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
-            axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,stdmanyskip_L[-1]), label='gaussian fit curve', linewidth=1, color='red')
+            axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,averageimagestd_L), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend( prop={'size': 14})
             else: axs[1].legend( prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
@@ -843,7 +846,7 @@ if reportPCD:
         if nskips!=1:
             try: calibrationconstant_U; guessCC = False
             except: calibrationconstant_U = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
-            averageimageoffset_U = m_functions.sigmaFinder(skipper_avg0_U, fwhm_est=True, debug=False)[1]
+            averageimageoffset_U,averageimagestd_U = m_functions.sigmaFinder(skipper_avg0_U, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_U = m_functions.selectImageRegion(skipper_avg0_U,analysisregion)
             if applymask: avg_image_0ravel_U = skipper_avg0_region_U.compressed()
             else: avg_image_0ravel_U = skipper_avg0_region_U.ravel()
@@ -866,7 +869,7 @@ if reportPCD:
                 avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 200, density=False)
                 ampls_U = avg_image_hist_U[np.argmax(avg_image_hist_U)]
             axs[1].hist(avg_image_0ravel_U, 200, rangeadhoc_U, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
-            axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,stdmanyskip_U[-1]), label='gaussian fit curve', linewidth=1, color='red')
+            axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,averageimagestd_U), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend( prop={'size': 14})
             else: axs[1].legend( prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')

@@ -658,7 +658,7 @@ if not multipleimages:
             if nskips!=1:
                 try: calibrationconstant; guessCC = False
                 except: calibrationconstant = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
-                averageimageoffset = m_functions.sigmaFinder(skipper_avg0, fwhm_est=True, debug=False)[1]
+                averageimageoffset,averageimagestd = m_functions.sigmaFinder(skipper_avg0, fwhm_est=True, debug=False)[1:3]
                 skipper_avg0_region = m_functions.selectImageRegion(skipper_avg0,analysisregion)
                 if applymask: avg_image_0ravel = skipper_avg0_region.compressed()
                 else: avg_image_0ravel = skipper_avg0_region.ravel()
@@ -680,7 +680,7 @@ if not multipleimages:
                     ampls = avg_image_hist[np.argmax(avg_image_hist)]
                 #axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,stdmanyskip[-1]), label='gaussian fit curve', linewidth=1, color='red')
                 axs[1].hist(avg_image_0ravel, 200, rangeadhoc, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel value distribution')
-                axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,stdmanyskip[-1]), label='gaussian fit curve', linewidth=1, color='red')
+                axs[1].plot(bincenters, gauss(bincenters,ampls,averageimageoffset,averageimagestd), label='gaussian fit curve', linewidth=1, color='red')
                 if reverse: axs[1].legend(loc='upper left',prop={'size': 14})
                 else: axs[1].legend(loc='upper right',prop={'size': 14})
                 axs[1].tick_params(axis='both', which='both', length=10, direction='in')
