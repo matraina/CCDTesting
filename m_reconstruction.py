@@ -60,10 +60,10 @@ def fixLeachReconstruction(image_file):
         image_data[0:nrows,0:ncoltot-2] = image_data0[0:nrows,2:ncoltot]
         image_data[0:nrows-1,ncoltot-2] = image_data0[1:nrows,0]
         image_data[0:nrows-1,ncoltot-1] = image_data0[1:nrows,1]
-        #image_data[nrows-1,ncoltot-2] = image_data0[nrows-1,0]
-        #image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,1]
-        image_data[-1,ncoltot-2] = image_data0[0,0]
-        image_data[-1,ncoltot-1] = image_data0[0,1]
+        image_data[nrows-1,ncoltot-2] = image_data0[nrows-1,0]
+        image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,1]
+        #image_data[-1,ncoltot-2] = image_data0[0,0]
+        #image_data[-1,ncoltot-1] = image_data0[0,1]
         #if ampl == 'UL':
         #    for x in range(nallcolumns-3,int(nallcolumns/2)-1,-1):
         #        image_data[y,x+2] = image_data0[y,x]
@@ -77,10 +77,10 @@ def fixLeachReconstruction(image_file):
             image_data[0:nrows,ncoltot+2:nallcolumns] = image_data0[0:nrows,ncoltot:nallcolumns-2]
             image_data[0:nrows-1,ncoltot] = image_data0[1:nrows,nallcolumns-2]
             image_data[0:nrows-1,ncoltot+1] = image_data0[1:nrows,nallcolumns-1]
-            #image_data[nrows-1,ncoltot] = image_data0[nrows-1,nallcolumns-2]
-            #image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,nallcolumns-1]
-            image_data[-1,-2] = image_data0[0,-2]
-            image_data[-1,-1] = image_data0[0,-1]
+            image_data[nrows-1,ncoltot] = image_data0[nrows-1,nallcolumns-2]
+            image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,nallcolumns-1]
+            #image_data[-1,-2] = image_data0[0,-2]
+            #image_data[-1,-1] = image_data0[0,-1]
             
     return image_data
 
