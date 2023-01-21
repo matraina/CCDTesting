@@ -748,6 +748,7 @@ if reportPCD:
 
         
         if nskips!=1:
+<<<<<<< HEAD
             try:
                 calibrationconstant_L
                 guessCC = False
@@ -756,6 +757,13 @@ if reportPCD:
                 calibrationconstant_L = calibrationguess
                 guessCC = True
                 print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value in config.json')
+=======
+            try: 
+                calibrationconstant_L
+                guessCC = False
+                if calibrationconstant_L<=0: calibrationconstant_L=calibrationguess
+            except: calibrationconstant_L = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value')
+>>>>>>> 2db6bdd40beb30b1d48d792e6e1773624a68feff
             averageimageoffset_L,averageimagestd_L = m_functions.sigmaFinder(skipper_avg0_L, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_L = m_functions.selectImageRegion(skipper_avg0_L,analysisregion)
             if applymask: avg_image_0ravel_L = skipper_avg0_region_L.compressed()
@@ -850,6 +858,7 @@ if reportPCD:
 
         
         if nskips!=1:
+<<<<<<< HEAD
             try:
                 calibrationconstant_U
                 guessCC = False
@@ -858,6 +867,13 @@ if reportPCD:
                 calibrationconstant_U = calibrationguess
                 guessCC = True
                 print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value in config.json')
+=======
+            try: 
+                calibrationconstant_U
+                guessCC = False
+                if calibrationconstant_U<=0:calibrationconstant_U=calibrationguess
+            except: calibrationconstant_U = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value')
+>>>>>>> 2db6bdd40beb30b1d48d792e6e1773624a68feff
             averageimageoffset_U,averageimagestd_U = m_functions.sigmaFinder(skipper_avg0_U, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_U = m_functions.selectImageRegion(skipper_avg0_U,analysisregion)
             if applymask: avg_image_0ravel_U = skipper_avg0_region_U.compressed()
