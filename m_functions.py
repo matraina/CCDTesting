@@ -13,6 +13,8 @@ Module with various functions used in the CCD testing package
 # import json and read configuration file
 import json
 import numpy as np
+from numba import jit
+import warnings
 
 #def infomod(): #to get functions.py function caller module)
 #    import inspect
@@ -32,7 +34,6 @@ analysisregion = config['analysis_region']
 #####################################################################
 #prescan+activeregion+prescan(physical)+overscan(unphysical)#########
 def selectImageRegion(image,analysisregion):
-    import warnings
     if analysisregion == 'full' or test == 'linearity': return image
     elif analysisregion == 'overscan':
         rowidx = np.arange(np.size(image,0))

@@ -128,7 +128,7 @@ def calibrationDC(avgimg,std,reverse,debug):
     mu = bincenters[np.argmax(avgimghist)]
     if reverse: avgimg = mu - avgimg
     else: avgimg = avgimg - mu
-    if analysisregion == 'arbitrary': avgimg = selectImageRegion(avgimg,analysisregion)
+    if analysisregion == 'arbitrary': avgimg = selectImageRegion(avgimg,analysisregion); avgimgravel = avgimg.ravel()
     if applymask: avgimgravel = avgimg.compressed()
     avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2

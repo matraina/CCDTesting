@@ -13,7 +13,7 @@ import numpy as np
 import sys
 from astropy.utils.data import get_pkg_data_filename
 from astropy.io import fits
-from numba import jit
+#from numba import jit
 
 import json
 with open('config.json') as config_file:
@@ -33,6 +33,7 @@ printheader = config['print_header']
 ####################################################################
 ### function used to correct image from leach reconstruction bug ###
 ####################################################################
+
 def fixLeachReconstruction(image_file):
     
     hdr = fits.getheader(image_file,0)
@@ -221,7 +222,7 @@ def reconstructSkipperImage(image_file,processedname):
 ###########################################################################################
 # primary reconstruction function: produces two amp imgs for analysis and processed .fits #
 ###########################################################################################
-@jit()
+#@jit()
 def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     
     hdr = fits.getheader(image_file,0)
@@ -360,7 +361,7 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     for y in range(0,nrows):
         xp = -1
         if nskips == 1:
-            pedestaloneskiprow_U = np.median(image_data_U[y,nallcolumns//2:nallcolumns:nskips]) #for pedestal subtraction in single-skip images
+            pedestaloneskiprow_U = np.median(image_data_U[y,0:nallcolumns//2:nskips]) #for pedestal subtraction in single-skip images
         for x in range(0, nallcolumns//2, nskips):
             xp = xp+1
             xeff = x
@@ -397,8 +398,9 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     processedfits = workingdirectory + processedname
     if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
         hdr_copy = hdr.copy()
-        hdu0 = fits.PrimaryHDU(data=image_data,header=hdr_copy)
-        new_hdul = fits.HDUList([hdu0])
+        hdu0L = fits.PrimaryHDU(data=image_data_L,header=hdr_copy)
+        hdu0U = fits.ImageHDU(data=image_data_U)
+        new_hdul = fits.HDUList([hdu0L,hdu0U])
         new_hdul.writeto(processedfits, overwrite=True)
     # Output the skipper images, same header as original file
     else:
@@ -663,6 +665,7 @@ def reverseImage(image_data):
     reversed_image_data = offset - image_data
     return reversed_image_data
     
+#@jit()
 def subtractPedestalRowByRow(image_data):
     nrows = np.size(image_data,0)
     row_pedestals = np.zeros(nrows,dtype=np.float64)
@@ -729,7 +732,6 @@ def getMask(mask,amplifier):
     #print(np.size(mask_for_amp,1))
     return mask_for_amp
     
-    
 def applyMask(image_to_mask,mask):
     #only apply mask if mask size <= image size
     imagerows = np.size(image_to_mask,0)
@@ -748,6 +750,7 @@ def applyMask(image_to_mask,mask):
 ###################################################################################
 ################ fast cluster-finding for images plots in report ##################
 ###################################################################################
+#@jit()
 def findChargedPixelNoBorder(image,sigma):
     coordinates = []
     for row in range(1,np.size(image,0)-1):

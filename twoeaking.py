@@ -748,8 +748,14 @@ if reportPCD:
 
         
         if nskips!=1:
-            try: calibrationconstant_L; guessCC = False
-            except: calibrationconstant_L = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
+            try:
+                calibrationconstant_L
+                guessCC = False
+                if calibrationconstant_L<=0:calibrationconstant_L=calibrationguess
+            except:
+                calibrationconstant_L = calibrationguess
+                guessCC = True
+                print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value in config.json')
             averageimageoffset_L,averageimagestd_L = m_functions.sigmaFinder(skipper_avg0_L, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_L = m_functions.selectImageRegion(skipper_avg0_L,analysisregion)
             if applymask: avg_image_0ravel_L = skipper_avg0_region_L.compressed()
@@ -765,14 +771,14 @@ if reportPCD:
             if len(avg_image_unsaturated_L) < 50:
                 avg_image_unsaturated_L = [s for s in np.ma.masked_equal(avg_image_0ravel_L, 0.0, copy=False) if - 20*calibrationconstant_L < s - averageimageoffset_L < 20*calibrationconstant_L]
                 rangeadhoc_L =  (averageimageoffset_L - 20*calibrationconstant_L, averageimageoffset_L + 20*calibrationconstant_L)
-            avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 200, density=False)
+            avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 100, density=False)
             ampls_L = avg_image_hist_L[np.argmax(avg_image_hist_L)]
-            bincenters = np.arange(averageimageoffset_L - 3*stdmanyskip_L[-1], averageimageoffset_L + 3*stdmanyskip_L[-1] + 6*stdmanyskip_L[-1]/200, 6*stdmanyskip_L[-1]/200)
+            bincenters = np.arange(averageimageoffset_L - 3*stdmanyskip_L[-1], averageimageoffset_L + 3*stdmanyskip_L[-1] + 6*stdmanyskip_L[-1]/100, 6*stdmanyskip_L[-1]/100)
             if abs(rangeadhoc_L[1]-rangeadhoc_L[0]) < max(bincenters) - min(bincenters):
                 rangeadhoc_L = (min(bincenters),max(bincenters))
-                avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 200, density=False)
+                avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 100, density=False)
                 ampls_L = avg_image_hist_L[np.argmax(avg_image_hist_L)]
-            axs[1].hist(avg_image_0ravel_L, 200, rangeadhoc_L, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+            axs[1].hist(avg_image_0ravel_L, 100, rangeadhoc_L, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
             axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,averageimagestd_L), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend( prop={'size': 14})
             else: axs[1].legend( prop={'size': 14})
@@ -844,8 +850,14 @@ if reportPCD:
 
         
         if nskips!=1:
-            try: calibrationconstant_U; guessCC = False
-            except: calibrationconstant_U = calibrationguess; guessCC = True; print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value 10 ADU/e-')
+            try:
+                calibrationconstant_U
+                guessCC = False
+                if calibrationconstant_U<=0: calibrationconstant_U = calibrationguess
+            except:
+                calibrationconstant_U = calibrationguess
+                guessCC = True
+                print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value in config.json')
             averageimageoffset_U,averageimagestd_U = m_functions.sigmaFinder(skipper_avg0_U, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_U = m_functions.selectImageRegion(skipper_avg0_U,analysisregion)
             if applymask: avg_image_0ravel_U = skipper_avg0_region_U.compressed()
@@ -861,14 +873,14 @@ if reportPCD:
             if len(avg_image_unsaturated_U) < 50:
                 avg_image_unsaturated_U = [s for s in np.ma.masked_equal(avg_image_0ravel_U, 0.0, copy=False) if - 20*calibrationconstant_U < s - averageimageoffset_U < 20*calibrationconstant_U]
                 rangeadhoc_U =  (averageimageoffset_U - 20*calibrationconstant_U, averageimageoffset_U + 20*calibrationconstant_U)
-            avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 200, density=False)
+            avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 100, density=False)
             ampls_U = avg_image_hist_U[np.argmax(avg_image_hist_U)]
-            bincenters = np.arange(averageimageoffset_U - 3*stdmanyskip_U[-1], averageimageoffset_U + 3*stdmanyskip_U[-1] + 6*stdmanyskip_U[-1]/200, 6*stdmanyskip_U[-1]/200)
+            bincenters = np.arange(averageimageoffset_U - 3*stdmanyskip_U[-1], averageimageoffset_U + 3*stdmanyskip_U[-1] + 6*stdmanyskip_U[-1]/100, 6*stdmanyskip_U[-1]/100)
             if abs(rangeadhoc_U[1]-rangeadhoc_U[0]) < max(bincenters) - min(bincenters):
                 rangeadhoc_U = (min(bincenters),max(bincenters))
-                avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 200, density=False)
+                avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 100, density=False)
                 ampls_U = avg_image_hist_U[np.argmax(avg_image_hist_U)]
-            axs[1].hist(avg_image_0ravel_U, 200, rangeadhoc_U, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+            axs[1].hist(avg_image_0ravel_U, 100, rangeadhoc_U, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
             axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,averageimagestd_U), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend( prop={'size': 14})
             else: axs[1].legend( prop={'size': 14})
@@ -1090,14 +1102,10 @@ if reportChargeLoss and nskips!=1:
 if reportCalibrationDarkcurrent and nskips!=1:
     if analysisregion == 'arbitrary': skipper_avg_cal_L = m_functions.selectImageRegion(skipper_avg_cal_L,analysisregion)
     skipperavgcalibrated_L = skipper_avg_cal_L.ravel()
-    try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
-        if calibrationconstant_L == calibrationguess:
+    try: #if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
+        if calibrationconstant_L == calibrationguess or calibrationconstant_L <= 1:
+            calibrationconstant_L = calibrationguess
             skipperavgcalibratedravel_L = [s for s in skipperavgcalibrated_L.ravel() if s > -10 and  s < 10]
-            nbins=int((max(skipperavgcalibratedravel_L) - min(skipperavgcalibratedravel_L))/10)
-        elif calibrationconstant_L <= 1:
-            skipperavgcalibratedravel_L =  [s for s in skipperavgcalibrated_L.ravel() if s > -200 and  s < 200]
-            if 0.01 < calibrationconstant_L <=0.1: skipperavgcalibratedravel_L =  [s for s in skipperavgcalibrated_L.ravel() if s > -2000 and  s < 2000]
-            elif calibrationconstant_L <=0.01: skipperavgcalibratedravel_L =  [s for s in skipperavgcalibrated_L.ravel() if s > -20000 and  s < 20000]
             nbins=int((max(skipperavgcalibratedravel_L) - min(skipperavgcalibratedravel_L))/10)
         else:
             skipperavgcalibratedravel_L = [s for s in skipperavgcalibrated_L.ravel() if s > -2 and  s < 4] 
@@ -1143,11 +1151,9 @@ if reportCalibrationDarkcurrent and nskips!=1:
     if analysisregion == 'arbitrary': skipper_avg_cal_U = m_functions.selectImageRegion(skipper_avg_cal_U,analysisregion)
     skipperavgcalibrated_U = skipper_avg_cal_U.ravel()
     try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
-        if calibrationconstant_U == calibrationguess: skipperavgcalibratedravel_U = [s for s in skipperavgcalibrated_U.ravel() if s > -10 and  s < 10]
-        elif calibrationconstant_U <= 1:
-            skipperavgcalibratedravel_U =  [s for s in skipperavgcalibrated_U.ravel() if s > -200 and  s < 200]
-            if 0.01 < calibrationconstant_U <=0.1: skipperavgcalibratedravel_U =  [s for s in skipperavgcalibrated_U.ravel() if s > -2000 and  s < 2000]
-            elif calibrationconstant_U <=0.01: skipperavgcalibratedravel_U =  [s for s in skipperavgcalibrated_U.ravel() if s > -20000 and  s < 20000]
+        if calibrationconstant_U == calibrationguess or calibrationconstant_U <= 1:
+            calibrationconstant_U = calibrationguess
+            skipperavgcalibratedravel_U = [s for s in skipperavgcalibrated_U.ravel() if s > -10 and  s < 10]
             nbins=int((max(skipperavgcalibratedravel_U) - min(skipperavgcalibratedravel_U))/10)
         else:
             skipperavgcalibratedravel_U = [s for s in skipperavgcalibrated_U.ravel() if s > -2 and  s < 4]
