@@ -13,7 +13,7 @@ import numpy as np
 import sys
 from astropy.utils.data import get_pkg_data_filename
 from astropy.io import fits
-from numba import jit
+#from numba import jit
 
 import json
 with open('config.json') as config_file:
@@ -59,10 +59,10 @@ def fixLeachReconstruction(image_file):
         image_data[0:nrows,0:ncoltot-2] = image_data0[0:nrows,2:ncoltot]
         image_data[0:nrows-1,ncoltot-2] = image_data0[1:nrows,0]
         image_data[0:nrows-1,ncoltot-1] = image_data0[1:nrows,1]
-        #image_data[nrows-1,ncoltot-2] = image_data0[nrows-1,0]
-        #image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,1]
-        image_data[-1,ncoltot-2] = image_data0[0,0]
-        image_data[-1,ncoltot-1] = image_data0[0,1]
+        image_data[nrows-1,ncoltot-2] = image_data0[nrows-1,0]
+        image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,1]
+        #image_data[-1,ncoltot-2] = image_data0[0,0]
+        #image_data[-1,ncoltot-1] = image_data0[0,1]
         #if ampl == 'UL':
         #    for x in range(nallcolumns-3,int(nallcolumns/2)-1,-1):
         #        image_data[y,x+2] = image_data0[y,x]
@@ -76,10 +76,10 @@ def fixLeachReconstruction(image_file):
             image_data[0:nrows,ncoltot+2:nallcolumns] = image_data0[0:nrows,ncoltot:nallcolumns-2]
             image_data[0:nrows-1,ncoltot] = image_data0[1:nrows,nallcolumns-2]
             image_data[0:nrows-1,ncoltot+1] = image_data0[1:nrows,nallcolumns-1]
-            #image_data[nrows-1,ncoltot] = image_data0[nrows-1,nallcolumns-2]
-            #image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,nallcolumns-1]
-            image_data[-1,-2] = image_data0[0,-2]
-            image_data[-1,-1] = image_data0[0,-1]
+            image_data[nrows-1,ncoltot] = image_data0[nrows-1,nallcolumns-2]
+            image_data[nrows-1,ncoltot-1] = image_data0[nrows-1,nallcolumns-1]
+            #image_data[-1,-2] = image_data0[0,-2]
+            #image_data[-1,-1] = image_data0[0,-1]
             
     return image_data
 
@@ -221,7 +221,7 @@ def reconstructSkipperImage(image_file,processedname):
 ###########################################################################################
 # primary reconstruction function: produces two amp imgs for analysis and processed .fits #
 ###########################################################################################
-@jit()
+#@jit()
 def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     
     hdr = fits.getheader(image_file,0)
@@ -360,7 +360,7 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     for y in range(0,nrows):
         xp = -1
         if nskips == 1:
-            pedestaloneskiprow_U = np.median(image_data_U[y,nallcolumns//2:nallcolumns:nskips]) #for pedestal subtraction in single-skip images
+            pedestaloneskiprow_U = np.median(image_data_U[y,0:nallcolumns//2:nskips]) #for pedestal subtraction in single-skip images
         for x in range(0, nallcolumns//2, nskips):
             xp = xp+1
             xeff = x
@@ -397,8 +397,9 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     processedfits = workingdirectory + processedname
     if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
         hdr_copy = hdr.copy()
-        hdu0 = fits.PrimaryHDU(data=image_data,header=hdr_copy)
-        new_hdul = fits.HDUList([hdu0])
+        hdu0L = fits.PrimaryHDU(data=image_data_L,header=hdr_copy)
+        hdu0U = fits.ImageHDU(data=image_data_U)
+        new_hdul = fits.HDUList([hdu0L,hdu0U])
         new_hdul.writeto(processedfits, overwrite=True)
     # Output the skipper images, same header as original file
     else:
