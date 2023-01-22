@@ -779,7 +779,7 @@ if reportPCD:
                 avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 100, density=False)
                 ampls_L = avg_image_hist_L[np.argmax(avg_image_hist_L)]
             axs[1].hist(avg_image_0ravel_L, 100, rangeadhoc_L, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
-            axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,averageimagestd_L), label='gaussian fit curve', linewidth=1, color='red')
+            if abs(calibrationconstant_L-calibrationguess)/5 < 1: axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,averageimagestd_L), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend( prop={'size': 14})
             else: axs[1].legend( prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
@@ -881,7 +881,7 @@ if reportPCD:
                 avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 100, density=False)
                 ampls_U = avg_image_hist_U[np.argmax(avg_image_hist_U)]
             axs[1].hist(avg_image_0ravel_U, 100, rangeadhoc_U, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
-            axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,averageimagestd_U), label='gaussian fit curve', linewidth=1, color='red')
+            if abs(calibrationconstant_U-calibrationguess)/5 < 1: axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,averageimagestd_U), label='gaussian fit curve', linewidth=1, color='red')
             if reverse: axs[1].legend( prop={'size': 14})
             else: axs[1].legend( prop={'size': 14})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
