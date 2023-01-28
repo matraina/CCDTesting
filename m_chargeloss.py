@@ -3,7 +3,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
+*By: Michelangelo Traina (CENPA, University of Washington and LPNHE, Sorbonne Universite) to study skipper CCD data
 Charge loss check module. Will output kcl, skewness and respective uncertainties. Will also output plot for latek summary
 
 -------------------

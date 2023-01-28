@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
+*By: Michelangelo Traina (CENPA, University of Washington and LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to assessing the linearity of the signal.
 It can use one single image with high exposure, but also several images (check that (0-e) peak std dev increases with mean & accumulate statistics with cumulatePCDistributions method in reconstruction.py)
 

@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
+*By: Michelangelo Traina (CENPA, University of Washington and LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to assessing the charge transfer efficiency of the CCD.
 It uses a single image: single- or multiple-skip to assess parallel/serial or skip charge transfer efficiency (CTE), respectively. For simplicity EPER is not carried out on multiskip images
 
