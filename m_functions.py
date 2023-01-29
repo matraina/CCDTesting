@@ -138,14 +138,24 @@ def convolutionGaussianPoisson(q, *p):
     f = 0
     npeaksp = 3
     for peaks in range(npeaksp):
-        f +=  ( (dcratep**peaks * np.exp(-dcratep) / factorial(peaks)) * (amplip / np.sqrt(2 * np.pi * sigmap**2)) * np.exp( - (q - peaks)**2 / (2 * sigmap**2)) )
-    return f
+        f +=  ( (dcratep**peaks * np.exp(-dcratep) / factorial(peaks)) * np.exp( - (q - peaks)**2 / (2 * sigmap**2)) )
+    return f * amplip / np.sqrt(2 * np.pi * sigmap**2)
     
 from math import log10, floor
 def round_sig_2(x, sig=2):
     if x == 0: x = 0.00001
     try: return round(x, sig-int(floor(log10(abs(x))))-1)
     except: return x
+    
+import sys, os
+
+# Disable
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
 
 def sigmaFinder(image, fwhm_est, debug):
     import numpy as np
@@ -162,21 +172,16 @@ def sigmaFinder(image, fwhm_est, debug):
         if reverse: pcd = [s for s in pcd if s != 0]
     else:
         pcd = image; bins = 100
-        if test != 'linearity': print("WARNING: Image provided in form of list (1D array). You're good if this is linearity test, else, check your code")
+        if test != 'linearity': print("WARNING: Image provided in form of list (1D array). You're good if this is linearity test")
     try: pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
     except: pcdhistogram, binedges = np.histogram(pcd, 100, density=False)
     if analysisregion == 'overscan': mostlikelyentry = np.array(pcd).mean(); mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]; sigma=np.array(pcd).std(); fwhm,fwhmcounts = float('nan'),float('nan')
     else:
         if fwhm_est:
             if reverse: #works well
-                while (bins - np.argmax(pcdhistogram) < 30):
+                while (bins - np.argmax(pcdhistogram) < 30): #bins ~ int(max(pcd)) if reverse
                     bins += 10
                     pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
-            #else: # 3 lines below hugely slow things down. Unlikely to have issue with not reversed images anyways
-            #    while (np.argmax(pcdhistogram) < 30):
-            #        bins += 10
-            #        print(np.argmax(pcdhistogram))
-            #        pcdhistogram, binedges = np.histogram(pcd, bins, density=False)
             mostlikelyentry = 0.5*(binedges[np.argmax(pcdhistogram)]+binedges[np.argmax(pcdhistogram)+1]) #pedestal estimation
             #find sigma using FWHM
             mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
@@ -211,23 +216,22 @@ def sigmaFinder(image, fwhm_est, debug):
     pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
     if reverse: pcdinrange = np.ma.masked_equal(pcdinrange, 0.0, copy=False)
     pguess = [mostlikelyentrycounts,mostlikelyentry,sigma]
-    try: binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange)); pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
-    except: binsinrange = 100+int(bins/100)*int(max(pcdinrange) - min(pcdinrange)); pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
+    try:
+        binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange))
+        pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
+    except:
+        binsinrange = 100+int(bins/100)*int(max(pcdinrange) - min(pcdinrange))
+        pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
     bincenters=(binedges[:-1] + binedges[1:])/2
     try:
         pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
         pcdhistfit = gauss(bincenters,*pfit)
         amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
-        #print(mu,np.sqrt(np.diag(varmatrix))[1])
         if abs(np.sqrt(np.diag(varmatrix))[1]/mu) > 0.5: mu = mostlikelyentry #should be fine
         munc = np.sqrt(np.diag(varmatrix))[1]
         stdunc = np.sqrt(np.diag(varmatrix))[-1]
     except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); munc,stdunc=0,0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
     if debug:
-        #bincenters=0.5*(binedges[1:] + binedges[:-1])
-        #plt.plot(bincenters, pcdhistogram)
-        #plt.show()
-        #plt.clf()
         print('Most likely entry is:', mostlikelyentry)
         print('Most likely entry counts are:', mostlikelyentrycounts)
         print('FWHM is at:', fwhm)
@@ -293,7 +297,7 @@ def rowFFT(avgimage, rows, columns, samplet):
     fftdata /= (rows)
     
     fig,axs = plt.subplots(1,1)
-    axs.plot(xfreq[1:int(columns/2)], np.abs(fftdata[1:int(columns/2)]), color='teal', label='Row Fast Fourier Transform')
+    axs.plot(xfreq[1:int(columns/2)], np.abs(fftdata[1:int(columns/2)]), color='teal', label='Pixel FFT across row')
     axs.set_yscale('log')
     plt.legend()
     #axs.yaxis.set_major_locator(MultipleLocator( 10**(ceil(log(max(np.abs(fftdata))-min(np.abs(fftdata)),10))-1) ))

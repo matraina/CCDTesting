@@ -5,7 +5,7 @@
 -------------------
 
 *By: Michelangelo Traina (CENPA, University of Washington and LPNHE, Sorbonne Universite) to study skipper CCD data
-Executable devoted to guide the clocks/bias parameters tweaking process in skipper CCD and achieve optimal performance using both register amplifiers (L and U).
+Executable devoted to guide the clocks/bias parameters tweaking process in skipper CCD and achieve optimal performance using both register amplifiers (L and U) (or different CCDs in modules).
 
 -------------------
 '''
@@ -167,12 +167,22 @@ if reportPCD or reportCalibrationDarkcurrent:
             numberskips.append(index*100)
             naverages = index+1; index+=1
     ampmanyskip_L, mumanyskip_L, stdmanyskip_L, stduncmanyskip_L = [],[],[],[]
-    for k in range(naverages): amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_L[:,:,k], fwhm_est=True, debug=False); ampmanyskip_L.append(amp);mumanyskip_L.append(mu); stdmanyskip_L.append(std); stduncmanyskip_L.append(stdunc)
+    for k in range(naverages):
+        amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_L[:,:,k], fwhm_est=False, debug=False)
+        ampmanyskip_L.append(amp)
+        mumanyskip_L.append(mu)
+        stdmanyskip_L.append(std)
+        stduncmanyskip_L.append(stdunc)
 
 startskipfitpar_U = m_functions.sigmaFinder(skipper_image_start_U, fwhm_est=False, debug=False) #ampss muss, stdss, stduncss
 if reportPCD or reportCalibrationDarkcurrent:
     ampmanyskip_U, mumanyskip_U, stdmanyskip_U, stduncmanyskip_U = [],[],[],[]
-    for k in range(naverages): amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:,k], fwhm_est=True, debug=False); ampmanyskip_U.append(amp);mumanyskip_U.append(mu); stdmanyskip_U.append(std); stduncmanyskip_U.append(stdunc)
+    for k in range(naverages):
+        amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:,k], fwhm_est=False, debug=False)
+        ampmanyskip_U.append(amp)
+        mumanyskip_U.append(mu)
+        stdmanyskip_U.append(std)
+        stduncmanyskip_U.append(stdunc)
     
 ##############################################################################
 #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
@@ -195,11 +205,11 @@ if reportChargeLoss and nskips!=1:
 ##############################################################################
 
 if reportCalibrationDarkcurrent and nskips!=1:
-    parametersDCfit_L, reducedchisquared_L, offset_L = m_calibrationdc.calibrationDC(skipper_avg0_L, stdmanyskip_L[-1], reverse, debug=False)
+    parametersDCfit_L, reducedchisquared_L, offset_L, nbins_plot_L = m_calibrationdc.calibrationDC(skipper_avg0_L, stdmanyskip_L[-1], reverse, debug=False)
     calibrationconstant_L = parametersDCfit_L[0][5]; calibratedsigma_L = stdmanyskip_L[-1]/calibrationconstant_L
     skipper_avg_cal_L = reversign*(skipper_avg0_L - offset_L)/calibrationconstant_L
     darkcurrentestimateAC_L = m_calibrationdc.anticlusteringDarkCurrent(m_functions.selectImageRegion(skipper_avg_cal_L,analysisregion), calibratedsigma_L, debug=False)
-    parametersDCfit_U, reducedchisquared_U, offset_U = m_calibrationdc.calibrationDC(skipper_avg0_U, stdmanyskip_U[-1], reverse, debug=False)
+    parametersDCfit_U, reducedchisquared_U, offset_U, nbins_plot_U = m_calibrationdc.calibrationDC(skipper_avg0_U, stdmanyskip_U[-1], reverse, debug=False)
     calibrationconstant_U = parametersDCfit_U[0][5]; calibratedsigma_U = stdmanyskip_U[-1]/calibrationconstant_U
     skipper_avg_cal_U = reversign*(skipper_avg0_U - offset_U)/calibrationconstant_U
     darkcurrentestimateAC_U = m_calibrationdc.anticlusteringDarkCurrent(m_functions.selectImageRegion(skipper_avg_cal_U,analysisregion), calibratedsigma_U, debug=False)
@@ -273,6 +283,10 @@ if not (reportHeader or reportImage or reportPCD or reportChargeLoss or reportCa
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
 import matplotlib
 matplotlib.use('Agg')  # Not to use X server. For TravisCI.
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 14}
+matplotlib.rc('font', **font)
 from scipy.optimize import curve_fit
 #setup document parameters
 geometry_options = {'right': '2cm', 'left': '2cm'}
@@ -450,7 +464,7 @@ if reportImage=='full':
             
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Exposed pixels region for various images (Amplifier L).')
+            plot.add_caption('Exposed pixels region for various images (L-side).')
         plt.clf()
         doc.append(NewPage())
     
@@ -525,7 +539,7 @@ if reportImage=='full':
                 
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Exposed pixels region for various images (Amplifier U).')
+            plot.add_caption('Exposed pixels region for various images (U-side).')
         plt.clf()
         doc.append(NewPage())
 
@@ -621,7 +635,7 @@ if reportImage=='cluster':
             
     with doc.create(Figure(position='htb!')) as plot:
         plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-        plot.add_caption('Exposed pixels region for various images (Amplifier L).')
+        plot.add_caption('Exposed pixels region for various images (L-side).')
     plt.clf()
     doc.append(NewPage())
     
@@ -712,7 +726,7 @@ if reportImage=='cluster':
             
     with doc.create(Figure(position='htb!')) as plot:
         plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-        plot.add_caption('Exposed pixels region for various images (Amplifier U).')
+        plot.add_caption('Exposed pixels region for various images (U-side).')
     plt.clf()
     doc.append(NewPage())
 
@@ -738,24 +752,27 @@ if reportPCD:
         axs[0].hist(skipper_image_start_ravel_L, 800, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='start skip pixel charge distribution')
         bincenters = np.arange(muss_L - 3*stdss_L, muss_L + 3*stdss_L + 6*stdss_L/100, 6*stdss_L/100) #last term in upper bound to get ~sym drawing
         axs[0].plot(bincenters, gauss(bincenters,ampss_L,muss_L,stdss_L), label='gaussian fit curve', linewidth=1, color='red')
-        if reverse: axs[0].legend( prop={'size': 14})
-        else: axs[0].legend( prop={'size': 14})
+        axs[0].legend( prop={'size': 16})
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
-        try: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_L,4)) + ' ADU; est. noise: ' + str(round(stdss_L/calibrationconstant_L,4)) + ' $e^{-}$')
-        except: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_L,4)) + ' ADU')
+        try: axs[0].set_title('Start skip PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_L,4)) + ' ADU. Est. noise: ' + str(round(stdss_L/calibrationconstant_L,4)) + ' $e^{-}$')
+        except: axs[0].set_title('Start skip PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_L,4)) + ' ADU')
 
         
         if nskips!=1:
             try:
                 calibrationconstant_L
                 guessCC = False
-                if calibrationconstant_L<=0:calibrationconstant_L=calibrationguess
+                if calibrationconstant_L<=1 or calibrationconstant_L>1.5*calibrationguess:
+                    calibrationconstant_L = calibrationguess
+                    guessCC = True
+                    reportCalibrationDarkcurrent = False
+                    print('WARNING: inaccurate calibration constant. Using guess value. Will not report on calibration')
             except:
                 calibrationconstant_L = calibrationguess
                 guessCC = True
-                print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value in config.json')
+                print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value')
             averageimageoffset_L,averageimagestd_L = m_functions.sigmaFinder(skipper_avg0_L, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_L = m_functions.selectImageRegion(skipper_avg0_L,analysisregion)
             if applymask: avg_image_0ravel_L = skipper_avg0_region_L.compressed()
@@ -771,29 +788,33 @@ if reportPCD:
             if len(avg_image_unsaturated_L) < 50:
                 avg_image_unsaturated_L = [s for s in np.ma.masked_equal(avg_image_0ravel_L, 0.0, copy=False) if - 20*calibrationconstant_L < s - averageimageoffset_L < 20*calibrationconstant_L]
                 rangeadhoc_L =  (averageimageoffset_L - 20*calibrationconstant_L, averageimageoffset_L + 20*calibrationconstant_L)
-            avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 100, density=False)
+            avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 200, density=False)
             ampls_L = avg_image_hist_L[np.argmax(avg_image_hist_L)]
-            bincenters = np.arange(averageimageoffset_L - 3*stdmanyskip_L[-1], averageimageoffset_L + 3*stdmanyskip_L[-1] + 6*stdmanyskip_L[-1]/100, 6*stdmanyskip_L[-1]/100)
+            bincenters = np.arange(averageimageoffset_L - 3*stdmanyskip_L[-1], averageimageoffset_L + 3*stdmanyskip_L[-1] + 6*stdmanyskip_L[-1]/200, 6*stdmanyskip_L[-1]/200)
             if abs(rangeadhoc_L[1]-rangeadhoc_L[0]) < max(bincenters) - min(bincenters):
                 rangeadhoc_L = (min(bincenters),max(bincenters))
-                avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 100, density=False)
+                avg_image_hist_L, binedges = np.histogram([s for s in avg_image_0ravel_L if s != 0], range=rangeadhoc_L, bins = 200, density=False)
                 ampls_L = avg_image_hist_L[np.argmax(avg_image_hist_L)]
-            axs[1].hist(avg_image_0ravel_L, 100, rangeadhoc_L, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
-            if abs(calibrationconstant_L-calibrationguess)/5 < 1: axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,averageimagestd_L), label='gaussian fit curve', linewidth=1, color='red')
-            if reverse: axs[1].legend( prop={'size': 14})
-            else: axs[1].legend( prop={'size': 14})
+            
+            if not guessCC:
+                axs[1].hist(avg_image_0ravel_L, 200, rangeadhoc_L, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+                if abs(calibrationconstant_L-calibrationguess)/3 < 1: axs[1].plot(bincenters, gauss(bincenters,ampls_L,averageimageoffset_L,averageimagestd_L), label='gaussian fit curve', linewidth=1, color='red')
+            else:
+                axs[1].hist(avg_image_0ravel_L, 200, range=(min(avg_image_0ravel_L),0.002*max(avg_image_0ravel_L)), density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+            
+            axs[1].legend( prop={'size': 16})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[1].get_yticklabels(), visible=True)
-            axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_L[-1],4)) + ' ADU; est. noise: ' + str(round(stdmanyskip_L[-1]/calibrationconstant_L,4)) + ' $e^{-}$')
-            if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_L[-1],4)) + ' ADU')
+            axs[1].set_title('Average image PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_L[-1],4)) + ' ADU. Est. noise: ' + str(round(stdmanyskip_L[-1]/calibrationconstant_L,4)) + ' $e^{-}$')
+            if guessCC: axs[1].set_title('Average image PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_L[-1],4)) + ' ADU')
         
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
             ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region (Amplifier L).')
+            plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region (L-side).')
         plt.clf()
         doc.append(NewPage())
         
@@ -807,7 +828,7 @@ if reportPCD:
         else: resolution_L = plt.errorbar([],[])
         resolution_L += plt.errorbar(1,stdss_L,stduncss_L,xerr=None,ecolor='red',marker='o',fmt='.',mfc='red', mec='red', ms=4)
         resolution_L = plt.plot(ns,r(ns),'k--',label='expected $1/\sqrt(N_{skip})$ trend based on first skip sigma')
-        plt.legend( prop={'size': 14})
+        plt.legend()
         plt.ylabel('resolution [ADU]')
         plt.xlabel('number of skips')
         plt.xscale('log')
@@ -821,11 +842,11 @@ if reportPCD:
             
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Resolution trend computed on '+analysisregion+' image region, as function of average image skip number (Amplifier L).')
+            plot.add_caption('Resolution trend computed on '+analysisregion+' image region, as function of average image skip number (L-side).')
         plt.clf()
         doc.append(NewPage())
 
-        #U AMPLIFIER
+        #U-side
         fig, axs = plt.subplots(2, 1, figsize=(11,10), sharey=False, tight_layout=True)
         
         skipper_image_start_region_U = m_functions.selectImageRegion(skipper_image_start_U,analysisregion)
@@ -840,24 +861,27 @@ if reportPCD:
         axs[0].hist(skipper_image_start_ravel_U, 800, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='start skip pixel charge distribution')
         bincenters = np.arange(muss_U - 3*stdss_U, muss_U + 3*stdss_U + 6*stdss_U/100, 6*stdss_U/100) #last term in upper bound to get ~sym drawing
         axs[0].plot(bincenters, gauss(bincenters,ampss_U,muss_U,stdss_U), label='gaussian fit curve', linewidth=1, color='red')
-        if reverse: axs[0].legend( prop={'size': 14})
-        else: axs[0].legend( prop={'size': 14})
+        axs[0].legend(prop={'size':16})
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
-        try: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_U,4)) + ' ADU; est. noise: ' + str(round(stdss_U/calibrationconstant_U,4)) + ' $e^{-}$')
-        except: axs[0].set_title('Start skip pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_U,4)) + ' ADU')
+        try: axs[0].set_title('Start skip PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_U,4)) + ' ADU. Est. noise: ' + str(round(stdss_U/calibrationconstant_U,4)) + ' $e^{-}$')
+        except: axs[0].set_title('Start skip PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdss_U,4)) + ' ADU')
 
         
         if nskips!=1:
             try:
                 calibrationconstant_U
                 guessCC = False
-                if calibrationconstant_U<=0: calibrationconstant_U = calibrationguess
+                if calibrationconstant_U<=1 or calibrationconstant_U>1.5*calibrationguess:
+                    calibrationconstant_U = calibrationguess
+                    guessCC = True
+                    reportCalibrationDarkcurrent = False
+                    print('WARNING: inaccurate calibration constant. Using guess value. Will not report on calibration')
             except:
                 calibrationconstant_U = calibrationguess
                 guessCC = True
-                print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value in config.json')
+                print('WARNING: calibration constant not defined for ADU/e- noise conversion. Using guess value')
             averageimageoffset_U,averageimagestd_U = m_functions.sigmaFinder(skipper_avg0_U, fwhm_est=True, debug=False)[1:3]
             skipper_avg0_region_U = m_functions.selectImageRegion(skipper_avg0_U,analysisregion)
             if applymask: avg_image_0ravel_U = skipper_avg0_region_U.compressed()
@@ -873,29 +897,32 @@ if reportPCD:
             if len(avg_image_unsaturated_U) < 50:
                 avg_image_unsaturated_U = [s for s in np.ma.masked_equal(avg_image_0ravel_U, 0.0, copy=False) if - 20*calibrationconstant_U < s - averageimageoffset_U < 20*calibrationconstant_U]
                 rangeadhoc_U =  (averageimageoffset_U - 20*calibrationconstant_U, averageimageoffset_U + 20*calibrationconstant_U)
-            avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 100, density=False)
+            avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 200, density=False)
             ampls_U = avg_image_hist_U[np.argmax(avg_image_hist_U)]
-            bincenters = np.arange(averageimageoffset_U - 3*stdmanyskip_U[-1], averageimageoffset_U + 3*stdmanyskip_U[-1] + 6*stdmanyskip_U[-1]/100, 6*stdmanyskip_U[-1]/100)
+            bincenters = np.arange(averageimageoffset_U - 3*stdmanyskip_U[-1], averageimageoffset_U + 3*stdmanyskip_U[-1] + 6*stdmanyskip_U[-1]/200, 6*stdmanyskip_U[-1]/200)
             if abs(rangeadhoc_U[1]-rangeadhoc_U[0]) < max(bincenters) - min(bincenters):
                 rangeadhoc_U = (min(bincenters),max(bincenters))
-                avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 100, density=False)
+                avg_image_hist_U, binedges = np.histogram([s for s in avg_image_0ravel_U if s != 0], range=rangeadhoc_U, bins = 200, density=False)
                 ampls_U = avg_image_hist_U[np.argmax(avg_image_hist_U)]
-            axs[1].hist(avg_image_0ravel_U, 100, rangeadhoc_U, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
-            if abs(calibrationconstant_U-calibrationguess)/5 < 1: axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,averageimagestd_U), label='gaussian fit curve', linewidth=1, color='red')
-            if reverse: axs[1].legend( prop={'size': 14})
-            else: axs[1].legend( prop={'size': 14})
+            if not guessCC:
+                axs[1].hist(avg_image_0ravel_U, 200, rangeadhoc_U, density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+                if abs(calibrationconstant_U-calibrationguess)/3 < 1: axs[1].plot(bincenters, gauss(bincenters,ampls_U,averageimageoffset_U,averageimagestd_U), label='gaussian fit curve', linewidth=1, color='red')
+            else:
+                axs[1].hist(avg_image_0ravel_U, 200, range=(min(avg_image_0ravel_U),0.002*max(avg_image_0ravel_U)), density = False, histtype='step', linewidth=2, log = True, color='teal', label = 'avg img pixel charge distribution')
+
+            axs[1].legend(prop={'size':16})
             axs[1].tick_params(axis='both', which='both', length=10, direction='in')
             axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
             plt.setp(axs[1].get_yticklabels(), visible=True)
-            axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_U[-1],4)) + ' ADU; est. noise: ' + str(round(stdmanyskip_U[-1]/calibrationconstant_U,4)) + ' $e^{-}$')
-            if guessCC: axs[1].set_title('Average image pixel charge distribution in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_U[-1],4)) + ' ADU')
+            axs[1].set_title('Average image PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_U[-1],4)) + ' ADU. Est. noise: ' + str(round(stdmanyskip_U[-1]/calibrationconstant_U,4)) + ' $e^{-}$')
+            if guessCC: axs[1].set_title('Average image PCD in '+analysisregion+' image region: $\sigma_{0e^-}~=~$ ' + str(round(stdmanyskip_U[-1],4)) + ' ADU')
         
         plt.subplots_adjust(hspace=0.5)
         for ax in axs.flat:
             ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region (Amplifier U).')
+            plot.add_caption('Start skip and avg image pixel charge distributions computed on '+analysisregion+' image region (U-side).')
         plt.clf()
         doc.append(NewPage())
         
@@ -923,7 +950,7 @@ if reportPCD:
             
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Resolution trend computed on '+analysisregion+' image region, as function of average image skip number (Amplifier U).')
+            plot.add_caption('Resolution trend computed on '+analysisregion+' image region, as function of average image skip number (U-side).')
         plt.clf()
         doc.append(NewPage())
 
@@ -951,8 +978,9 @@ if reportChargeLoss and nskips!=1:
         axs[0].hist(skipperdiffcoreravelledinrange01_L, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
         axs[0].plot(bincenters, PCDDhistfit01_L, label='gaussian fit curve', linewidth=1, color='red')
         #axs[0].plot(bincenters,skipperdiffcoreravelledinrangehist01, label='pixel charge difference distribution', color='teal')
-        axs[0].legend( prop={'size': 14})
+        axs[0].legend( prop={'size': 16})
         axs[0].set_yscale('linear')
+        axs[0].set_ylim(0,1.4*max(PCDDhistfit01_L))
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
@@ -968,8 +996,9 @@ if reportChargeLoss and nskips!=1:
         axs[1].hist(skipperdiffcoreravelledinrange_L, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
         axs[1].plot(bincenters, PCDDhistfit_L, label='gaussian fit curve', linewidth=1, color='red')
         #axs[1].plot(bincenters,skipperdiffcoreravelledinrangehist, label='pixel charge difference distribution', color='teal')
-        axs[1].legend( prop={'size': 14})
+        axs[1].legend( prop={'size': 16})
         axs[1].set_yscale('linear')
+        axs[1].set_ylim(0,1.4*max(PCDDhistfit_L))
         axs[1].tick_params(axis='both', which='both', length=10, direction='in')
         axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[1].get_yticklabels(), visible=True)
@@ -980,7 +1009,7 @@ if reportChargeLoss and nskips!=1:
             ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom) (Amplifier L). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
+            plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom) (L-side). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
         doc.append(NoEscape(r'NOTE: A good gaussian fit of the PCDDs is essential for $S_{k_{cl}}$ to be an effective charge loss classifier'))
         plt.clf()
         doc.append(NewPage())
@@ -989,7 +1018,8 @@ if reportChargeLoss and nskips!=1:
             
         centeredskipperdiffcore01_L = [s for s in skipperdiffcoreravelled01_L-muPCDD01_L if s != -muPCDD01_L]
         axs[0].hist(centeredskipperdiffcore01_L, 600, range = (-20*stdPCDD01_L,10*stdPCDD01_L), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
-        axs[0].legend( prop={'size': 14})
+        #axs[0].set_ylim(0,1.4*max())
+        axs[0].legend(loc='upper left', prop={'size': 17})
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
@@ -997,7 +1027,8 @@ if reportChargeLoss and nskips!=1:
 
         centeredskipperdiffcore_L = [s for s in skipperdiffcoreravelled_L-muPCDD_L if s != -muPCDD_L]
         axs[1].hist(centeredskipperdiffcore_L, 600, range = (-20*stdPCDD_L,10*stdPCDD_L), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
-        axs[1].legend( prop={'size': 14})
+        #axs[1].set_ylim(0,1.4*max())
+        axs[1].legend(loc='upper left', prop={'size': 17})
         axs[1].tick_params(axis='both', which='both', length=10, direction='in')
         axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
@@ -1008,7 +1039,7 @@ if reportChargeLoss and nskips!=1:
             ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom) (Amplifier L).')
+            plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom) (L-side).')
             from scipy.stats import norm
             doc.append('First-second skip lower tail entries: '+str(len([s for s in centeredskipperdiffcore01_L if s < -kclthreshold*stdPCDD01_L]))+'. First-second skip upper tail entries: '+str(len([s for s in centeredskipperdiffcore01_L if s > kclthreshold*stdPCDD01_L]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffcore01_L)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.\n Second-last skip lower tail entries: '+str(len([s for s in centeredskipperdiffcore_L if s < -kclthreshold*stdPCDD_L]))+'. Second-last skip upper tail entries: '+str(len([s for s in centeredskipperdiffcore_L if s > kclthreshold*stdPCDD_L]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffcore_L)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.')
 
@@ -1032,7 +1063,8 @@ if reportChargeLoss and nskips!=1:
         axs[0].hist(skipperdiffcoreravelledinrange01_U, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
         axs[0].plot(bincenters, PCDDhistfit01_U, label='gaussian fit curve', linewidth=1, color='red')
         #axs[0].plot(bincenters,skipperdiffcoreravelledinrangehist01, label='pixel charge difference distribution', color='teal')
-        axs[0].legend( prop={'size': 14})
+        axs[0].set_ylim(0,1.4*max(PCDDhistfit01_U))
+        axs[0].legend(prop={'size': 16})
         axs[0].set_yscale('linear')
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
@@ -1049,7 +1081,8 @@ if reportChargeLoss and nskips!=1:
         axs[1].hist(skipperdiffcoreravelledinrange_U, len(bincenters), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='pixel charge difference distribution')
         axs[1].plot(bincenters, PCDDhistfit_U, label='gaussian fit curve', linewidth=1, color='red')
         #axs[1].plot(bincenters,skipperdiffcoreravelledinrangehist, label='pixel charge difference distribution', color='teal')
-        axs[1].legend( prop={'size': 14})
+        axs[1].set_ylim(0,1.4*max(PCDDhistfit_U))
+        axs[1].legend(prop={'size': 16})
         axs[1].set_yscale('linear')
         axs[1].tick_params(axis='both', which='both', length=10, direction='in')
         axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
@@ -1061,7 +1094,7 @@ if reportChargeLoss and nskips!=1:
             ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom) (Amplifier U). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
+            plot.add_caption('Full image pixel charge difference distributions (PCDD) between first and second skip (top) and second and end skip (bottom) (U-side). Entries at 0 (saturation digitizer range) might be masked for analysis purposes.')
         doc.append(NoEscape(r'NOTE: A good gaussian fit of the PCDDs is essential for $S_{k_{cl}}$ to be an effective charge loss classifier'))
         plt.clf()
         doc.append(NewPage())
@@ -1070,7 +1103,7 @@ if reportChargeLoss and nskips!=1:
             
         centeredskipperdiffcore01_U = [s for s in skipperdiffcoreravelled01_U-muPCDD01_U if s != -muPCDD01_U]
         axs[0].hist(centeredskipperdiffcore01_U, 600, range = (-20*stdPCDD01_U,10*stdPCDD01_U), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
-        axs[0].legend( prop={'size': 14})
+        axs[0].legend(loc='upper left', prop={'size': 17})
         axs[0].tick_params(axis='both', which='both', length=10, direction='in')
         axs[0].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
@@ -1078,7 +1111,7 @@ if reportChargeLoss and nskips!=1:
 
         centeredskipperdiffcore_U = [s for s in skipperdiffcoreravelled_U-muPCDD_U if s != -muPCDD_U]
         axs[1].hist(centeredskipperdiffcore_U, 600, range = (-20*stdPCDD_U,10*stdPCDD_U), density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='centered pixel charge difference distribution')
-        axs[1].legend( prop={'size': 14})
+        axs[1].legend(loc='upper left', prop={'size': 17})
         axs[1].tick_params(axis='both', which='both', length=10, direction='in')
         axs[1].grid(color='grey', linestyle=':', linewidth=1, which='both')
         plt.setp(axs[0].get_yticklabels(), visible=True)
@@ -1089,7 +1122,7 @@ if reportChargeLoss and nskips!=1:
             ax.set(xlabel='pixel value [ADU]', ylabel='counts')
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom) (Amplifier U).')
+            plot.add_caption('Pedestal-subtracted full-image PCDDs: first and second skip (top) and second and end skip (bottom) (U-side).')
             from scipy.stats import norm
             doc.append('First-second skip lower tail entries: '+str(len([s for s in centeredskipperdiffcore01_U if s < -kclthreshold*stdPCDD01_U]))+'. First-second skip upper tail entries: '+str(len([s for s in centeredskipperdiffcore01_U if s > kclthreshold*stdPCDD01_U]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffcore01_U)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.\n Second-last skip lower tail entries: '+str(len([s for s in centeredskipperdiffcore_U if s < -kclthreshold*stdPCDD_U]))+'. Second-last skip upper tail entries: '+str(len([s for s in centeredskipperdiffcore_U if s > kclthreshold*stdPCDD_U]))+'. Both expected to be '+ str( int(round_sig_2( len(centeredskipperdiffcore_U)*norm(loc = 0, scale = 1).cdf(-kclthreshold))) )+'.')
         plt.clf()
@@ -1100,96 +1133,102 @@ if reportChargeLoss and nskips!=1:
 #############################################
 
 if reportCalibrationDarkcurrent and nskips!=1:
+    #transform to masked array with no mask, if using no mask
+    if not applymask: skipper_avg_cal_L = np.ma.masked_array(skipper_avg_cal_L, mask=None)
+    #after masking select region of interest
     if analysisregion == 'arbitrary': skipper_avg_cal_L = m_functions.selectImageRegion(skipper_avg_cal_L,analysisregion)
-    skipperavgcalibrated_L = skipper_avg_cal_L.ravel()
-    try: #if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
-        if calibrationconstant_L == calibrationguess or calibrationconstant_L <= 1:
-            calibrationconstant_L = calibrationguess
-            skipperavgcalibratedravel_L = [s for s in skipperavgcalibrated_L.ravel() if s > -10 and  s < 10]
-            nbins=int((max(skipperavgcalibratedravel_L) - min(skipperavgcalibratedravel_L))/10)
-        else:
-            skipperavgcalibratedravel_L = [s for s in skipperavgcalibrated_L.ravel() if s > -2 and  s < 4] 
-            nbins=20*int(max(skipperavgcalibratedravel_L) - min(skipperavgcalibratedravel_L))
-    except: #if so we keep skipperavgcalibratedravel without range
-        skipperavgcalibratedravel_L = skipperavgcalibrated_L
-        nbins=20*int(max(skipperavgcalibratedravel_L) - min(skipperavgcalibratedravel_L))
+    skipperavgcalibratedravel_L = skipper_avg_cal_L.compressed()
+    #case for failed calibrations (very large constant not included)
+    #if calibrationconstant_L == calibrationguess or calibrationconstant_L <= 1: calibrationconstant_L = calibrationguess #skipperavgcalibratedravel_L = [s for s in skipperavgcalibratedravel_L if s > -10 and  s < 10]
+    #nbins factor keeps track of binning for plot consistency
+    nbinsfactor = 10
+    nbins = nbinsfactor*nbins_plot_L
+    #if nbins_plot=0 there is a problem with the image or the mask
     if nbins == 0: nbins=100
+    #plot calibrated average image histogram and gauss-poisson fit function
     skipperavgcalibratedravelhist_L, binedges = np.histogram(skipperavgcalibratedravel_L, nbins, density=False)
     bincenters=(binedges[:-1] + binedges[1:])/2
-    npeaksp_L = 3
-    dcpar_L = parametersDCfit_L[0][0], npeaksp_L, parametersDCfit_L[0][2]/(20/0.5), parametersDCfit_L[0][3]/calibrationconstant_L
-    if calibrationconstant_L <= 1: dcpar_L = parametersDCfit_L[0][0], npeaksp_L, parametersDCfit_L[0][2]/(0.1/0.5), parametersDCfit_L[0][3]/calibrationconstant_L
-    #dcparunc has one more component (the gain) than dcpar (dcpar is an argument for the calibrated gaussian)
-    try: dcparunc_L = parametersDCfit_L[1][0], parametersDCfit_L[1][1], parametersDCfit_L[1][2]/(20/0.5), parametersDCfit_L[1][3]/calibrationconstant_L, parametersDCfit_L[1][5]
+    #both amplitude [2] and sigma [3] must be rescaled by calibration constant
+    dcpar_L = parametersDCfit_L[0][0], parametersDCfit_L[0][1], parametersDCfit_L[0][2]/calibrationconstant_L, parametersDCfit_L[0][3]/calibrationconstant_L
+    #same for uncertainty
+    try: dcparunc_L = parametersDCfit_L[1][0], parametersDCfit_L[1][1], parametersDCfit_L[1][2]/calibrationconstant_L, parametersDCfit_L[1][3]/calibrationconstant_L, parametersDCfit_L[1][5]
+    #if calibration failed
     except: dcparunc_L = 0,0,0,0,0
-    skipperavgcalibratedravelhistfit_L = convolutionGaussianPoisson(bincenters,*dcpar_L)
-    #plt.plot(bincenters,skipperavgcalibratedravelhist,label='avg img calibrated pixel charge distribution', color='teal')
-    plt.hist(skipperavgcalibratedravel_L, len(bincenters), density = False, histtype='step', linewidth=2, log = False, color = 'teal', label='avg image calibrated pixel charge distribution')
+    #plot histogram
+    skipperavgcalibratedravelhistfit_L = convolutionGaussianPoisson(bincenters,*dcpar_L)/nbinsfactor
+    plt.hist(skipperavgcalibratedravel_L, nbins, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='avg image calibrated pixel charge distribution')
+    #plot fit function
     plt.plot(bincenters, skipperavgcalibratedravelhistfit_L, label='gauss-poisson convolution fit curve: '+'$\chi^2_{red}=$'+str(round_sig_2(reducedchisquared_L)), color='red')
-    #plt.hist(skipperavgcalibrated.ravel(), 200, (-1,5), density = False, histtype='step', linewidth=2, log = True, color='teal')
-    plt.legend( prop={'size': 10})
+    #cosmetics
+    plt.legend( prop={'size': 17})
     plt.xlabel('pixel value [e$^-$]')
     plt.ylabel('counts')
     plt.yscale("log")
-    plt.ylim(0.8)
+    #x range in electrons
+    plt.xlim(-1.5,4)
+    #y range, upper limit is 0.5 maximum amplitude (0-electron counts only)
+    plt.ylim(0.8, 0.5*parametersDCfit_L[0][2]/calibrationconstant_L*nbinsfactor)
     plt.tick_params(axis='both', which='both', length=10, direction='in')
     plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
     #plt.setp(ax.get_yticklabels(), visible=True)
-    try: plt.title('$I_{darkCF}~=~$' + str(round(dcpar_L[0],6)) + '$\pm$' + str(round_sig_2(dcparunc_L[0])) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(darkcurrentestimateAC_L,6)) + ' $e^-$pix$^{-1}$')
-    except: plt.title('$I_{darkCF}~=~$' + str(round(dcpar_L[0],6)) + '$\pm$' + str(dcparunc_L[0]) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(darkcurrentestimateAC_L,6)) + ' $e^-$pix$^{-1}$')
+    try: plt.title('$I_{CF}~=~$' + str(round(dcpar_L[0],6)) + '$\pm$' + str(round_sig_2(dcparunc_L[0])) + ' $e^-$pix$^{-1}$, $I_{AC}~=~$' + str(round(darkcurrentestimateAC_L,6)) + ' $e^-$pix$^{-1}$')
+    except: plt.title('$I_{CF}~=~$' + str(round(dcpar_L[0],6)) + '$\pm$' + str(dcparunc_L[0]) + ' $e^-$pix$^{-1}$, $I_{AC}~=~$' + str(round(darkcurrentestimateAC_L,6)) + ' $e^-$pix$^{-1}$')
         
     with doc.create(Section('Dark Current')):
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-            if analysisregion == 'arbitrary': plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on arbitrary image region) and anticlustering (on '+analysisregion+' image region)')
-            else: plot.add_caption('Calibrated pixel charge distribution (Amplifier L). Dark current values computed with convolution fit (on full image region) and anticlustering (on '+analysisregion+' image region).')
+            if analysisregion == 'arbitrary': plot.add_caption('Calibrated pixel charge distribution (L-side). Dark current values computed with convolution fit (on arbitrary image region) and anticlustering (on '+analysisregion+' image region).')
+            else: plot.add_caption('Calibrated pixel charge distribution (L-side). Dark current values computed with convolution fit (on full image region) and anticlustering (on '+analysisregion+' image region).')
         calibrationline = 'Calibration constant is: '+str(round(calibrationconstant_L,4))+'±'+str(round_sig_2(dcparunc_L[4]))+' ADU per electron.'
         doc.append(calibrationline)
         plt.clf()
         doc.append(NewPage())
    
+    #transform to masked array with no mask, if using no mask
+    if not applymask: skipper_avg_cal_U = np.ma.masked_array(skipper_avg_cal_U, mask=None)
+    #after masking select region of interest
     if analysisregion == 'arbitrary': skipper_avg_cal_U = m_functions.selectImageRegion(skipper_avg_cal_U,analysisregion)
-    skipperavgcalibrated_U = skipper_avg_cal_U.ravel()
-    try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
-        if calibrationconstant_U == calibrationguess or calibrationconstant_U <= 1:
-            calibrationconstant_U = calibrationguess
-            skipperavgcalibratedravel_U = [s for s in skipperavgcalibrated_U.ravel() if s > -10 and  s < 10]
-            nbins=int((max(skipperavgcalibratedravel_U) - min(skipperavgcalibratedravel_U))/10)
-        else:
-            skipperavgcalibratedravel_U = [s for s in skipperavgcalibrated_U.ravel() if s > -2 and  s < 4]
-            nbins=20*int(max(skipperavgcalibratedravel_U) - min(skipperavgcalibratedravel_U))
-    except: #if so we keep skipperavgcalibratedravel without range
-        skipperavgcalibratedravel_U = skipperavgcalibrated_U
-        nbins=20*int(max(skipperavgcalibratedravel_U) - min(skipperavgcalibratedravel_U))
+    skipperavgcalibratedravel_U = skipper_avg_cal_U.compressed()
+    #case for failed calibrations (very large constant not included)
+    #if calibrationconstant_U == calibrationguess or calibrationconstant_U <= 1: calibrationconstant_U = calibrationguess #skipperavgcalibratedravel_L = [s for s in skipperavgcalibratedravel_L if s > -10 and  s < 10]
+    #nbins factor keeps track of binning for plot consistency
+    nbinsfactor = 10
+    nbins = nbinsfactor*nbins_plot_U
+    #if nbins_plot=0 there is a problem with the image or the mask
     if nbins == 0: nbins=100
+    #plot calibrated average image histogram and gauss-poisson fit function
     skipperavgcalibratedravelhist_U, binedges = np.histogram(skipperavgcalibratedravel_U, nbins, density=False)
     bincenters=(binedges[:-1] + binedges[1:])/2
-    npeaksp_U = 3
-    dcpar_U = parametersDCfit_U[0][0], npeaksp_U, parametersDCfit_U[0][2]/(20/0.5), parametersDCfit_U[0][3]/calibrationconstant_U
-    if calibrationconstant_U <= 1: dcpar_U = parametersDCfit_U[0][0], npeaksp_U, parametersDCfit_U[0][2]/(0.1/0.5), parametersDCfit_U[0][3]/calibrationconstant_U
-    #dcparunc has one more component (the gain) than dcpar (dcpar is an argument for the calibrated gaussian)
-    try: dcparunc_U = parametersDCfit_U[1][0], parametersDCfit_U[1][1], parametersDCfit_U[1][2]/(20/0.5), parametersDCfit_U[1][3]/calibrationconstant_U, parametersDCfit_U[1][5]
-    except: dcparunc_U = 0,0,0,0,0
-    skipperavgcalibratedravelhistfit_U = convolutionGaussianPoisson(bincenters,*dcpar_U)
-    #plt.plot(bincenters,skipperavgcalibratedravelhist,label='avg img calibrated pixel charge distribution', color='teal')
-    plt.hist(skipperavgcalibratedravel_U, len(bincenters), density = False, histtype='step', linewidth=2, log = False, color = 'teal', label='avg image calibrated pixel charge distribution')
+    #both amplitude [2] and sigma [3] must be rescaled by calibration constant
+    dcpar_U = parametersDCfit_U[0][0], parametersDCfit_U[0][1], parametersDCfit_U[0][2]/calibrationconstant_U, parametersDCfit_U[0][3]/calibrationconstant_U
+    #same for uncertainty
+    try: dcparunc_U = parametersDCfit_U[1][0], parametersDCfit_U[1][1], parametersDCfit_U[1][2]/calibrationconstant_U, parametersDCfit_U[1][3]/calibrationconstant_U, parametersDCfit_U[1][5]
+    #if calibration failed
+    except: dcparunc_L = 0,0,0,0,0
+    #plot histogram
+    skipperavgcalibratedravelhistfit_U = convolutionGaussianPoisson(bincenters,*dcpar_U)/nbinsfactor
+    plt.hist(skipperavgcalibratedravel_U, nbins, density = False, histtype='step', linewidth=2, log = True, color = 'teal', label='avg image calibrated pixel charge distribution')
+    #plot fit function
     plt.plot(bincenters, skipperavgcalibratedravelhistfit_U, label='gauss-poisson convolution fit curve: '+'$\chi^2_{red}=$'+str(round_sig_2(reducedchisquared_U)), color='red')
-    #plt.hist(skipperavgcalibrated.ravel(), 200, (-1,5), density = False, histtype='step', linewidth=2, log = True, color='teal')
-    plt.legend( prop={'size': 10})
+    #cosmetics
+    plt.legend( prop={'size': 17})
     plt.xlabel('pixel value [e$^-$]')
     plt.ylabel('counts')
     plt.yscale("log")
-    plt.ylim(0.8)
+    #x range in electrons
+    plt.xlim(-1.5,4)
+    #y range, upper limit is 0.5 maximum amplitude (0-electron counts only)
+    plt.ylim(0.8, 0.5*parametersDCfit_U[0][2]/calibrationconstant_U*nbinsfactor)
     plt.tick_params(axis='both', which='both', length=10, direction='in')
     plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
     #plt.setp(ax.get_yticklabels(), visible=True)
-    try: plt.title('$I_{darkCF}~=~$' + str(round(dcpar_U[0],6)) + '$\pm$' + str(round_sig_2(dcparunc_U[0])) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(darkcurrentestimateAC_U,6)) + ' $e^-$pix$^{-1}$')
-    except: plt.title('$I_{darkCF}~=~$' + str(round(dcpar_U[0],6)) + '$\pm$' + str(dcparunc_U[0]) + ' $e^-$pix$^{-1}$, $I_{darkAC}~=~$' + str(round(darkcurrentestimateAC_U,6)) + ' $e^-$pix$^{-1}$')
+    try: plt.title('$I_{CF}~=~$' + str(round(dcpar_U[0],6)) + '$\pm$' + str(round_sig_2(dcparunc_U[0])) + ' $e^-$pix$^{-1}$, $I_{AC}~=~$' + str(round(darkcurrentestimateAC_U,6)) + ' $e^-$pix$^{-1}$')
+    except: plt.title('$I_{CF}~=~$' + str(round(dcpar_U[0],6)) + '$\pm$' + str(dcparunc_U[0]) + ' $e^-$pix$^{-1}$, $I_{AC}~=~$' + str(round(darkcurrentestimateAC_U,6)) + ' $e^-$pix$^{-1}$')
         
     with doc.create(Figure(position='htb!')) as plot:
         plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-        if analysisregion == 'arbitrary': plot.add_caption('Calibrated pixel charge distribution. Dark current values computed with convolution fit (on arbitrary image region) and anticlustering (on '+analysisregion+' image region)')
-        else: plot.add_caption('Calibrated pixel charge distribution (Amplifier U). Dark current values computed with convolution fit (on full image region) and anticlustering (on '+analysisregion+' image region).')
+        if analysisregion == 'arbitrary': plot.add_caption('Calibrated pixel charge distribution (U-side). Dark current values computed with convolution fit (on arbitrary image region) and anticlustering (on '+analysisregion+' image region).')
+        else: plot.add_caption('Calibrated pixel charge distribution (U-side). Dark current values computed with convolution fit (on full image region) and anticlustering (on '+analysisregion+' image region).')
     calibrationline = 'Calibration constant is: '+str(round(calibrationconstant_U,4))+'±'+str(round_sig_2(dcparunc_U[4]))+' ADU per electron.'
     doc.append(calibrationline)
     plt.clf()
@@ -1213,7 +1252,7 @@ if (reportFFTskips or reportFFTrow):
             m_functions.pixelFFT(image_data_L, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Full image Fast Fourier Transform (first to last skip) (Amplifier L).')
+                plot.add_caption('Full image Fast Fourier Transform (first to last skip) (L-side).')
             plt.clf()
             
             ncolumns = int(nallcolumns/nskips)//2 # n of columns in the image
@@ -1221,7 +1260,7 @@ if (reportFFTskips or reportFFTrow):
             m_functions.pixelFFT(image_data_U, nrows-1, ncolumns-1, nskips, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Full image Fast Fourier Transform (first to last skip) (Amplifier U).')
+                plot.add_caption('Full image Fast Fourier Transform (first to last skip) (U-side).')
             plt.clf()
         
         if reportFFTrow:
@@ -1231,7 +1270,7 @@ if (reportFFTskips or reportFFTrow):
             else: m_functions.rowFFT(image_data_L, nrows-1, ncolumns//2-1, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Average image Fast Fourier Transform (all row pixels) (Amplifier L).')
+                plot.add_caption('Average image Fast Fourier Transform (all row pixels) (L-side).')
             plt.clf()
             doc.append(NewPage())
             
@@ -1241,7 +1280,7 @@ if (reportFFTskips or reportFFTrow):
             else: m_functions.rowFFT(image_data_U, nrows-1, ncolumns//2-1, samplet)
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.9\linewidth'))
-                plot.add_caption('Average image Fast Fourier Transform (all row pixels) (Amplifier U).')
+                plot.add_caption('Average image Fast Fourier Transform (all row pixels) (U-side).')
             plt.clf()
             doc.append(NewPage())
 

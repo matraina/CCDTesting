@@ -14,7 +14,7 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from scipy.special import factorial
 import lmfit
-from m_functions import selectImageRegion
+from m_functions import selectImageRegion, sigmaFinder, blockPrint, enablePrint, convolutionGaussianPoisson
 
 #functions performing gaussPoisson convolution fit. Using lmfit library. Adapted from A. Piers https://github.com/alexanderpiers/damicm-image-preproc/
 
@@ -27,7 +27,7 @@ with open('config.json') as config_file:
     
 def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurrent, npoisson):
 
-    avgimghist, binedges = np.histogram(avgimgravel, bins = int(0.5*(max(avgimgravel)-min(avgimgravel))), density=False)
+    avgimghist, binedges = np.histogram(avgimgravel, bins = int((max(avgimgravel)-min(avgimgravel))), density=False)
     binwidth = np.diff(binedges)[0]
     bincenters = (binedges[:-1] + binedges[1:])/2
     
@@ -53,7 +53,7 @@ def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurre
     return minimized
 
 
-def convolutionGaussianPoisson(q, *p):
+def convolutionGaussPoiss(q, *p):
     import numpy as np
     dcratep, nelectronsp, amplip, sigmap, offsetp, calibp = p
     f = 0
@@ -75,7 +75,7 @@ def lmfitGausPoisson(param, x, data):
     
     par = [dcratep, nelectronsp.value, amplip, sigmap, offsetp, calibp]
 
-    model = convolutionGaussianPoisson(x, *par)
+    model = convolutionGaussPoiss(x, *par)
 
     # include uncertainties as weights
     sig=np.sqrt(data)
@@ -119,25 +119,28 @@ def fitGuessesArray(centroid,calibguess,npeaks):
     return pguesses
     
 def calibrationDC(avgimg,std,reverse,debug):
-
-    avgimgravel = avgimg.ravel()
-    nbins=int(0.5*(np.ma.max(avgimgravel)-np.ma.min(avgimgravel)))
+    if not applymask: avgimg = np.ma.masked_array(avgimg, mask=None)
+    if analysisregion == 'arbitrary':
+        avgimg = selectImageRegion(avgimg,analysisregion)
+    avgimgravel = avgimg.compressed()
+    #mu = bincenters[np.argmax(avgimghist)]
+    blockPrint() #to prevent message on invalid choice for arbitrary region (wrong only in this case)
+    mu = sigmaFinder(avgimg, fwhm_est=True, debug=False)[1]
+    enablePrint()
+    if reverse: avgimg = mu - avgimg
+    else: avgimg = avgimg - mu
+    avgimgravel = avgimg.compressed()
+    #nbins=int(0.5*(np.ma.max(avgimgravel)-np.ma.min(avgimgravel)))
+    nbins=int((np.ma.max(avgimgravel)-np.ma.min(avgimgravel)))
     if reverse: avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False) #s!=0 removes saturation counts
     else: avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
-    mu = bincenters[np.argmax(avgimghist)]
-    if reverse: avgimg = mu - avgimg
-    else: avgimg = avgimg - mu
-    if analysisregion == 'arbitrary': avgimg = selectImageRegion(avgimg,analysisregion); avgimgravel = avgimg.ravel()
-    if applymask: avgimgravel = avgimg.compressed()
-    avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
-    bincenters = (binedges[:-1] + binedges[1:])/2
-        
-    pguesses = fitGuessesArray(mu,calibrationguess,npeaks=4)
+    #fitting set of guesses
+    pguesses = fitGuessesArray(mu,calibrationguess,npeaks=3)
     reducedchisquared = np.zeros(np.size(pguesses,1), dtype=np.float64)
     par = np.zeros((6,np.size(pguesses,1)), dtype=np.float64)
     parunc = np.zeros((6,np.size(pguesses,1)), dtype=np.float64)
-    
+    #try fit with different guess
     for tweakfitindex in range(np.size(pguesses,1)):
         fitminimized = computeGausPoissDist(avgimgravel, pguesses[0,tweakfitindex], std, pguesses[1,tweakfitindex], -1, pguesses[2,tweakfitindex])
         params = fitminimized.params
@@ -153,13 +156,14 @@ def calibrationDC(avgimg,std,reverse,debug):
             avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
             bincenters = (binedges[:-1] + binedges[1:])/2
             adu = np.linspace(bincenters[0], bincenters[-1], nbins)
-            plt.plot(adu, convolutionGaussianPoisson(adu, *parprint), 'r')
+            plt.plot(adu, convolutionGaussPoiss(adu, *parprint), 'r')
             plt.yscale('log')
             plt.plot(adu, avgimghist, 'teal')
             plt.ylim(0.01, params['Npixelspeak'])
             plt.show()
          '''
     #find best fit
+    #redchisquared should always be positive, lines below make no sense
     optimalfitindex = np.argmin(abs(reducedchisquared))
     parmatrix = [par[:,optimalfitindex],parunc[:,optimalfitindex]]
             
@@ -174,7 +178,7 @@ def calibrationDC(avgimg,std,reverse,debug):
     if debug:
         avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
         bincenters = (binedges[:-1] + binedges[1:])/2
-        skipperavgfit = convolutionGaussianPoisson(bincenters,*par[:,optimalfitindex])
+        skipperavgfit = convolutionGaussPoiss(bincenters,*par[:,optimalfitindex])
         plt.plot(bincenters,avgimghist, 'teal')
         plt.plot(bincenters,skipperavgfit, label='gauss-poisson convolution fit curve: '+'$\chi^2_{red}=$'+str(round(reducedchisquared[optimalfitindex],4)), color='red')
         plt.legend(loc = 'upper right')
@@ -185,7 +189,7 @@ def calibrationDC(avgimg,std,reverse,debug):
         #print(skipper_avg_cal.ravel())
     
     
-    return parmatrix, reducedchisquared[optimalfitindex], offset
+    return parmatrix, reducedchisquared[optimalfitindex], offset, nbins
 
 
 
