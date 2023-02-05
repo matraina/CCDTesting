@@ -247,6 +247,27 @@ def sigmaFinder(image, fwhm_est, debug):
 
 from math import ceil,log
 
+def profileCharge(avgimage,axis,charge_threshold,do_plot):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    if axis == 'rows': axis = 0; axis2=1
+    elif axis == 'columns': axis = 1; axis2=0
+    else: print('ERROR: axis must be either "rows" or "columns"'); exit()
+    chargeprofile = np.zeros((np.size(avgimage,axis)))
+    #row charge profile
+    if axis == 0:
+        for i in range(np.size(avgimage,axis)):
+            for j in range(np.size(avgimage,axis2)):
+                if avgimage[i,j] > charge_threshold:
+                    chargeprofile[i] += 1
+    #column charge profile
+    elif axis == 1:
+        for i in range(np.size(avgimage,axis)):
+            for j in range(np.size(avgimage,axis2)):
+                if avgimage[j,i] > charge_threshold:
+                    chargeprofile[i] += 1
+    return chargeprofile, do_plot
+
 def pixelFFT(skipimage, rows, columns, Nskips, samplet):
     import numpy as np
     import matplotlib.pyplot as plt

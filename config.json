@@ -11,6 +11,7 @@
     "subtract_pedestal_row_by_row" : true,
     "apply_mask" : false,
     "mask_file" : "./masks/20221016_mask6414.fits",
+    "profiles_charge_threshold" : 0.7,
     
     "ccd_active_register_size": 6144,
     "prescan" : 8,
@@ -19,15 +20,14 @@
     "analysis_region" : "arbitrary",
     "lower_row" : 3,
     "upper_row" : 10,
-    "lower_column" : 5,
+    "lower_column" : 10,
     "upper_column" : 6200,
 
     "kcl_threshold" : 3.2,
     "calibration_constant_guess" : 5,
     
     "print_header" : false,
-    
-    
+    "print_report" : true,
     
     "tweaking_analysis":
     [{
@@ -38,6 +38,8 @@
             "pcds" : true,
             "chargeloss" : false,
             "calibration_darkcurrent" : true,
+            "column_charge_profile" : true,
+            "row_charge_profile" : false,
             "fft_skips" : false,
             "fft_row" : false
         }],

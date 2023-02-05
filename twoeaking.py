@@ -42,6 +42,7 @@ if reverse: reversign = -1
 row_pedestal_subtract = config['subtract_pedestal_row_by_row']
 applymask = config['apply_mask']
 if applymask: mask_fits_file = config['mask_file']
+chargethreshold = config['profiles_charge_threshold']
 registersize = config['ccd_active_register_size']
 prescan = config['prescan']
 overscan = config['overscan']
@@ -49,13 +50,17 @@ analysisregion = config['analysis_region']
 kclthreshold = config['kcl_threshold']
 calibrationguess = config['calibration_constant_guess']
 printheader = config['print_header']
-reportHeader = config['tweaking_analysis'][-1]['report'][-1]['header']
-reportImage = config['tweaking_analysis'][-1]['report'][-1]['image']
-reportPCD = config['tweaking_analysis'][-1]['report'][-1]['pcds']
-reportChargeLoss = config['tweaking_analysis'][-1]['report'][-1]['chargeloss']
-reportCalibrationDarkcurrent = config['tweaking_analysis'][-1]['report'][-1]['calibration_darkcurrent']
-reportFFTskips = config['tweaking_analysis'][-1]['report'][-1]['fft_skips']
-reportFFTrow = config['tweaking_analysis'][-1]['report'][-1]['fft_row']
+printreport = config['print_report']
+if printreport:
+    reportHeader = config['tweaking_analysis'][-1]['report'][-1]['header']
+    reportImage = config['tweaking_analysis'][-1]['report'][-1]['image']
+    reportPCD = config['tweaking_analysis'][-1]['report'][-1]['pcds']
+    reportChargeLoss = config['tweaking_analysis'][-1]['report'][-1]['chargeloss']
+    reportCalibrationDarkcurrent = config['tweaking_analysis'][-1]['report'][-1]['calibration_darkcurrent']
+    reportColumnChargeProfile = config['tweaking_analysis'][-1]['report'][-1]['column_charge_profile']
+    reportRowChargeProfile = config['tweaking_analysis'][-1]['report'][-1]['row_charge_profile']
+    reportFFTskips = config['tweaking_analysis'][-1]['report'][-1]['fft_skips']
+    reportFFTrow = config['tweaking_analysis'][-1]['report'][-1]['fft_row']
 
 if test != 'tweaking':
     proceed = ''
@@ -277,7 +282,7 @@ if reportCalibrationDarkcurrent and nskips!=1:
 ##############################################################################
 ##############################################################################
 
-if not (reportHeader or reportImage or reportPCD or reportChargeLoss or reportCalibrationDarkcurrent or reportFFTrow or reportFFTskips):
+if not printreport or not (reportHeader or reportImage or reportPCD or reportChargeLoss or reportCalibrationDarkcurrent or reportFFTrow or reportFFTskips):
     print('No information to be reported. Exiting'); sys.exit()
 
 from pylatex import Document, Section, Figure, NoEscape, Math, Axis, NewPage, LineBreak, Description, Command
@@ -1233,8 +1238,65 @@ if reportCalibrationDarkcurrent and nskips!=1:
     doc.append(calibrationline)
     plt.clf()
     doc.append(NewPage())
-   
 
+if reportColumnChargeProfile and nskips!=1:
+
+    madthreshold = 5
+
+    #column profile plots (only when calibrated)
+    from scipy.stats import median_abs_deviation
+    skipper_avg_cal_full_L = reversign*(skipper_avg0_L - offset_L)/calibrationconstant_L
+    columnprofile_L,do_plot_profile = m_functions.profileCharge(skipper_avg_cal_full_L,'columns',chargethreshold,do_plot=False)
+    columns = np.arange(np.size(columnprofile_L))
+        
+    if do_plot_profile:
+        
+        cpmad_L = median_abs_deviation(columnprofile_L)
+        hotcols_L = []
+        for i in range(np.size(columns)):
+            if columnprofile_L[i] > madthreshold*cpmad_L: hotcols_L.append(columns[i])
+        
+        plt.plot(columns,columnprofile_L,'o',color='teal', markersize=4,linestyle=':')
+        plt.axhline(y = madthreshold*cpmad_L, color = 'red', linestyle = '-', label='y = '+str(madthreshold)+' MAD')
+        plt.xlabel('column number')
+        plt.ylabel('counts')
+        #plt.yscale('log')
+        plt.legend()
+        plt.tick_params(axis='both', which='both', length=10, direction='in')
+        plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.title('L-side column charge profile')
+    
+        with doc.create(Figure(position='htb!')) as plot:
+            plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+        doc.append('L-side column profile with charge threshold set to '+str(chargethreshold)+' electrons. Columns above '+str(madthreshold)+' MAD ('+str(madthreshold*cpmad_L)+' counts) are: '+ str(hotcols_L))
+        plt.clf()
+        doc.append(NewPage())
+    
+    skipper_avg_cal_full_U = reversign*(skipper_avg0_U - offset_U)/calibrationconstant_U
+    columnprofile_U = m_functions.profileCharge(skipper_avg_cal_full_U,'columns',chargethreshold,do_plot=False)[0]
+
+    if do_plot_profile:
+    
+        cpmad_U = median_abs_deviation(columnprofile_U)
+        hotcols_U = []
+        for i in range(np.size(columns)):
+            if columnprofile_U[i] > madthreshold*cpmad_U: hotcols_U.append(columns[i])
+    
+        plt.bar(np.arange(np.size(columnprofile_U)),columnprofile_U,3,color='teal')
+        plt.axhline(y = madthreshold*cpmad_U, color = 'red', linestyle = '-', label='y = '+str(madthreshold)+' MAD')
+        plt.xlabel('column number')
+        plt.ylabel('counts')
+        #plt.yscale('log')
+        plt.legend()
+        plt.tick_params(axis='both', which='both', length=10, direction='in')
+        plt.grid(color='grey', linestyle=':', linewidth=1, which='both')
+        plt.title('U-side column charge profile')
+    
+        with doc.create(Figure(position='htb!')) as plot:
+            plot.add_plot(width=NoEscape(r'0.9\linewidth'))
+        doc.append('U-side column profile with charge threshold set to '+str(chargethreshold)+' electrons. Columns above '+str(madthreshold)+' MAD ('+str(madthreshold*cpmad_L)+' counts) are: '+ str(list(hotcols_U)))
+        plt.clf()
+        doc.append(NewPage())
    
 #############################################
 #######Fast Fourier Transform section #######
