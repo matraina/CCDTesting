@@ -1,5 +1,5 @@
 {
-    "test" : "clusters_depth_calibration",
+    "test" : "tweaking",
     
     "working_directory" : "./",
     "raw_processed_header_reports_dir_structure" : true,
@@ -8,28 +8,56 @@
     "skip_end" : -1,
     "fix_leach_reconstruction" : true,
     "reverse" : false,
+    "subtract_pedestal_row_by_row" : false,
+    "pedestal_from_overscan" : false,
+    "apply_mask" : false,
+    "mask_file" : "./masks/20221016_mask6414.fits",
+    "profiles_charge_threshold" : 1.7,
     
-    "ccd_active_register_size": 1024,
-    "prescan" : 8,
+    "ccd_active_register_size": 3080,
+    "prescan" : 4,
     "overscan" : 60,
     
-    "analysis_region" : "full",
+    "analysis_region" : "arbitrary",
+    "lower_row" : 10,
+    "upper_row" : 119,
+    "lower_column" : 20,
+    "upper_column" : 299,
+
+    "fit_noise" : false,
     "kcl_threshold" : 3.2,
-    "calibration_constant_guess" : 10,
+    "calibration_constant_guess" : 7.0,
+    "calibration_constant_lowerbound" : 5.0,
+    "calibration_constant_upperbound" : 10.0,
+    "anticlustering_leakagecurrent": false,
+    "convert_adu_to_electron": false,
     
     "print_header" : false,
-    
-    
+    "print_report" : true,
     
     "tweaking_analysis":
     [{
         "report" :
         [{
             "header" : false,
-            "image" : true,
+            "image" : false,
             "pcds" : true,
-            "chargeloss" : true,
+            "resolution_trend" : false,
+            "chargeloss" : false,
             "calibration_darkcurrent" : true,
+            "column_charge_profile" : false,
+            "row_charge_profile" : false,
+            "fft_skips" : false,
+            "fft_row" : false
+        }],
+        "multiple_images" :
+        [{
+            "use_multiple_images" : false,
+            "lower_index" : 2,
+            "upper_index" : 3,
+            "scan_report" : true,
+            "scan_parameters": "VDD",
+            "scan_intervals": "-17,-24,-2"
             "fft_skips" : true,
             "fft_row" : true
         }]
@@ -39,6 +67,13 @@
     
     "quality_analysis":
     [{
+        "report" :
+        [{
+            "header" : true,
+            "image" : true,
+            "quality" : true,
+            "quality_plots" : [{ "log_scale" : false }]
+        }],
         "multiple_images" :
         [{
             "use_multiple_images" : false,
@@ -47,13 +82,6 @@
             "pixel_fraction_hot_column":0.3,
             "lower_index" : 74,
             "upper_index" : 75
-        }],
-        "report" :
-        [{
-            "header" : true,
-            "image" : true,
-            "quality" : true,
-            "quality_plots" : [{ "log_scale" : false }]
         }]
     }],
     
@@ -63,6 +91,13 @@
     [{
         "calibrate" : true,
         "max_electrons" : 2,
+        "report" :
+        [{
+            "header" : false,
+            "image" : true,
+            "calibration" : true,
+            "linearity_curves" : true
+        }],
         "multiple_images" :
         [{
             "use_multiple_images" : false,
@@ -70,13 +105,6 @@
             "transfer_curve" : true,
             "lower_index" : 22,
             "upper_index" : 25
-        }],
-        "report" :
-        [{
-            "header" : false,
-            "image" : true,
-            "calibration" : true,
-            "linearity_curves" : true
         }]
     }],
     
@@ -100,16 +128,10 @@
     [{
         "calibrate" : false,
         "global_threshold_in_sigma": 3,
-        "maximum_pixel_value_threshold_in_sigma": 4,
+        "maximum_pixel_value_threshold_in_sigma": 15,
         "use_mask" : false,
-        "mask_path" : "/Users/mtraina/repositories/CCDTesting/processed/MASK_74_75.fits",
+        "mask_path" : "./processed/MASK_74_75.fits",
         "cluster_fit_std_threshold" : 0.01,
-        "multiple_images" :
-        [{
-            "use_multiple_images" : false,
-            "lower_index" : 8,
-            "upper_index" : 9
-        }],
         "subdivide_image_for_diffusion_analysis" :
         [{
             "rows" : 200,
@@ -124,8 +146,15 @@
             [{
                 "clusters_plots" : true,
                 "lower_energy_bound_keV" : 0,
-                "upper_energy_bound_keV" : -1
+                "upper_energy_bound_keV" : -1,
+                "fit_sym_clusters" : false
             }]
+        }],
+        "multiple_images" :
+        [{
+            "use_multiple_images" : false,
+            "lower_index" : 8,
+            "upper_index" : 9
         }]
     }]
     

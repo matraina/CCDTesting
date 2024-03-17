@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
+*By: Michelangelo Traina (CENPA, University of Washington and LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to assessing the linearity of the signal.
 It can use one single image with high exposure, but also several images (check that (0-e) peak std dev increases with mean & accumulate statistics with cumulatePCDistributions method in reconstruction.py)
 
@@ -149,7 +149,7 @@ if not multipleimages:
     #SINGLE IMAGE LINEARITY STUDY: MEASURED VS EXPECTED N ELECTRONS###############
     ##############################################################################
     skipper_avg0 = getAverageSkipperImage(image_file)
-    offset, avg0_std = sigmaFinder(skipper_avg0, debug = False)[1:3]
+    offset, avg0_std = sigmaFinder(skipper_avg0, fwhm_est=True, debug = False)[1:3]
     if calibrate:
         parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(skipper_avg0, avg0_std, reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = parametersDCfit[0][3]/calibrationconstant
@@ -162,7 +162,7 @@ if not multipleimages:
     for npeakelectron in range(maxelectrons+1):
         npeakarray = [s for s in skipper_avg_cal_ravelled if s > npeakelectron - 3*calibratedsigma and s < npeakelectron + 3*calibratedsigma]
         if len(npeakarray) == 0: maxelectrons = npeakelectron - 1; break
-        tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, debug = False)[1:5]
+        tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, fwhm_est=True, debug = False)[1:5]
         #print(tmpmu, tmpstd)
         peakmus.append(tmpmu); peakstds.append(tmpstd); peakmuncs.append(tmpmunc); peakstduncs.append(tmpstdunc)
 
@@ -177,7 +177,7 @@ if multipleimages:
     hdr = fits.getheader(nameprefix+str(lowerindex)+'.fits',0)
     nskips = hdr['NDCMS']  # n of skips
     avgimagestack = reconstructAvgImageStack(nameprefix,lowerindex,upperindex)
-    offset, avg0_std = sigmaFinder(avgimagestack[:,:,0], debug = False)[1:3]
+    offset, avg0_std = sigmaFinder(avgimagestack[:,:,0], fwhm_est=True, debug = False)[1:3]
     if transfercurve:
         print('I am going to compute the photon transfer curve for the selected images')
         means,stddevs,meansunc,stddevsunc = getADUMeansStds(avgimagestack,lowerindex,upperindex)
@@ -194,7 +194,7 @@ if multipleimages:
         for npeakelectron in range(maxelectrons+1):
             npeakarray = [s for s in skipper_avg_cal_ravelled if s > npeakelectron - 3*calibratedsigma and s < npeakelectron + 3*calibratedsigma]
             if len(npeakarray) == 0: maxelectrons = npeakelectron - 1; break
-            tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, debug = False)[1:5]
+            tmpmu, tmpstd, tmpmunc, tmpstdunc = sigmaFinder(npeakarray, fwhm_est=True, debug = False)[1:5]
             #print(tmpmu, tmpstd)
             peakmus.append(tmpmu); peakstds.append(tmpstd); peakmuncs.append(tmpmunc); peakstduncs.append(tmpstdunc)
 
@@ -237,7 +237,14 @@ geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
 doc.preamble.append(Command('title', 'Image Analysis Report on Linearity'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
+doc.preamble.append(NoEscape(r'\usepackage{tocloft}'))
+doc.preamble.append(NoEscape(r'\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}'))
+doc.preamble.append(NoEscape(r'\usepackage{hyperref}'))
+doc.preamble.append(NoEscape(r'\usepackage{bookmark}'))
 doc.append(NoEscape(r'\maketitle'))
+doc.append(NoEscape(r'\tableofcontents'))
+doc.append(NoEscape(r'\thispagestyle{empty}'))
+doc.append(NewPage())
 
 #############################################
 #Print acqusition parameters value in report#
@@ -307,8 +314,14 @@ if reportCalibrationDarkcurrent:
     if measVSexp_e: skipperavgcalibrated = avgimagestack_cal[:,:,0]
     try:#if calibration went wrong skipperavgcalibratedravel could be empty because limits are out of range
         if calibrationconstant == calibrationguess: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -10 and  s < 10]
-        else: skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
-        nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
+        elif calibrationconstant <= 1:
+            skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -200 and  s < 200]
+            if 0.01 < calibrationconstant <=0.1: skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -2000 and  s < 2000]
+            elif calibrationconstant <=0.01: skipperavgcalibratedravel =  [s for s in skipperavgcalibrated.ravel() if s > -20000 and  s < 20000]
+            nbins=int((max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))/10)
+        else:
+            skipperavgcalibratedravel = [s for s in skipperavgcalibrated.ravel() if s > -2 and  s < 4]
+            nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
     except:#if so we keep skipperavgcalibratedravel without range
         skipperavgcalibratedravel = skipperavgcalibrated
         nbins=50*int(max(skipperavgcalibratedravel) - min(skipperavgcalibratedravel))
@@ -420,8 +433,8 @@ if default_directory_structure:
 else:
     if not multipleimages: reportname = 'linearity_'+sys.argv[2]
     if multipleimages: reportname = 'linearity_'+str(lowerindex)+'_'+str(upperindex)
-doc.generate_pdf(reportname, clean_tex=False)
-os.remove(reportname+'.tex')
+
+doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')

@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
+*By: Michelangelo Traina (CENPA, University of Washington and LPNHE, Sorbonne Universite) to study skipper CCD data
 Module devoted to image cluster search and analysis for physics study and depth calibration.
 
 -------------------
@@ -105,8 +105,9 @@ def clusterImage(image,cut,**kwargs):
     
     from astropy.utils.data import get_pkg_data_filename
     from m_reconstruction import getSingleSkipImage
+    import os
     import json
-    with open('config.json') as config_file:
+    with open(os.path.dirname(os.path.realpath(__file__))+'/'+'config.json') as config_file:
         config = json.load(config_file)
     usemask = config['clusters_depth_analysis'][-1]['use_mask']
     if usemask: maskpath = config['clusters_depth_analysis'][-1]['mask_path']
@@ -134,11 +135,14 @@ def clusterImage(image,cut,**kwargs):
     if mask is not None: mask = getSingleSkipImage(get_pkg_data_filename(maskpath))
     clusternpixels,clustertouchmask,clusterspatialmetrics,passcut,clusterenergy = [],[],[],[],[]
     sigmarfit,sigmacfit=[],[]
+    parafittmp=[0,0,0,0,0,0]
+    clustermask = np.zeros(np.shape(image)).astype(bool)
     for icluster in range(nclusters):
         clusterpixels = np.argwhere(image_features==icluster+1)
         npixels = len(clusterpixels)
         #print(clusterpixels,npixels)
         clusterinimage = image[cluster[icluster]]
+        clustermask[cluster[icluster]] = True
         #print(clusterinimage)
         electronsinclusterpixels = image[clusterpixels[0:npixels,0],clusterpixels[0:npixels,1]]
         
@@ -189,7 +193,7 @@ def clusterImage(image,cut,**kwargs):
         
     if maskpath is not None: print('I have found '+str(sum(clustertouchmask))+ ' clusters touching the masked pixels and columns')
         
-    return clusternpixels, clustertouchmask, clusterspatialmetrics, passcut, sigmarfit, sigmacfit, clusterenergy, parafittmp
+    return clusternpixels, clustermask, clustertouchmask, clusterspatialmetrics, passcut, sigmarfit, sigmacfit, clusterenergy, parafittmp
 
 
 

@@ -4,7 +4,7 @@
 '''
 -------------------
 
-*By: Michelangelo Traina (LPNHE, Sorbonne Universite) to study skipper CCD data
+*By: Michelangelo Traina (CENPA, University of Washington and LPNHE, Sorbonne Universite) to study skipper CCD data
 Executable devoted to monitor the quality of data produced by the CCD.
 
 -------------------
@@ -269,7 +269,14 @@ geometry_options = {'right': '2cm', 'left': '2cm'}
 doc = Document(geometry_options=geometry_options)
 doc.preamble.append(Command('title', 'Image Analysis Report on Data Quality'))
 doc.preamble.append(Command('author', 'DAMIC-M'))
+doc.preamble.append(NoEscape(r'\usepackage{tocloft}'))
+doc.preamble.append(NoEscape(r'\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}'))
+doc.preamble.append(NoEscape(r'\usepackage{hyperref}'))
+doc.preamble.append(NoEscape(r'\usepackage{bookmark}'))
 doc.append(NoEscape(r'\maketitle'))
+doc.append(NoEscape(r'\tableofcontents'))
+doc.append(NoEscape(r'\thispagestyle{empty}'))
+doc.append(NewPage())
 
 #############################################
 #Print acqusition parameters value in report#
@@ -293,7 +300,7 @@ doc.append(NewPage())
 ################Image section#################
 ##############################################
 if reportImage:
-    stddev = sigmaFinder(image_data0,False)[2]
+    stddev = sigmaFinder(image_data0,fwhm_est=True,debug=False)[2]
     clustercandidates = findChargedPixelNoBorder(image_data0,stddev)
     isChargedCrown = True; coor = np.size(image_data0,0)//2, np.size(image_data0,1)//2
     for coor in clustercandidates:
@@ -334,7 +341,7 @@ if reportImage:
 if reportQuality:
     with doc.create(Section('Data Quality')):
         if nskips == 1:
-            #overscanmean,overscansigma=sigmaFinder(image_overscan,False)[1:3]
+            #overscanmean,overscansigma=sigmaFinder(image_overscan,fwhm_est=True,False)[1:3]
             fig, axs = plt.subplots(4, 1, figsize=(11,10), sharey=False, tight_layout=True)
             if multipleimages:
                 for i in range(upperindex-lowerindex+1):
@@ -410,8 +417,8 @@ if reportQuality:
                     ax.set_yscale('log')
             with doc.create(Figure(position='htb!')) as plot:
                 plot.add_plot(width=NoEscape(r'0.99\linewidth'))
-                if multipleimages: plot.add_caption('Overscan median and median absolute deviation (MAD) of images set')
-                else: plot.add_caption('Overscan median and median absolute deviation (MAD) as functions of skip number')
+                if multipleimages: plot.add_caption('Overscan median and median absolute deviation (MAD) of images set. If image has no overscan, exposed pixels are used.')
+                else: plot.add_caption('Overscan median and median absolute deviation (MAD) as functions of skip number. If image has no overscan, exposed pixels are used.')
             plt.clf()
             doc.append(NewPage())
             
@@ -468,8 +475,8 @@ if default_directory_structure:
 else:
     if not multipleimages: reportname = 'quality_'+sys.argv[2]
     if multipleimages: reportname = 'quality_'+str(lowerindex)+'_'+str(upperindex)
-doc.generate_pdf(reportname, clean_tex=False)
-os.remove(reportname+'.tex')
+
+doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')
