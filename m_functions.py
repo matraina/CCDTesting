@@ -72,9 +72,9 @@ def selectImageRegion(image,analysisregion):
             warnings.warn('WARNING: Image has no overscan. EPER CTE estimation cannot be carried out.')
     elif analysisregion == 'arbitrary':
         lowerrow = config['lower_row']
-        upperrow = config['upper_row']
+        upperrow = config['upper_row'] + 1
         lowercolumn = config['lower_column']
-        uppercolumn = config['upper_column']
+        uppercolumn = config['upper_column'] + 1 #for range from lower to upper included
         if lowerrow < 0 or upperrow < 0 or lowercolumn < 0 or uppercolumn < 0:
             print('Invalid choice for arbitrary region. Falling back to full image')
             return image
@@ -136,7 +136,7 @@ def factorial(n):
 def convolutionGaussianPoisson(q, *p):
     dcratep, npeaksp, amplip, sigmap = p
     f = 0
-    npeaksp = 3
+    npeaksp = int(npeaksp)
     for peaks in range(npeaksp):
         f +=  ( (dcratep**peaks * np.exp(-dcratep) / factorial(peaks)) * np.exp( - (q - peaks)**2 / (2 * sigmap**2)) )
     return f * amplip / np.sqrt(2 * np.pi * sigmap**2)
@@ -157,7 +157,7 @@ def blockPrint():
 def enablePrint():
     sys.stdout = sys.__stdout__
 
-def sigmaFinder(image, fwhm_est, debug):
+def sigmaFinder(image, fit, fwhm_est, debug):
     import numpy as np
     from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
@@ -210,27 +210,34 @@ def sigmaFinder(image, fwhm_est, debug):
             mostlikelyentry=np.array(pcd).mean()
             mostlikelyentrycounts = pcdhistogram[np.argmax(pcdhistogram)]
             sigma=np.array(pcd).std()
-    #now find accurate mean and stdev by fitting in proper range
-    fitrange = 2
-    #print(pcd)
-    pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
-    if reverse: pcdinrange = np.ma.masked_equal(pcdinrange, 0.0, copy=False)
-    pguess = [mostlikelyentrycounts,mostlikelyentry,sigma]
-    try:
-        binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange))
-        pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
-    except:
-        binsinrange = 100+int(bins/100)*int(max(pcdinrange) - min(pcdinrange))
-        pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
-    bincenters=(binedges[:-1] + binedges[1:])/2
-    try:
-        pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
-        pcdhistfit = gauss(bincenters,*pfit)
-        amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
-        if abs(np.sqrt(np.diag(varmatrix))[1]/mu) > 0.5: mu = mostlikelyentry #should be fine
-        munc = np.sqrt(np.diag(varmatrix))[1]
-        stdunc = np.sqrt(np.diag(varmatrix))[-1]
-    except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); munc,stdunc=0,0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
+    if fit:
+        #now find accurate mean and stdev by fitting in proper range
+        fitrange = 2
+        #print(pcd)
+        pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
+        if reverse: pcdinrange = np.ma.masked_equal(pcdinrange, 0.0, copy=False)
+        pguess = [mostlikelyentrycounts,mostlikelyentry,sigma]
+        try:
+            binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange))
+            pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
+        except:
+            binsinrange = 100+int(bins/100)*int(max(pcdinrange) - min(pcdinrange))
+            pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
+        bincenters=(binedges[:-1] + binedges[1:])/2
+        try:
+            pfit, varmatrix = curve_fit(gauss, bincenters, pcdinrangehist, p0=pguess)
+            pcdhistfit = gauss(bincenters,*pfit)
+            amp,mu,std = pfit[0],pfit[1],abs(pfit[2])
+            if abs(np.sqrt(np.diag(varmatrix))[1]/mu) > 0.5: mu = mostlikelyentry #should be fine
+            munc = np.sqrt(np.diag(varmatrix))[1]
+            stdunc = np.sqrt(np.diag(varmatrix))[-1]
+        except: amp, mu, std = pguess; pcdhistfit = gauss(bincenters,*pguess); munc,stdunc=0,0; print('Gaussian fit for noise evaluation failed. Fit guess values used')
+    else:
+        mu=np.array(pcd).mean()
+        std=np.array(pcd).std()
+        amp=float('nan')
+        munc,stdunc=float('nan'),float('nan')
+
     if debug:
         print('Most likely entry is:', mostlikelyentry)
         print('Most likely entry counts are:', mostlikelyentrycounts)

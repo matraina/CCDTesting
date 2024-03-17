@@ -174,11 +174,11 @@ if not multipleimages:
         #plt.show()
         mu_avg0, sigma_avg0 = sigmaFinder(skipper_avg0,fwhm_est=True,debug=False)[1:3]
         if calibrate:
-            parametersDCfit, reducedchisquared, offset = m_calibrationdc.calibrationDC(skipper_avg0, sigma_avg0, reverse, debug=False)
+            parametersDCfit, reducedchisquared, offset, n_bins_plot = m_calibrationdc.calibrationDC(skipper_avg0, sigma_avg0, reverse, debug=False)
             calibrationconstant = parametersDCfit[0][5]; calibratedsigma = sigma_avg0/calibrationconstant
-            skipper_avg = reversign*(skipper_avg0 - offset)
-        else: skipper_avg = reversign*(skipper_avg0 - mu_avg0); calibrationconstant = calibrationguess; offset = mu_avg0
-        skipper_avg_exposed = selectImageRegion(skipper_avg,'exposed_pixels')
+            skipper_avg_cal = reversign*(skipper_avg0 - offset)
+        else: skipper_avg_cal = reversign*(skipper_avg0 - mu_avg0); calibrationconstant = calibrationguess; offset = mu_avg0
+        skipper_avg_exposed = selectImageRegion(skipper_avg_cal,'exposed_pixels')
         image_data_exposed = skipper_avg_exposed
         cut = [globalthreshold*sigma_avg0,maximumthreshold*sigma_avg0,clustdthre]
         clusters = clusterImage(skipper_avg_exposed,cut,mask=maskpath)
@@ -425,7 +425,8 @@ if reportCalibration:
     #plt.setp(ax.get_yticklabels(), visible=True)
     
     with doc.create(Section('Calibration')):
-        fig.tight_layout(pad=.001)
+        #fig=plt.figure(figsize=(8,8))
+        #fig.tight_layout(pad=.001)
         with doc.create(Figure(position='htb!')) as plot:
             plot.add_plot(width=NoEscape(r'0.90\linewidth'))
             plot.add_caption('Calibrated pixel charge distribution.')

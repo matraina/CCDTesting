@@ -14,6 +14,7 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from scipy.special import factorial
 import lmfit
+import tqdm
 from m_functions import selectImageRegion, sigmaFinder, blockPrint, enablePrint, convolutionGaussianPoisson
 
 #functions performing gaussPoisson convolution fit. Using lmfit library. Adapted from A. Piers https://github.com/alexanderpiers/damicm-image-preproc/
@@ -23,31 +24,47 @@ with open('config.json') as config_file:
     config = json.load(config_file)
     applymask = config['apply_mask']
     analysisregion = config['analysis_region']
+    fit_noise = config['fit_noise']
     calibrationguess = config['calibration_constant_guess']
+    calibrationlowbound = config['calibration_constant_lowerbound']
+    calibrationupbound = config['calibration_constant_upperbound']
     
-def computeGausPoissDist(avgimgravel, avgimgmu, avgimgstd, calibguess, darkcurrent, npoisson):
+def computeGausPoissDist(avgimgravel, calibguess, darkcurrent, stdmanyskip):
 
     avgimghist, binedges = np.histogram(avgimgravel, bins = int((max(avgimgravel)-min(avgimgravel))), density=False)
     binwidth = np.diff(binedges)[0]
     bincenters = (binedges[:-1] + binedges[1:])/2
     
-    ###part where estimate guesses for parameters below###
-
     # Set parameters to the fit
+
+    # Make educated guesses for the parameters
+    first_counts_bin = next(binedge for binedge, content in zip(binedges, avgimghist) if content > 10)
+    last_counts_bin = next(binedge for binedge, content in zip(np.flip(binedges), np.flip(avgimghist)) if content > 10) + 2*calibguess
+
+    # Find the location of the zero electron peak
+    min_index = np.searchsorted(binedges, first_counts_bin, side='right') - 1
+    max_index = np.searchsorted(binedges, first_counts_bin + calibguess, side='left')
+    #local_max_count = np.max(counts[min_index:max_index])
+    local_max_bin_index = np.argmax(avgimghist[min_index:max_index]) + min_index
+    local_max_bin_edge = binedges[local_max_bin_index]
+    #local_max_bin_count = counts[local_max_bin_index]
+
+    expected_nelectrons = (last_counts_bin - first_counts_bin)/calibguess
+    print('Expected number of electron peaks: ', int(expected_nelectrons))
+
     params = lmfit.Parameters()
-    if darkcurrent > 0:
-        params.add('dcrate', value=darkcurrent, vary=False)
-    else:
-        params.add('dcrate', value=-1*darkcurrent, min = 0, vary=True)
-    params.add('Nelectrons', value=npoisson, vary=False)
-    params.add('Npixelspeak', value=len(avgimgravel), vary=True)
-    params.add('sigma', value=avgimgstd, min = 0, vary=True)
-    params.add('offset', value=avgimgmu, vary = True)
-    if calibguess > 0:
-        params.add('gain', value=calibguess, vary=True)
-    else:
-        params.add('gain', value=-1*calibguess, min = 0)
-    minimized = lmfit.minimize(lmfitGausPoisson, params, method='least_squares', args=(bincenters, avgimghist))
+    # Set parameters to the fit
+    if darkcurrent > 0: params.add('dcrate', value = darkcurrent, vary = True, min=1E-6)
+    else: params.add('dcrate', value = -1*darkcurrent, vary = True, min = 1E-6)
+    params.add('Nelectrons', value = int(expected_nelectrons), vary = True, max = int(expected_nelectrons))
+    params.add('Npixelspeak', value = len(avgimgravel)/2, vary = True, min = 0)
+    params.add('sigma', value = stdmanyskip, vary = True, min = 0.1*calibguess, max = 10*calibguess)
+    if first_counts_bin < 0: params.add('offset', value = local_max_bin_edge, vary = True, min = first_counts_bin)
+    else: params.add('offset', value = local_max_bin_edge, vary = True, min = first_counts_bin)
+    if calibguess > 0: params.add('gain', value = calibguess, vary = True, min = calibrationlowbound, max = calibrationupbound)
+    else: params.add('gain', value = -1*calibguess, vary = True, min = calibrationlowbound, max = calibrationupbound)
+    minimized = lmfit.minimize(lmfitGausPoisson, params, method = 'least-squares', args = (bincenters, avgimghist))
+
     
     # Operations on the returned values to parse into a useful format
     return minimized
@@ -108,16 +125,6 @@ def paramsToList(params):
     parunc = [ params['dcrate'].stderr, params['Nelectrons'].stderr, params['Npixelspeak'].stderr, params['sigma'].stderr, params['offset'].stderr, params['gain'].stderr]
     return par, parunc
     
-def fitGuessesArray(centroid,calibguess,npeaks):
-    pguesses = np.zeros((3,36), dtype=np.float64) #3 = fit parameters to tweak, 18 = set of guess
-    i=0
-    for npeaksguess in range(npeaks-2,npeaks+3,2):
-        for calguess in np.arange(calibguess-0.5,calibguess+2.5,0.5):
-            for zeroelectroncentroid in [0,centroid]:
-                pguesses[:,i] = zeroelectroncentroid, calguess, npeaksguess
-                i+=1
-    return pguesses
-    
 def calibrationDC(avgimg,std,reverse,debug):
     if not applymask: avgimg = np.ma.masked_array(avgimg, mask=None)
     if analysisregion == 'arbitrary':
@@ -125,7 +132,7 @@ def calibrationDC(avgimg,std,reverse,debug):
     avgimgravel = avgimg.compressed()
     #mu = bincenters[np.argmax(avgimghist)]
     blockPrint() #to prevent message on invalid choice for arbitrary region (wrong only in this case)
-    mu = sigmaFinder(avgimg, fwhm_est=True, debug=False)[1]
+    mu = sigmaFinder(avgimg, fit=fit_noise, fwhm_est=True, debug=False)[1]
     enablePrint()
     if reverse: avgimg = mu - avgimg
     else: avgimg = avgimg - mu
@@ -135,42 +142,35 @@ def calibrationDC(avgimg,std,reverse,debug):
     if reverse: avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False) #s!=0 removes saturation counts
     else: avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
-    #fitting set of guesses
-    pguesses = fitGuessesArray(mu,calibrationguess,npeaks=3)
-    reducedchisquared = np.zeros(np.size(pguesses,1), dtype=np.float64)
-    par = np.zeros((6,np.size(pguesses,1)), dtype=np.float64)
-    parunc = np.zeros((6,np.size(pguesses,1)), dtype=np.float64)
-    #try fit with different guess
-    for tweakfitindex in range(np.size(pguesses,1)):
-        fitminimized = computeGausPoissDist(avgimgravel, pguesses[0,tweakfitindex], std, pguesses[1,tweakfitindex], -1, pguesses[2,tweakfitindex])
-        params = fitminimized.params
-        #print(lmfit.fit_report(fitminimized))
-        reducedchisquared[tweakfitindex] = fitminimized.redchi
-        par[:,tweakfitindex] = np.array(paramsToList(params)[0])
-        parprint = par[:,tweakfitindex]
-        parunc[:,tweakfitindex] = np.array(paramsToList(params)[1])
-        #debug
-        '''
-        if debug:
-            #print(lmfit.fit_report(fitminimized))
-            avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
-            bincenters = (binedges[:-1] + binedges[1:])/2
-            adu = np.linspace(bincenters[0], bincenters[-1], nbins)
-            plt.plot(adu, convolutionGaussPoiss(adu, *parprint), 'r')
-            plt.yscale('log')
-            plt.plot(adu, avgimghist, 'teal')
-            plt.ylim(0.01, params['Npixelspeak'])
-            plt.show()
-         '''
-    #find best fit
-    #redchisquared should always be positive, lines below make no sense
-    optimalfitindex = np.argmin(abs(reducedchisquared))
-    parmatrix = [par[:,optimalfitindex],parunc[:,optimalfitindex]]
+    #fitting
+    reducedchisquared = np.zeros(1, dtype=np.float64)
+    par = np.zeros(6, dtype=np.float64)
+    parunc = np.zeros(6, dtype=np.float64)
+    bestfit = computeGausPoissDist(avgimgravel, calibrationguess, 1, std)
+    params = bestfit.params
+    #print(lmfit.fit_report(bestfit))
+    par = np.array(paramsToList(params)[0])
+    parprint = par[:]
+    parunc[:] = np.array(paramsToList(params)[1])
+    #debug
+    '''
+    if debug:
+        #print(lmfit.fit_report(bestfit))
+        avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
+        bincenters = (binedges[:-1] + binedges[1:])/2
+        adu = np.linspace(bincenters[0], bincenters[-1], nbins)
+        plt.plot(adu, convolutionGaussPoiss(adu, *parprint), 'r')
+        plt.yscale('log')
+        plt.plot(adu, avgimghist, 'teal')
+        plt.ylim(0.01, params['Npixelspeak'])
+        plt.show()
+     '''
+    parmatrix = [par,parunc]
+
             
     # save fit results
-    bestfit = computeGausPoissDist(avgimgravel, pguesses[0,optimalfitindex], std, pguesses[1,optimalfitindex], -1, pguesses[2,optimalfitindex])
     print(parseFitMinimum(bestfit))
-    darkcurrentestimate,offsetresidual,calibrationconstant = par[0,optimalfitindex],par[4,optimalfitindex],par[5,optimalfitindex]
+    darkcurrentestimate,offsetresidual,calibrationconstant = par[0],par[4],par[5]
     skipper_avg_cal = (avgimg - offsetresidual)/calibrationconstant
     if reverse: offset = mu - offsetresidual
     else: offset = mu + offsetresidual
@@ -178,9 +178,9 @@ def calibrationDC(avgimg,std,reverse,debug):
     if debug:
         avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
         bincenters = (binedges[:-1] + binedges[1:])/2
-        skipperavgfit = convolutionGaussPoiss(bincenters,*par[:,optimalfitindex])
+        skipperavgfit = convolutionGaussPoiss(bincenters,*par)
         plt.plot(bincenters,avgimghist, 'teal')
-        plt.plot(bincenters,skipperavgfit, label='gauss-poisson convolution fit curve: '+'$\chi^2_{red}=$'+str(round(reducedchisquared[optimalfitindex],4)), color='red')
+        plt.plot(bincenters,skipperavgfit, label='gauss-poisson convolution fit curve', color='red')
         plt.legend(loc = 'upper right')
         plt.yscale('log')
         plt.ylim(0.1)
@@ -189,7 +189,8 @@ def calibrationDC(avgimg,std,reverse,debug):
         #print(skipper_avg_cal.ravel())
     
     
-    return parmatrix, reducedchisquared[optimalfitindex], offset, nbins
+    return parmatrix, offset, nbins
+
 
 
 
