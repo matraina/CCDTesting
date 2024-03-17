@@ -58,6 +58,8 @@
             "scan_report" : true,
             "scan_parameters": "VDD",
             "scan_intervals": "-17,-24,-2"
+            "fft_skips" : true,
+            "fft_row" : true
         }]
     }],
     
@@ -128,7 +130,7 @@
         "global_threshold_in_sigma": 3,
         "maximum_pixel_value_threshold_in_sigma": 15,
         "use_mask" : false,
-        "mask_path" : "/Users/mtraina/repositories/CCDTesting/processed/MASK_74_75.fits",
+        "mask_path" : "./processed/MASK_74_75.fits",
         "cluster_fit_std_threshold" : 0.01,
         "subdivide_image_for_diffusion_analysis" :
         [{

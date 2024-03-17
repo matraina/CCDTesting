@@ -139,7 +139,7 @@ def calibrationDC(avgimg,std,reverse,debug):
     avgimgravel = avgimg.compressed()
     #nbins=int(0.5*(np.ma.max(avgimgravel)-np.ma.min(avgimgravel)))
     nbins=int((np.ma.max(avgimgravel)-np.ma.min(avgimgravel)))
-    if reverse: avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False) #s!=0 removes saturation counts
+    if reverse: avgimghist, binedges = np.histogram([s for s in avgimgravel if s!=0], bins = nbins, density=False) #s!=0 masks saturation counts
     else: avgimghist, binedges = np.histogram(avgimgravel, bins = nbins, density=False)
     bincenters = (binedges[:-1] + binedges[1:])/2
     #fitting
@@ -187,10 +187,9 @@ def calibrationDC(avgimg,std,reverse,debug):
         plt.show()
         print('Estimated offset is '+str(offset)+' ADU')
         #print(skipper_avg_cal.ravel())
-    
-    
+  
+  
     return parmatrix, offset, nbins
-
 
 
 

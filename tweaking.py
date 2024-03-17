@@ -44,7 +44,6 @@ analysisregion = config['analysis_region']
 kclthreshold = config['kcl_threshold']
 calibrationguess = config['calibration_constant_guess']
 printheader = config['print_header']
-multipleimages = config['tweaking_analysis'][-1]['multiple_images'][-1]['use_multiple_images']
 reportHeader = config['tweaking_analysis'][-1]['report'][-1]['header']
 reportImage = config['tweaking_analysis'][-1]['report'][-1]['image']
 reportPCD = config['tweaking_analysis'][-1]['report'][-1]['pcds']
@@ -66,10 +65,6 @@ start = time.perf_counter()
 if default_directory_structure:
     arg1 = 'raw/' + arg1
     arg2 = 'processed/' + arg2
-    
-if multipleimages:
-    arg1 = ''.join([i for i in arg1 if not i.isdigit()]).replace('.fits','')
-    arg2 = ''.join([i for i in arg2 if not i.isdigit()]).replace('.fits','')
 
 ##############################################################################                             
 # Get Numpy and Matplotlib
@@ -179,7 +174,7 @@ if not multipleimages:
     ##############################################################################
     #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
     ##############################################################################
-
+         
     if reportCalibrationDarkcurrent and nskips!=1:
         parametersDCfit, reducedchisquared, offset, nbins_plot = m_calibrationdc.calibrationDC(skipper_avg0, stdmanyskip[-1], reverse, debug=False)
         calibrationconstant = parametersDCfit[0][5]; calibratedsigma = stdmanyskip[-1]/calibrationconstant
@@ -280,7 +275,7 @@ if multipleimages:
             calibrationconstant_stack[iimage] = parametersDCfit_stack[0,5,iimage]; calibratedsigma_stack[iimage] = stdmanyskip_stack[-1,iimage]/calibrationconstant_stack[iimage]
             skipper_avg_cal_stack[:,:,iimage] = reversign*(skipper_avg0_stack[:,:,iimage] - offset_stack[iimage])/calibrationconstant_stack[iimage]
             darkcurrentestimateAC_stack[iimage] = m_calibrationdc.anticlusteringDarkCurrent(m_functions.selectImageRegion(skipper_avg_cal_stack[:,:,iimage],analysisregion), calibratedsigma_stack[iimage], debug=False)
-    
+
 ##############################################################################
 ##############################################################################
 ##############################################################################
@@ -1240,4 +1235,5 @@ doc.generate_pdf(reportname, clean_tex=True)
 
 end = time.perf_counter()
 print('Code execution took ' + str(round((end-start),4)) + ' seconds')
+    
     
