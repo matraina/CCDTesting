@@ -188,7 +188,7 @@ startskipfitpar_U = m_functions.sigmaFinder(skipper_image_start_U, fit=fit_noise
 ampmanyskip_U, mumanyskip_U, stdmanyskip_U, stduncmanyskip_U = [],[],[],[]
 if reportRT:
     for k in range(naverages):
-        if naverages == 1: amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:], fit=fit_noise, fwhm_est=True, debug=False)
+        if naverages == 1: amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:], fit=fit_noise, fwhm_est=False, debug=False)
         else: amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:,k], fit=fit_noise, fwhm_est=False, debug=False)
         ampmanyskip_U.append(amp)
         mumanyskip_U.append(mu)
@@ -222,11 +222,11 @@ if reportChargeLoss and nskips!=1:
 ##############################################################################
 
 if reportCalibrationDarkcurrent and nskips!=1:
-    parametersDCfit_L, offset_L, nbins_plot_L = m_calibrationdc.calibrationDC(skipper_avg0_L, stdmanyskip_L[-1], reverse, debug=True)
+    parametersDCfit_L, offset_L, nbins_plot_L = m_calibrationdc.calibrationDC(skipper_avg0_L, stdmanyskip_L[-1], reverse, debug=False)
     calibrationconstant_L = parametersDCfit_L[0][5]; calibratedsigma_L = stdmanyskip_L[-1]/calibrationconstant_L
     skipper_avg_cal_L = reversign*(skipper_avg0_L - offset_L)/calibrationconstant_L
     if anticlustering_leakage: darkcurrentestimateAC_L = m_calibrationdc.anticlusteringDarkCurrent(m_functions.selectImageRegion(skipper_avg_cal_L,analysisregion), calibratedsigma_L, debug=False)
-    parametersDCfit_U, offset_U, nbins_plot_U = m_calibrationdc.calibrationDC(skipper_avg0_U, stdmanyskip_U[-1], reverse, debug=True)
+    parametersDCfit_U, offset_U, nbins_plot_U = m_calibrationdc.calibrationDC(skipper_avg0_U, stdmanyskip_U[-1], reverse, debug=False)
     calibrationconstant_U = parametersDCfit_U[0][5]; calibratedsigma_U = stdmanyskip_U[-1]/calibrationconstant_U
     skipper_avg_cal_U = reversign*(skipper_avg0_U - offset_U)/calibrationconstant_U
     if anticlustering_leakage: darkcurrentestimateAC_U = m_calibrationdc.anticlusteringDarkCurrent(m_functions.selectImageRegion(skipper_avg_cal_U,analysisregion), calibratedsigma_U, debug=False)

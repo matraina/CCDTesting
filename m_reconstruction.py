@@ -419,7 +419,7 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
             #skipper_image_start_U = subtractPedestalRowByRow(skipper_image_start_U)[0]
             if not ped_overscan:
                 skipper_avg0_L = subtractPedestalRowByRow(skipper_avg0_L)[0]
-                skipper_avg0_u = subtractPedestalRowByRow(skipper_avg0_U)[0]
+                skipper_avg0_U = subtractPedestalRowByRow(skipper_avg0_U)[0]
             else:
                 skipper_avg0_L = subtractOvscPedestalRowByRow(skipper_avg0_L)[0]
                 skipper_avg0_U = subtractOvscPedestalRowByRow(skipper_avg0_U)[0]

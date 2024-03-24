@@ -158,6 +158,8 @@ def enablePrint():
     sys.stdout = sys.__stdout__
 
 def sigmaFinder(image, fit, fwhm_est, debug):
+    if image.flatten().size == 0:
+        raise ValueError("Empty array provided to sigmaFinder.")
     import numpy as np
     from scipy.optimize import curve_fit
     import matplotlib.pyplot as plt
@@ -239,6 +241,12 @@ def sigmaFinder(image, fit, fwhm_est, debug):
         munc,stdunc=float('nan'),float('nan')
 
     if debug:
+        fitrange = 2
+        #print(pcd)
+        pcdinrange = [s for s in pcd if s > mostlikelyentry - fitrange*sigma and s < mostlikelyentry + fitrange*sigma] #remove pixels out of desired range
+        binsinrange = int(bins/int(max(pcd) - min(pcd)))*int(max(pcdinrange) - min(pcdinrange))
+        pcdinrangehist, binedges = np.histogram(pcdinrange, binsinrange, density=False)
+        bincenters=(binedges[:-1] + binedges[1:])/2
         print('Most likely entry is:', mostlikelyentry)
         print('Most likely entry counts are:', mostlikelyentrycounts)
         print('FWHM is at:', fwhm)
@@ -246,7 +254,7 @@ def sigmaFinder(image, fit, fwhm_est, debug):
         print('Value of approximate gaussian std (noise) is:', round(sigma,4))
         print('Value of gaussian std (noise) is:', round(std,4))
         plt.plot(bincenters,pcdinrangehist,label='pcd')
-        plt.plot(bincenters, pcdhistfit, label='fit curve')
+        #plt.plot(bincenters, pcdhistfit, label='fit curve')
         plt.title('$\mu=$' + str(round(mu,1)) + ' ADU, $\sigma=$' + str(round(std,3)) + ' ADU')
         plt.show()
         

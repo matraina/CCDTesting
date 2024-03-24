@@ -172,7 +172,7 @@ else:
     while index <= nskips/100:
         numberskips.append(index*100)
         naverages = index+1; index+=1
-if reportRT:
+if reportRT and nskips > 1:
     for k in range(naverages):
         if naverages == 1: amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_L[:,:], fit=fit_noise, fwhm_est=False, debug=False)
         else: amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_L[:,:,k], fit=fit_noise, fwhm_est=False, debug=False)
@@ -181,16 +181,19 @@ if reportRT:
         stdmanyskip_L.append(std)
         stduncmanyskip_L.append(stdunc)
 else: 
-    amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_L[:,:,naverages-1], fit=fit_noise, fwhm_est=False, debug=False)
-    ampmanyskip_L.append(amp)
-    mumanyskip_L.append(mu)
-    stdmanyskip_L.append(std)
-    stduncmanyskip_L.append(stdunc)
+    if nskips < 2:
+        pass
+    else:
+        amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_L[:,:,naverages-1], fit=fit_noise, fwhm_est=False, debug=False)
+        ampmanyskip_L.append(amp)
+        mumanyskip_L.append(mu)
+        stdmanyskip_L.append(std)
+        stduncmanyskip_L.append(stdunc)
 
 startskipfitpar_U = m_functions.sigmaFinder(skipper_image_start_U, fit=fit_noise, fwhm_est=False, debug=False) #ampss muss, stdss, stduncss
 
 ampmanyskip_U, mumanyskip_U, stdmanyskip_U, stduncmanyskip_U = [],[],[],[]
-if reportRT:
+if reportRT and nskips > 1:
     for k in range(naverages):
         if naverages == 1: amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:], fit=fit_noise, fwhm_est=True, debug=False)
         else: amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:,k], fit=fit_noise, fwhm_est=False, debug=False)
@@ -198,18 +201,21 @@ if reportRT:
         mumanyskip_U.append(mu)
         stdmanyskip_U.append(std)
         stduncmanyskip_U.append(stdunc)
-else: 
-    amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:,naverages-1], fit=fit_noise, fwhm_est=False, debug=False)
-    ampmanyskip_U.append(amp)
-    mumanyskip_U.append(mu)
-    stdmanyskip_U.append(std)
-    stduncmanyskip_U.append(stdunc)
+else:
+    if nskips < 2:
+        pass
+    else: 
+        amp, mu, std, munc, stdunc = m_functions.sigmaFinder(skipper_averages_U[:,:,naverages-1], fit=fit_noise, fwhm_est=False, debug=False)
+        ampmanyskip_U.append(amp)
+        mumanyskip_U.append(mu)
+        stdmanyskip_U.append(std)
+        stduncmanyskip_U.append(stdunc)
     
 ##############################################################################
 #FIRST LAST SKIP CHARGE LOSS CHECK: KCL AND SKEW##############################
 ##############################################################################
     
-if reportChargeLoss and nskips!=1:
+if reportChargeLoss and nskips > 1:
     diff_image_core_01_L,diff_image_core_L = m_functions.selectImageRegion(skipper_diff_01_L,'exposed_pixels_exclude_first_row'),m_functions.selectImageRegion(skipper_diff_L,'exposed_pixels_exclude_first_row')
     diff_image_core_01_U,diff_image_core_U = m_functions.selectImageRegion(skipper_diff_01_U,'exposed_pixels_exclude_first_row'),m_functions.selectImageRegion(skipper_diff_U,'exposed_pixels_exclude_first_row')
     PCDDstudyparameters01_L = m_chargeloss.firstLastSkipPCDDCheck(diff_image_core_01_L, debug=False) #skewnessPCDD, skewnessPCDDuncertainty, kclPCDD, kclPCDDuncertainty, ampPCDD, muPCDD, stdPCDD
@@ -241,39 +247,20 @@ if reportCalibrationDarkcurrent and nskips!=1:
 ##############################################################################
 
 if nskips == 1:
+    print('Make sure images to cluster are pedestal subtracted. Set subtract_pedestal_row_by_row to true in configuration file.')
     ped_subtracted_image_data_exposed_L = m_functions.selectImageRegion(image_data_L,'exposed_pixels')
-    pedestal_L = np.mean(pedestals_L)
-    mad_L = np.mean(mads_L)
-    #cut = [200,500] #cut on value                                                                                                                               
-    cut_L = [globalthreshold*mad_L,maximumthreshold*mad_L,clustdthreshold] #min pix val, max pix val, cluster sigma (for code eff. optimiz.)                     
+    cut_L = [globalthreshold*startskipfitpar_L[2],maximumthreshold*startskipfitpar_L[2],clustdthreshold] #min pix val, max pix val, cluster sigma (for code eff. optimiz.)                     
     clusters_L = clusterImage(ped_subtracted_image_data_exposed_L,cut_L,mask=None) #fix                                                                          
     clustermask_L = clusters_L[1]
     
-    ped_subtracted_image_data_exposed_U = m_functions.selectImageRegion(image_data_U,'exposed_pixels')
-    pedestal_U = np.mean(pedestals_U)
-    mad_U = np.mean(mads_U)
-    cut_U = [globalthreshold*mad_U,maximumthreshold*mad_U,clustdthreshold]
+    ped_subtracted_image_data_exposed_U = m_functions.selectImageRegion(image_data_U,'exposed_pixels') 
+    cut_U = [globalthreshold*startskipfitpar_U[2],maximumthreshold*startskipfitpar_U[2],clustdthreshold]
     clusters_U = clusterImage(ped_subtracted_image_data_exposed_U,cut_U,mask=None) #fix
     clustermask_U = clusters_U[1]
     
-else:
-    print('Make sure images to cluster are pedestal subtracted. Set subtract_pedestal_row_by_row to True in the configuration file.')
-    #from matplotlib.colors import LogNorm
-    #plt.imshow(skipper_avg0_L, cmap='cividis', norm=LogNorm(), extent=(0,ncolumns,0,nrows))
-    #plt.show()
-    skipper_avg_exposed_L = m_functions.selectImageRegion(skipper_avg0_L,'exposed_pixels')
-    cut_L = [globalthreshold*stdmanyskip_L[0]/np.sqrt(nskips),maximumthreshold*stdmanyskip_L[0]/np.sqrt(nskips),clustdthreshold]
-    clusters_L = clusterImage(skipper_avg_exposed_L,cut_L,mask=None)
-    clustermask_L = clusters_L[1]
     #plt.imshow(clustermask_L, cmap='cividis', extent=(0,ncolumns//2,0,nrows),origin='lower')
     #plt.show()
     
-    #plt.imshow(skipper_avg0_U, cmap='cividis', norm=LogNorm(), extent=(0,ncolumns,0,nrows))
-    #plt.show()
-    skipper_avg_exposed_U = m_functions.selectImageRegion(skipper_avg0_U,'exposed_pixels')
-    cut_U = [globalthreshold*stdmanyskip_U[0]/np.sqrt(nskips),maximumthreshold*stdmanyskip_U[0]/np.sqrt(nskips),clustdthreshold]
-    clusters_U = clusterImage(skipper_avg_exposed_U,cut_U,mask=None)
-    clustermask_U = clusters_U[1]
     #plt.imshow(clustermask_U, cmap='cividis', extent=(0,ncolumns//2,0,nrows),origin='lower')
     #plt.show()
     
@@ -282,21 +269,56 @@ else:
     #plt.xlabel('energy (keV)')
     #plt.ylabel('entries')
     #plt.show()
-    
+
     #clustersenergy_U = [x * 0.00377/calibrationguess for x in clusters_U[7]]
     #plt.hist(clustersenergy_U,500,log=True)
     #plt.xlabel('energy (keV)')
     #plt.ylabel('entries')
     #plt.show()
+    
+else:
+    print('Make sure images to cluster are pedestal subtracted. Set subtract_pedestal_row_by_row to true in configuration file.')
+    #from matplotlib.colors import LogNorm
+    #plt.imshow(skipper_avg0_L, cmap='cividis', norm=LogNorm(), extent=(0,ncolumns,0,nrows))
+    #plt.show()
+    skipper_avg_exposed_L = m_functions.selectImageRegion(skipper_avg0_L,'exposed_pixels')
+    cut_L = [globalthreshold*stdmanyskip_L[0]/np.sqrt(nskips),maximumthreshold*stdmanyskip_L[0]/np.sqrt(nskips),clustdthreshold]
+    clusters_L = clusterImage(skipper_avg_exposed_L,cut_L,mask=None)
+    clustermask_L = clusters_L[1]
+    
+    #plt.imshow(skipper_avg0_U, cmap='cividis', norm=LogNorm(), extent=(0,ncolumns,0,nrows))
+    #plt.show()
+    skipper_avg_exposed_U = m_functions.selectImageRegion(skipper_avg0_U,'exposed_pixels')
+    cut_U = [globalthreshold*stdmanyskip_U[0]/np.sqrt(nskips),maximumthreshold*stdmanyskip_U[0]/np.sqrt(nskips),clustdthreshold]
+    clusters_U = clusterImage(skipper_avg_exposed_U,cut_U,mask=None)
+    clustermask_U = clusters_U[1]
+    
+    plt.imshow(clustermask_L, cmap='cividis', extent=(0,ncolumns//2,0,nrows),origin='lower')
+    plt.show()
+
+    plt.imshow(clustermask_U, cmap='cividis', extent=(0,ncolumns//2,0,nrows),origin='lower')
+    plt.show()
+
+    clustersenergy_L = [x * 0.00377/calibrationguess for x in clusters_L[7]]
+    plt.hist(clustersenergy_L,500,log=True)
+    plt.xlabel('energy (keV)')
+    plt.ylabel('entries')
+    plt.show()
+    
+    clustersenergy_U = [x * 0.00377/calibrationguess for x in clusters_U[7]]
+    plt.hist(clustersenergy_U,500,log=True)
+    plt.xlabel('energy (keV)')
+    plt.ylabel('entries')
+    plt.show()
 
 ##############################################################################
 #ADU TO e- CALIBRATION AND DARK CURRENT ESTIMATES#############################
 ##############################################################################
 
-skipper_avg_exposed_L = m_reconstruction.applyMask(skipper_avg_exposed_L, clustermask_L)
-skipper_avg_exposed_U = m_reconstruction.applyMask(skipper_avg_exposed_U, clustermask_U)
-
 if reportCalibrationDarkcurrent and nskips!=1:
+    skipper_avg_exposed_L = m_reconstruction.applyMask(skipper_avg_exposed_L, clustermask_L)
+    skipper_avg_exposed_U = m_reconstruction.applyMask(skipper_avg_exposed_U, clustermask_U)
+    
     parametersDCfit_L, offset_L, nbins_plot_L = m_calibrationdc.calibrationDC(skipper_avg_exposed_L, stdmanyskip_L[-1], reverse, debug=False)
     calibrationconstant_L = parametersDCfit_L[0][5]; calibratedsigma_L = stdmanyskip_L[-1]/calibrationconstant_L
     skipper_avg_cal_L = reversign*(skipper_avg_exposed_L - offset_L)/calibrationconstant_L
