@@ -12,6 +12,7 @@ Module for image reconstruction starting from raw .fits file
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import os
 from astropy.utils.data import get_pkg_data_filename
 from astropy.io import fits
 from numba import jit
@@ -33,6 +34,7 @@ overscan = config['overscan']
 analysisregion = config['analysis_region']
 calibrationguess = config['calibration_constant_guess']
 printheader = config['print_header']
+
 
 ####################################################################
 ### function used to correct image from leach reconstruction bug ###
@@ -405,6 +407,7 @@ def reconstructTwoAmpSkipperImages(image_file,processedname,flip_U_img):
     
     #save processed images
     processedfits = workingdirectory + processedname
+    print('saving processed image to: ', processedfits)
     if nskips == 1: #processed image is pedestal-subtracted if nskip == 1
         hdr_copy = hdr.copy()
         hdu0L = fits.PrimaryHDU(data=image_data_L,header=hdr_copy)

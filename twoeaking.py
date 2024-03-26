@@ -109,6 +109,7 @@ import m_calibrationdc
 
 import os
 os.chdir(workingdirectory)
+print('Current working directory: ',os.getcwd())
 
 ##############################################################################
 #SINGLE IMAGE TWEAKING ANALYSIS ##############################################
@@ -117,7 +118,8 @@ os.chdir(workingdirectory)
 ##############################################################################
 # Open the data image
 
-image_file = get_pkg_data_filename(arg1)
+print('Opening image file: ',arg1)
+image_file = get_pkg_data_filename(workingdirectory+arg1)
 
 ##############################################################################
 # Use `astropy.io.fits.info()` to display the structure of the file
