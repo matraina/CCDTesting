@@ -14,12 +14,11 @@ Working directory must be specified in 'working_directory' in config.json. If 'r
 e.g.: ./tweaking.py Image_LPNHE_16 Img_16
 
 General Notes:
-- start_skip for avg and diff starts at 0, not at 1. If 1 is input, it will start from the second skip
-- end_skip also follows the convention above, so to check the last skip of a 1000-skip image, it should be set to 999. 
-- Setting -1 (or any other impossible value) for skip number arguments: start_skip and end_skip will set them to 0 (first skip) and N_tot_skip-1, respectively
+- start_skip for avg and diff starts at 0. If 1 is input, it will start from the second skip
+- end_skip also follows the convention above, so for a 1000-skip image it should be set to 999. 
+- Setting am impossible value for start/end skip numbers will set start_skip and end_skip to 0 (first skip) and N_tot_skip-1, respectively
 - Set start and end skips hold for all processing (avg image, std image, difference image (start+1-end to avoid using first skip), etc.) except for noise trend. The noise trend is computed for all skips regardless
-- Do not include .fits extension at the end of image name (for raw and for processed image) both in shell and python scripts
 
 Acknowledgements:
-- The fit framework was adapted based on Alex Piers example (check calibration module for further info)
+- The Gauss-Poisson convolution fit was adapted from Alex Piers' damicm-image-preproc (https://github.com/alexanderpiers/damicm-image-preproc)
 - The code uses few basic lines of plot_fits-image.py (By: Lia R. Corrales, Adrian Price-Whelan, Kelle Cruz. License: BSD) to display info and open .fits files with python
